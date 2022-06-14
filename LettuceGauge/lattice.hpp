@@ -18,6 +18,9 @@
 // Can be indexed with individual coordinates (t, x, y, z, mu)
 // Can also take a link_coord struct as coordinates
 
+// TODO: Split up into class which only consists of the array holding a gauge field?
+//       Probably better for handling the smeared fields, since that way we can use an array/vector of n_smear gauge fields
+
 // template<typename gaugeT, typename LayoutT>
 template<typename gaugeT>
 class GaugeField4D

@@ -585,11 +585,6 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
 
 // }
 
-Matrix_3x3 ProjectionAlgebraSingle(const Matrix_3x3& mat)
-{
-    return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
-}
-
 //-----
 // Cayley map to transform Lie algebra elements to the associated Lie group
 // Can be used as an alernative to the exponential map in the HMC

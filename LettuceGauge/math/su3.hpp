@@ -99,6 +99,13 @@ namespace SU3::Projection
         // GluonMatrix = GluonMatrix * (1.f/std::cbrt(GluonMatrix.determinant()));
     }
 
+    //-----
+    // Projects a single element onto su(3) algebra
+
+    Matrix_3x3 Algebra(const Matrix_3x3& mat)
+    {
+        return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
+    }
 }
 
 namespace SU3::Tests
