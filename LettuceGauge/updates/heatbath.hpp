@@ -22,7 +22,7 @@ template<typename floatT>
 struct HeatbathKernel
 {
     private:
-        GaugeField4D<Matrix_SU3>& Gluon;
+        GaugeField& Gluon;
         std::uniform_real_distribution<floatT>& distribution_uniform;
         // TODO: Include this as parameters in constructor
         int N_col {3};
@@ -85,7 +85,7 @@ struct HeatbathKernel
             return {SU2_comp<floatT> {std::complex<floatT> (x0, x1), std::complex<floatT> (x2, x3)} * V.adjoint()};
         }
     public:
-        explicit HeatbathKernel(GaugeField4D<Matrix_SU3>& Gluon_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
+        explicit HeatbathKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
         Gluon(Gluon_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
         {}
 

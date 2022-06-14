@@ -128,7 +128,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool UnitarityAll(const GaugeField4D<Matrix_SU3>& Gluon, const floatT prec = 1e-6) noexcept
+    bool UnitarityAll(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
     {
         bool IsUnitary {true};
         for (int t = 0; t < Nt; ++t)
@@ -163,7 +163,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool SpecialAll(const GaugeField4D<Matrix_SU3>& Gluon, const floatT prec = 1e-6) noexcept
+    bool SpecialAll(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
     {
         bool IsSpecial {true};
         for (int t = 0; t < Nt; ++t)
@@ -198,7 +198,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool TestSU3All(const GaugeField4D<Matrix_SU3>& Gluon, const floatT prec = 1e-6) noexcept
+    bool TestSU3All(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
     {
         bool InGroup {true};
         for (int t = 0; t < Nt; ++t)
@@ -233,7 +233,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool Testsu3All(const GaugeField4D<Matrix_SU3>& Gluon, const floatT prec = 1e-6) noexcept
+    bool Testsu3All(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
     {
         bool InAlgebra {true};
         for (int t = 0; t < Nt; ++t)

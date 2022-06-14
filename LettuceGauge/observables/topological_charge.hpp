@@ -22,7 +22,7 @@
 // Calculate field-theoretic topological charge using field-strength tensor
 
 [[nodiscard]]
-double TopChargeGluonic(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+double TopChargeGluonic(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+:Q)
@@ -94,7 +94,7 @@ double TopChargeGluonic(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicSymm(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+:Q)
@@ -194,7 +194,7 @@ double TopChargeGluonicSymm(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicUnimproved(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+:Q)

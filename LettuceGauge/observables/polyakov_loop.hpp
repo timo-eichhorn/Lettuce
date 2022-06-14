@@ -18,7 +18,7 @@
 // Polyakov loops
 
 [[nodiscard]]
-std::complex<double> PolyakovLoop(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+std::complex<double> PolyakovLoop(const GaugeField& Gluon) noexcept
 {
     std::complex<floatT> P {0.0, 0.0};
     #pragma omp parallel for reduction(+:P)

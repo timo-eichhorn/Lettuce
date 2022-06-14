@@ -21,7 +21,7 @@ namespace WilsonAction
     // Returns unnormalized Wilson gauge action
 
     [[nodiscard]]
-    double Action(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+    double Action(const GaugeField& Gluon) noexcept
     {
         double S {0.0};
 
@@ -44,7 +44,7 @@ namespace WilsonAction
     // Returns normalized Wilson gauge action/Wilson gauge action per site
 
     [[nodiscard]]
-    double ActionNormalized(const GaugeField4D<Matrix_SU3>& Gluon) noexcept
+    double ActionNormalized(const GaugeField& Gluon) noexcept
     {
         double S {0.0};
         // Matrix_SU3_double pl;
@@ -76,7 +76,7 @@ namespace WilsonAction
     // Compared to the definition used by Gattringer & Lang, this version is the adjoint
 
     [[nodiscard]]
-    Matrix_3x3 Staple(const GaugeField4D<Matrix_SU3>& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
+    Matrix_3x3 Staple(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
     {
         Matrix_3x3 st;
 

@@ -19,8 +19,8 @@
 // TODO: Rewrite this? Is this even correct? Why does it return a zero matrix for nu = 0?
 
 [[nodiscard]]
-// Matrix_SU3 Plaquette(const GaugeField4D<Matrix_SU3>& Gluon, const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
-Matrix_SU3 Plaquette(const GaugeField4D<Matrix_SU3>& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+// Matrix_SU3 Plaquette(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
+Matrix_SU3 Plaquette(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     // site_coord current_site {t, x, y, z};
     return Gluon(current_site, mu) * Gluon(Move<1>(current_site, mu), nu) * Gluon(Move<1>(current_site, nu), mu).adjoint() * Gluon(current_site, nu).adjoint();

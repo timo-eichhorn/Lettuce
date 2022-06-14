@@ -21,7 +21,7 @@
 
 template<int Nmu_start, int Nmu_end, bool reset>
 [[nodiscard]]
-double WilsonLoop(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluonchain) noexcept
+double WilsonLoop(const GaugeField& Gluon, GaugeField& Gluonchain) noexcept
 {
     double W {0.0};
     #pragma omp parallel for

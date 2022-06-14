@@ -21,10 +21,10 @@
 struct OverrelaxationDirectKernel
 {
     private:
-        GaugeField4D<Matrix_SU3>& Gluon;
+        GaugeField& Gluon;
         std::uniform_real_distribution<floatT>& distribution_prob;
     public:
-        explicit OverrelaxationDirectKernel(GaugeField4D<Matrix_SU3>& Gluon_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+        explicit OverrelaxationDirectKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
         Gluon(Gluon_in), distribution_prob(distribution_prob_in)
         {}
 
@@ -87,7 +87,7 @@ struct OverrelaxationDirectKernel
 struct OverrelaxationSubgroupKernel
 {
     private:
-        GaugeField4D<Matrix_SU3>& Gluon;
+        GaugeField& Gluon;
         // Overrelaxation update for SU(2)
         template<typename floatT>
         SU2_comp<floatT> OverrelaxationSU2(const SU2_comp<floatT>& A) const noexcept
@@ -97,7 +97,7 @@ struct OverrelaxationSubgroupKernel
             return (V * V).adjoint();
         }
     public:
-        explicit OverrelaxationSubgroupKernel(GaugeField4D<Matrix_SU3>& Gluon_in) noexcept :
+        explicit OverrelaxationSubgroupKernel(GaugeField& Gluon_in) noexcept :
         Gluon(Gluon_in)
         {}
 

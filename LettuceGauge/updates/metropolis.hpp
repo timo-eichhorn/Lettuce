@@ -14,7 +14,7 @@
 // ...
 
 [[nodiscard]]
-Matrix3x3 Staple(const GField& U, const link_coord& coord)
+Matrix3x3 Staple(const GaugeField& U, const link_coord& coord)
 {
     // int t = coord.t;
     // int x = coord.x;
@@ -88,7 +88,7 @@ Matrix3x3 Staple(const GField& U, const link_coord& coord)
     }
 }
 
-void MetropolisSingle(GField& U, const link_coord& coord)
+void MetropolisSingle(GaugeField& U, const link_coord& coord)
 {
     // Calculate staple
     // placeholder;
@@ -96,7 +96,7 @@ void MetropolisSingle(GField& U, const link_coord& coord)
 
 void MetropolisSweep()
 {
-    a;
+    // placeholder;
 }
 
 #endif // LETTUCE_METROPOLIS_HPP

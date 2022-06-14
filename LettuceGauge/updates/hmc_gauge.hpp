@@ -20,7 +20,7 @@
 
 namespace HMC
 {
-    void RandomMomentum(GaugeField4D<Matrix_SU3>& Momentum) noexcept
+    void RandomMomentum(GaugeField& Momentum) noexcept
     {
         #pragma omp parallel for
         for (int t = 0; t < Nt; ++t)
@@ -51,7 +51,7 @@ namespace HMC
     //-----
     // Reverse momenta for HMC reversibility test
 
-    void ReverseMomenta(GaugeField4D<Matrix_SU3>& Momentum) noexcept
+    void ReverseMomenta(GaugeField& Momentum) noexcept
     {
         #pragma omp parallel for
         for (int t = 0; t < Nt; ++t)
@@ -68,7 +68,7 @@ namespace HMC
     //-----
     // Update momenta for HMC
 
-    void UpdateMomenta(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const floatT epsilon) noexcept
+    void UpdateMomenta(GaugeField& Gluon, GaugeField& Momentum, const floatT epsilon) noexcept
     {
         #pragma omp parallel for
         for (int t = 0; t < Nt; ++t)
@@ -87,7 +87,7 @@ namespace HMC
     //-----
     // Update gauge fields for HMC
 
-    void UpdateFields(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const floatT epsilon) noexcept
+    void UpdateFields(GaugeField& Gluon, GaugeField& Momentum, const floatT epsilon) noexcept
     {
         #pragma omp parallel for
         for (int t = 0; t < Nt; ++t)
@@ -111,7 +111,7 @@ namespace HMC
     }
 
     [[nodiscard]]
-    double Hamiltonian(const GaugeField4D<Matrix_SU3>& Gluon, const GaugeField4D<Matrix_SU3>& Momentum) noexcept
+    double Hamiltonian(const GaugeField& Gluon, const GaugeField& Momentum) noexcept
     {
         double potential_energy {WilsonAction::Action(Gluon)};
         double kinetic_energy {0.0};
@@ -130,7 +130,7 @@ namespace HMC
     }
 
     // Leapfrog integrator for HMC
-    void Leapfrog(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const int n_step) noexcept
+    void Leapfrog(GaugeField& Gluon, GaugeField& Momentum, const int n_step) noexcept
     {
         // Calculate stepsize epsilon from n_step
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
@@ -149,7 +149,7 @@ namespace HMC
     // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
     // cf. hep-lat/0505020
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
-    void OMF_2_slow(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const int n_step) noexcept
+    void OMF_2_slow(GaugeField& Gluon, GaugeField& Momentum, const int n_step) noexcept
     {
         // Calculate stepsize epsilon from n_step
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
@@ -170,7 +170,7 @@ namespace HMC
     //-----
     // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
     // cf. hep-lat/0505020
-    void OMF_2(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const int n_step) noexcept
+    void OMF_2(GaugeField& Gluon, GaugeField& Momentum, const int n_step) noexcept
     {
         // Calculate stepsize epsilon from n_step
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
@@ -197,7 +197,7 @@ namespace HMC
     // Omelyan-Mryglod-Folk fourth order minimum norm integrator
     // cf. hep-lat/0505020
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
-    void OMF_4_slow(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const int n_step) noexcept
+    void OMF_4_slow(GaugeField& Gluon, GaugeField& Momentum, const int n_step) noexcept
     {
         // Calculate stepsize epsilon from n_step
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
@@ -230,7 +230,7 @@ namespace HMC
     //-----
     // Omelyan-Mryglod-Folk fourth order minimum norm integrator
     // cf. hep-lat/0505020
-    void OMF_4(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Momentum, const int n_step) noexcept
+    void OMF_4(GaugeField& Gluon, GaugeField& Momentum, const int n_step) noexcept
     {
         // Calculate stepsize epsilon from n_step
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
@@ -279,7 +279,7 @@ namespace HMC
     // TODO: Add tau parameter (trajectory time) and pass to integrator functions
 
     template<typename FuncT>
-    bool HMCGauge(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluon_copy, GaugeField4D<Matrix_SU3>& Momentum, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
+    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
     {
         // Copy old field so we can restore it in case the update gets rejected
         Gluon_copy = Gluon;
