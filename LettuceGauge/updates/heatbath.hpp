@@ -89,36 +89,6 @@ struct HeatbathKernel
         Gluon(Gluon_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
         {}
 
-        void operator()(const int t, const int x, const int y, const int z, const int mu) const noexcept
-        {
-            // For SU(2), the prefactor is 0.5 / beta
-            // For SU(3), the prefactor is 0.75 / beta
-            // floatT prefactor {static_cast<floatT>(0.75) / beta}; // N_c/(2 * 2)
-            // int N_col {3};
-            // floatT prefactor {static_cast<floatT>(N_col) / beta};
-            Matrix_3x3 W;
-            SU2_comp<floatT> subblock;
-            // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, t, x, y, z, mu)).adjoint()};
-            //-----
-            // Update (0, 1) subgroup
-            // W = Gluon[t][x][y][z][mu] * st_adj;
-            subblock = Extract01<floatT>(Gluon(t, x, y, z, mu) * st_adj);
-            Gluon(t, x, y, z, mu) = Embed01(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(t, x, y, z, mu);
-            //-----
-            // Update (0, 2) subgroup
-            // W = Gluon[t][x][y][z][mu] * st_adj;
-            subblock = Extract02<floatT>(Gluon(t, x, y, z, mu) * st_adj);
-            Gluon(t, x, y, z, mu) = Embed02(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(t, x, y, z, mu);
-            //-----
-            // Update (1, 2) subgroup
-            // W = Gluon[t][x][y][z][mu] * st_adj;
-            subblock = Extract12<floatT>(Gluon(t, x, y, z, mu) * st_adj);
-            Gluon(t, x, y, z, mu) = Embed12(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(t, x, y, z, mu);
-            //-----
-            // Project link to SU(3)
-            SU3::Projection::GramSchmidt(Gluon(t, x, y, z, mu));
-        }
         void operator()(const link_coord& current_link) const noexcept
         {
             // For SU(2), the prefactor is 0.5 / beta

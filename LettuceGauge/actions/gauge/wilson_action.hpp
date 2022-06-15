@@ -169,6 +169,56 @@ namespace WilsonAction
         return st;
     }
 
+    // [[nodiscard]]
+    // Matrix_3x3 PartialStaple(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
+    // {
+    //     site_coord site_mup     {Move< 1>(current_site, mu)};
+    //     site_coord site_nup     {Move< 1>(current_site, nu)};
+    //     site_coord site_nud     {Move<-1>(current_site, nu)};
+    //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
+    //     return U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+    //          + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
+    // }
+
+    // [[nodiscard]]
+    // Matrix_3x3 Staple(const GaugeField& U, const int t, const int x, const int y, const int z, const int mu) noexcept
+    // {
+    //     site_coord current_site {t, x, y, z};
+    //     Matrix_3x3 st;
+    //     // for (int nu = 0; nu < 4; ++nu)
+    //     // {
+    //         // We could also move this insider another function and manually go through all directions?
+    //         // Alternatively, move directional loops outisde coordinate loops?
+    //         // if (nu != mu)
+    //         // {
+    //         //     site_coord site_mup     {Move< 1>(current_site, mu)};
+    //         //     site_coord site_nup     {Move< 1>(current_site, nu)};
+    //         //     site_coord site_nud     {Move<-1>(current_site, nu)};
+    //         //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
+    //         //     st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+    //         //                   + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
+    //         //     // st.noalias() += U(site_mup    , nu)           * U(site_nup, mu).adjoint() * U(current_site, nu).adjoint()
+    //         //     //               + U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint() * U(site_nud    , nu);
+    //         // }
+    //     // }
+    //     st.noalias() += PartialStaple(U, current_site, 0, 1);
+    //     st.noalias() += PartialStaple(U, current_site, 0, 2);
+    //     st.noalias() += PartialStaple(U, current_site, 0, 3);
+
+    //     st.noalias() += PartialStaple(U, current_site, 1, 0);
+    //     st.noalias() += PartialStaple(U, current_site, 1, 2);
+    //     st.noalias() += PartialStaple(U, current_site, 1, 3);
+
+    //     st.noalias() += PartialStaple(U, current_site, 2, 0);
+    //     st.noalias() += PartialStaple(U, current_site, 2, 1);
+    //     st.noalias() += PartialStaple(U, current_site, 2, 3);
+
+    //     st.noalias() += PartialStaple(U, current_site, 3, 0);
+    //     st.noalias() += PartialStaple(U, current_site, 3, 1);
+    //     st.noalias() += PartialStaple(U, current_site, 3, 2);
+    //     return st;
+    // }
+
     //-----
 
     // TODO: Does __restrict__ help in any way?
@@ -205,6 +255,23 @@ namespace WilsonAction
 //             beta(beta_in)
 //             {}
 
+//             void SetBeta(const double beta_in) noexcept
+//             {
+//                 beta = beta_in;
+//             }
+
+//             [[nodiscard]]
+//             double GetBeta() noexcept
+//             {
+//                 return beta;
+//             }
+
+//             [[nodiscard]]
+//             double ActionLocal() noexcept
+//             {
+//                 return;
+//             }
+
 //             [[nodiscard]]
 //             double Action() noexcept
 //             {
@@ -219,12 +286,6 @@ namespace WilsonAction
 
 //             [[nodiscard]]
 //             Matrix_3x3 Staple(const link_coord& link) noexcept
-//             {
-//                 return;
-//             }
-
-//             [[nodiscard]]
-//             double Local() noexcept
 //             {
 //                 return;
 //             }

@@ -56,10 +56,16 @@
 // std::unique_ptr<Gl_Lattice> Gluonchain    {std::make_unique<Gl_Lattice>()};
 // std::unique_ptr<Full_tensor> F_tensor     {std::make_unique<Full_tensor>()};
 // std::unique_ptr<Full_tensor> Q_tensor     {std::make_unique<Full_tensor>()};
-GaugeField4D<Matrix_SU3>     Gluon         {Nt, Nx, Ny, Nz};
-GaugeField4D<Matrix_SU3>     Gluonsmeared1 {Nt, Nx, Ny, Nz};
-GaugeField4D<Matrix_SU3>     Gluonsmeared2 {Nt, Nx, Ny, Nz};
-GaugeField4D<Matrix_SU3>     Gluonchain    {Nt, Nx, Ny, Nz};
+
+// GaugeField     Gluon         {Nt, Nx, Ny, Nz};
+// GaugeField     Gluonsmeared1 {Nt, Nx, Ny, Nz};
+// GaugeField     Gluonsmeared2 {Nt, Nx, Ny, Nz};
+// GaugeField     Gluonchain    {Nt, Nx, Ny, Nz};
+
+GaugeField                   Gluon;
+GaugeField                   Gluonsmeared1;
+GaugeField                   Gluonsmeared2;
+GaugeField                   Gluonchain;
 std::unique_ptr<Full_tensor> F_tensor      {std::make_unique<Full_tensor>()};
 std::unique_ptr<Full_tensor> Q_tensor      {std::make_unique<Full_tensor>()};
 
@@ -382,7 +388,7 @@ vector<std::normal_distribution<floatT>> CreateNormal(const int thread_num = 0)
 //-----
 // Set gauge fields to identity
 
-void SetGluonToOne(GaugeField4D<Matrix_SU3>& Gluon)
+void SetGluonToOne(GaugeField& Gluon)
 {
     #pragma omp parallel for
     // for (auto &ind0 : Gluon)
@@ -580,7 +586,7 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
 // TODO: Implement
 
 // [[nodiscard]]
-// double LWGaugeAction(const GaugeField4D<Matrix_SU3>& Gluon)
+// double LWGaugeAction(const GaugeField& Gluon)
 // {
 
 // }
@@ -598,7 +604,7 @@ Matrix_SU3 CayleyMap(Matrix_3x3 Mat)
 //-----
 // Stout smearing of gluon fields in all 4 directions
 
-void StoutSmearing4D(const GaugeField4D<Matrix_SU3>& Gluon_unsmeared, GaugeField4D<Matrix_SU3>& Gluon_smeared, const floatT smear_param = 0.12)
+void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeared, const floatT smear_param = 0.12)
 {
     Matrix_3x3 Sigma;
     Matrix_3x3 A;
@@ -633,7 +639,7 @@ void StoutSmearing4D(const GaugeField4D<Matrix_SU3>& Gluon_unsmeared, GaugeField
 // TODO: This is potentially dangerous, since we need to make sure we use the correct Gluon array afterwards,
 //       which depends on N. For even N, we need to use Gluon1, for odd N we need to use Gluon2!
 
-void StoutSmearingN(GaugeField4D<Matrix_SU3>& Gluon1, GaugeField4D<Matrix_SU3>& Gluon2, const int N, const floatT smear_param = 0.12)
+void StoutSmearingN(GaugeField& Gluon1, GaugeField& Gluon2, const int N, const floatT smear_param = 0.12)
 {
     for (int smear_count = 0; smear_count < N; ++smear_count)
     {
@@ -672,7 +678,7 @@ void StoutSmearingN(GaugeField4D<Matrix_SU3>& Gluon1, GaugeField4D<Matrix_SU3>& 
 //     }
 // }
 
-void WilsonFlowForward(GaugeField4D<Matrix_SU3>& Gluon, const double epsilon, const int n_flow)
+void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow)
 {
     Matrix_3x3 st;
     Matrix_3x3 A;
@@ -731,7 +737,7 @@ void WilsonFlowForward(GaugeField4D<Matrix_SU3>& Gluon, const double epsilon, co
 
 // Seems to be somewhat invertible if precision = 1e-12, but a precision of 1e-8 is definitely not sufficient
 
-void WilsonFlowBackward(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluon_temp, const double epsilon, const int n_flow, const floatT precision = 1e-14)
+void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double epsilon, const int n_flow, const floatT precision = 1e-14)
 {
     Gluon_temp = Gluon;
     Matrix_3x3 st;
@@ -811,7 +817,7 @@ void WilsonFlowBackward(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3
 
 // template<int Nmu>
 // void Clover(const Gl_Lattice& Gluon, Full_tensor& Q)
-void Clover(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluonchain, Full_tensor& Clov, const int Nmu)
+void Clover(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& Clov, const int Nmu)
 {
     // Gl_Lattice Gluonchain;
     for (int t = 0; t < Nt; ++t)
@@ -892,7 +898,7 @@ void Clover(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Glu
 //-----
 // Calculates the field strength tensor using clover definition
 
-void Fieldstrengthtensor(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
+void Fieldstrengthtensor(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
 {
     Clover(Gluon, Gluonchain, Q, Nmu);
 
@@ -934,7 +940,7 @@ void Fieldstrengthtensor(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Mat
 // Calculates energy density from field strength tensor
 
 [[nodiscard]]
-double Energy_density(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
+double Energy_density(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
 {
     cout << "\nBeginning of function" << endl;
     double e_density {0.0};
@@ -962,7 +968,7 @@ double Energy_density(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix
 //-----
 // Metropolis update routine
 
-void MetropolisUpdate(GaugeField4D<Matrix_SU3>& Gluon, const int n_sweep, uint_fast64_t& acceptance_count, floatT& epsilon, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
+void MetropolisUpdate(GaugeField& Gluon, const int n_sweep, uint_fast64_t& acceptance_count, floatT& epsilon, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
 {
     acceptance_count = 0;
 
@@ -1076,7 +1082,7 @@ SU2_comp<floatT> OverrelaxationSU2Old(const SU2_comp<floatT>& A)
 //-----
 // Overrelaxation update for SU(3) using Cabibbo-Marinari method
 
-void OverrelaxationSubgroupOld(GaugeField4D<Matrix_SU3>& Gluon, const int n_sweep)
+void OverrelaxationSubgroupOld(GaugeField& Gluon, const int n_sweep)
 {
     for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
     for (int mu = 0; mu < 4; ++mu)
@@ -1207,7 +1213,7 @@ SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, 
 // Heatbath update for SU(3) using Cabibbo-Marinari method
 // TODO: Extend to SU(N) with Ncol?
 
-void HeatbathSU3(GaugeField4D<Matrix_SU3>& Gluon, const int n_sweep, std::uniform_real_distribution<floatT>& distribution_uniform)
+void HeatbathSU3(GaugeField& Gluon, const int n_sweep, std::uniform_real_distribution<floatT>& distribution_uniform)
 {
     // For SU(2), the prefactor is 0.5 / beta
     // For SU(3), the prefactor is 0.75 / beta
@@ -1257,7 +1263,7 @@ void HeatbathSU3(GaugeField4D<Matrix_SU3>& Gluon, const int n_sweep, std::unifor
 // TODO: Metadynamics
 
 template<typename FuncT>
-void MetadynamicsLocal(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluon1, GaugeField4D<Matrix_SU3>& Gluon2, MetaBiasPotential& Metapotential, FuncT&& CV_function, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
+void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2, MetaBiasPotential& Metapotential, FuncT&& CV_function, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
 {
     // Copy old field so we can restore it in case the update gets rejected
     // In contrast to HMC, we expect the acceptance rates to be quite low, so always perform updates using Gluon1 instead of Gluon
@@ -1300,7 +1306,7 @@ void MetadynamicsLocal(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>
     }
 }
 
-double MetaCharge(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluon_copy, const double epsilon, const int n_flow)
+double MetaCharge(GaugeField& Gluon, GaugeField& Gluon_copy, const double epsilon, const int n_flow)
 {
     /*StoutSmearing4D(Gluon, Gluon1);*/
     // Gluon1 = Gluon;
@@ -1324,7 +1330,7 @@ double MetaCharge(GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Glu
 //-----
 // Calculates and writes observables to logfile
 
-void Observables(const GaugeField4D<Matrix_SU3>& Gluon, GaugeField4D<Matrix_SU3>& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     vector<double> Action(n_smear + 1);
     vector<double> WLoop2(n_smear + 1);

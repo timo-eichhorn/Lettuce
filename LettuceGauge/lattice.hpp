@@ -14,21 +14,27 @@
 // Standard C headers
 #include <cstddef>
 
+//----------------------------------------
+// Provides classes that hold the underlying lattices
+
 // Struct holding the lattice
 // Can be indexed with individual coordinates (t, x, y, z, mu)
 // Can also take a link_coord struct as coordinates
 
-// TODO: Split up into class which only consists of the array holding a gauge field?
-//       Probably better for handling the smeared fields, since that way we can use an array/vector of n_smear gauge fields
-
-// DO NOT EVER USE THIS, ONLY FOR INTERNAL USAGE!
-
+// This class is a minimal wrapper around an array containing a gauge field, to be used in the GaugeField4D and GaugeField4DSmeared classes
+// It should never be used by itself, hence everything is private
 template<std::size_t size_, typename gaugeT>
 class GaugeFieldRaw
 {
     private:
+        // This class should only be used internally in GaugeField4D and GaugeField4DSmeared, so everything is private
+        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        friend class GaugeField4D;
+
+        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        friend class GaugeField4DSmeared;
+
         std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
-    public:
         static constexpr std::size_t size {size_};
         // Default constructor (apparantly not allowed to be marked as noexcept, compiler will complain)
         GaugeFieldRaw() = default;
@@ -64,7 +70,10 @@ class GaugeFieldRaw
         }
 };
 
-// template<typename gaugeT, typename LayoutT>
+// This class acts as a general container for a gauge fields in 4 dimensions
+// The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
+// The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
+// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
 template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
 class GaugeField4D
 {
@@ -216,6 +225,10 @@ class GaugeField4D
         // }
 };
 
+// This class acts as a general container for multiple gauge fields in 4 dimensions (mainly meant to be used for smearing/calculation of smeared forces)
+// The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
+// The [] operator provides access to the different smearing levels, i.e., it returns a reference to a GaugeField4D (which can the be accessed and manipulated in the usual way)
+// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
 template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
 class GaugeField4DSmeared
 {
@@ -249,8 +262,10 @@ class GaugeField4DSmeared
         {
             return gaugefield[n];
         }
+        // TODO: Do we want to return a potentially huge object like this by value?
+        //       Can we return by const reference, or should we just leave this out?
         [[nodiscard]]
-        GaugeFieldRaw<V, gaugeT> operator[](const int n) const noexcept
+        const GaugeFieldRaw<V, gaugeT>& operator[](const int n) const noexcept
         {
             return gaugefield[n];
         }
