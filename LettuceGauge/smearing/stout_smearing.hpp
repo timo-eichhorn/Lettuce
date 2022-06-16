@@ -70,7 +70,7 @@ void StoutSmearing4DWithForce(const GaugeField>& Gluon_unsmeared, GaugeField& Gl
         for (int mu = 0; mu < 4; ++mu)
         {
             // Stout smearing
-            st.noalias() = WilsonAction::Staple(Gluon_unsmeared, t, x, y, z, mu);
+            st.noalias() = WilsonAction::Staple(Gluon_unsmeared, {t, x, y, z}, mu);
             A.noalias() = st * Gluon_unsmeared({t, x, y, z, mu}).adjoint();
             B.noalias() = A - A.adjoint();
             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();

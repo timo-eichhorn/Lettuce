@@ -622,7 +622,7 @@ void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeare
         {
             // int coord {(((t * 32 + x) * 32 + y) * 32 + z) * 4 + mu};
             // int coord{t * 131072 + x * 4096 + y * 128 + z * 4 + mu};
-            Sigma.noalias() = WilsonAction::Staple(Gluon_unsmeared, t, x, y, z, mu);
+            Sigma.noalias() = WilsonAction::Staple(Gluon_unsmeared, {t, x, y, z}, mu);
             // A.noalias() = Sigma * Gluon_unsmeared(t, x, y, z, mu).adjoint();
             A.noalias() = Sigma * Gluon_unsmeared({t, x, y, z, mu}).adjoint();
             B.noalias() = A - A.adjoint();
@@ -700,11 +700,12 @@ void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow
                 int offset {((t + x + y) & 1) ^ eo};
                 for (int z = offset; z < Nz; z+=2)
                 {
-                    st.noalias() = WilsonAction::Staple(Gluon, t, x, y, z, mu);
+                    st.noalias() = WilsonAction::Staple(Gluon, {t, x, y, z}, mu);
                     A.noalias() = st * Gluon({t, x, y, z, mu}).adjoint();
                     B.noalias() = A - A.adjoint();
                     C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                    Gluon({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                    // Gluon({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                    Gluon({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                     //-----
                     SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
                 }
@@ -722,11 +723,12 @@ void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow
         {
             for (int mu = 0; mu < 4; ++mu)
             {
-                st.noalias() = WilsonAction::Staple(Gluon, t, x, y, z, mu);
+                st.noalias() = WilsonAction::Staple(Gluon, {t, x, y, z}, mu);
                 A.noalias() = st * Gluon({t, x, y, z, mu}).adjoint();
                 B.noalias() = A - A.adjoint();
                 C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                Gluon({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                // Gluon({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                Gluon({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                 //-----
                 SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
             }
@@ -765,11 +767,12 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
                     {
                         old_link = Gluon_temp({t, x, y, z, mu});
                         SU3::Projection::GramSchmidt(old_link);
-                        st.noalias() = WilsonAction::Staple(Gluon_temp, t, x, y, z, mu);
+                        st.noalias() = WilsonAction::Staple(Gluon_temp, {t, x, y, z}, mu);
                         A.noalias() = st * Gluon_temp({t, x, y, z, mu}).adjoint();
                         B.noalias() = A - A.adjoint();
                         C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                        Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                        // Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                        Gluon_temp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                         //-----
                         SU3::Projection::GramSchmidt(Gluon_temp({t, x, y, z, mu}));
                     }
@@ -795,11 +798,12 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
                 {
                     old_link = Gluon_temp({t, x, y, z, mu});
                     SU3::Projection::GramSchmidt(old_link);
-                    st.noalias() = WilsonAction::Staple(Gluon_temp, t, x, y, z, mu);
+                    st.noalias() = WilsonAction::Staple(Gluon_temp, {t, x, y, z}, mu);
                     A.noalias() = st * Gluon_temp({t, x, y, z, mu}).adjoint();
                     B.noalias() = A - A.adjoint();
                     C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                    Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                    // Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                    Gluon_temp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                     //-----
                     SU3::Projection::GramSchmidt(Gluon_temp({t, x, y, z, mu}));
                 }
@@ -990,7 +994,7 @@ void MetropolisUpdate(GaugeField& Gluon, const int n_sweep, uint_fast64_t& accep
             for (int z = offset; z < Nz; z+=2)
             {
                 // auto start_staple = std::chrono::high_resolution_clock::now();
-                Matrix_3x3 st {WilsonAction::Staple(Gluon, t, x, y, z, mu)};
+                Matrix_3x3 st {WilsonAction::Staple(Gluon, {t, x, y, z}, mu)};
                 // auto end_staple = std::chrono::high_resolution_clock::now();
                 // staple_time += end_staple - start_staple;
 
@@ -1099,7 +1103,7 @@ void OverrelaxationSubgroupOld(GaugeField& Gluon, const int n_sweep)
                 Matrix_3x3 W;
                 SU2_comp<floatT> subblock;
                 // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-                Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, t, x, y, z, mu)).adjoint()};
+                Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, {t, x, y, z}, mu)).adjoint()};
                 //-----
                 // Update (0, 1) subgroup
                 // W = Gluon[t][x][y][z][mu] * st_adj;
@@ -1235,7 +1239,7 @@ void HeatbathSU3(GaugeField& Gluon, const int n_sweep, std::uniform_real_distrib
                 Matrix_3x3 W;
                 SU2_comp<floatT> subblock;
                 // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-                Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, t, x, y, z, mu)).adjoint()};
+                Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, {t, x, y, z}, mu)).adjoint()};
                 //-----
                 // Update (0, 1) subgroup
                 // W = Gluon[t][x][y][z][mu] * st_adj;
@@ -1263,14 +1267,20 @@ void HeatbathSU3(GaugeField& Gluon, const int n_sweep, std::uniform_real_distrib
 // TODO: Metadynamics
 
 template<typename FuncT>
-void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2, MetaBiasPotential& Metapotential, FuncT&& CV_function, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
+void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2, MetaBiasPotential& Metapotential, FuncT&& CV_function, double& CV_old, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
 {
     // Copy old field so we can restore it in case the update gets rejected
     // In contrast to HMC, we expect the acceptance rates to be quite low, so always perform updates using Gluon1 instead of Gluon
     // TODO: Is that true? Better check to be sure
+    // auto start_copy = std::chrono::system_clock::now();
     Gluon1 = Gluon;
+    // auto end_copy = std::chrono::system_clock::now();
+    // std::chrono::duration<double> copy_time = end_copy - start_copy;
+    // std::cout << "Time for copy: " << copy_time.count() << std::endl;
     // Get old value of collective variable
-    double CV_old {CV_function(Gluon1, Gluon2, rho_stout, 15)};
+    // TODO: Since the calculation is expensive in our case, we should try to reduce the number of CV calculations
+    //       Instead of recomputing the CV, only compute the new CV and remember the old CV from last step
+    // double CV_old {CV_function(Gluon1, Gluon2, rho_stout, 15)};
     // Perform update sweeps
     HeatbathSU3(Gluon1, n_sweep_heatbath, distribution_uniform);
     OverrelaxationSubgroupOld(Gluon1, n_sweep_orelax);
@@ -1292,6 +1302,7 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     {
         // std::cout << "Accepted!" << std::endl;
         Gluon = Gluon1;
+        CV_old = CV_new;
         // TODO: Track acceptance rate
         // acceptance_count_metadyn += 1;
         // TODO: Update metapotential
@@ -1344,46 +1355,46 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double> TopologicalChargeUnimproved(n_smear + 1);
 
     // Unsmeared observables
-    auto start_action = std::chrono::system_clock::now();
+    // auto start_action = std::chrono::system_clock::now();
     Action[0] = WilsonAction::ActionNormalized(Gluon);
-    auto end_action = std::chrono::system_clock::now();
-    std::chrono::duration<double> action_time = end_action - start_action;
-    cout << "Time for calculating action: " << action_time.count() << endl;
+    // auto end_action = std::chrono::system_clock::now();
+    // std::chrono::duration<double> action_time = end_action - start_action;
+    // cout << "Time for calculating action: " << action_time.count() << endl;
 
-    auto start_wilson = std::chrono::system_clock::now();
+    // auto start_wilson = std::chrono::system_clock::now();
     WLoop2[0] = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
-    auto end_wilson = std::chrono::system_clock::now();
-    std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
-    cout << "Time for calculating wilson 2: " << wilson_time.count() << endl;
+    // auto end_wilson = std::chrono::system_clock::now();
+    // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 2: " << wilson_time.count() << endl;
 
-    start_wilson = std::chrono::system_clock::now();
+    // start_wilson = std::chrono::system_clock::now();
     WLoop4[0] = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
-    end_wilson = std::chrono::system_clock::now();
-    wilson_time = end_wilson - start_wilson;
-    cout << "Time for calculating wilson 4: " << wilson_time.count() << endl;
+    // end_wilson = std::chrono::system_clock::now();
+    // wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 4: " << wilson_time.count() << endl;
 
-    start_wilson = std::chrono::system_clock::now();
+    // start_wilson = std::chrono::system_clock::now();
     WLoop8[0] = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
-    end_wilson = std::chrono::system_clock::now();
-    wilson_time = end_wilson - start_wilson;
-    cout << "Time for calculating wilson 8: " << wilson_time.count() << endl;
+    // end_wilson = std::chrono::system_clock::now();
+    // wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 8: " << wilson_time.count() << endl;
 
-    auto start_polyakov = std::chrono::system_clock::now();
+    // auto start_polyakov = std::chrono::system_clock::now();
     PLoop[0] = PolyakovLoop(Gluon);
-    auto end_polyakov = std::chrono::system_clock::now();
-    std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
-    cout << "Time for calculating Polyakov: " << polyakov_time.count() << endl;
+    // auto end_polyakov = std::chrono::system_clock::now();
+    // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
+    // cout << "Time for calculating Polyakov: " << polyakov_time.count() << endl;
 
     // auto start_topcharge = std::chrono::system_clock::now();
     // TopologicalCharge[0] = TopChargeGluonic(Gluon);
     // auto end_topcharge = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // cout << "Time for calculating topcharge: " << topcharge_time.count() << endl;
-    auto start_topcharge_symm = std::chrono::system_clock::now();
+    // auto start_topcharge_symm = std::chrono::system_clock::now();
     TopologicalChargeSymm[0] = TopChargeGluonicSymm(Gluon);
-    auto end_topcharge_symm = std::chrono::system_clock::now();
-    std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
-    cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
+    // auto end_topcharge_symm = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
+    // cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
     TopologicalChargeUnimproved[0] = TopChargeGluonicUnimproved(Gluon);
 
     //-----
@@ -1391,11 +1402,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     if (n_smear > 0)
     {
         // Apply smearing
-        auto start_smearing = std::chrono::system_clock::now();
+        // auto start_smearing = std::chrono::system_clock::now();
         StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
-        auto end_smearing = std::chrono::system_clock::now();
-        std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
-        cout << "Time for calculating smearing: " << smearing_time.count() << endl;
+        // auto end_smearing = std::chrono::system_clock::now();
+        // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
+        // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
         // Calculate observables
         Action[1] = WilsonAction::ActionNormalized(Gluonsmeared1);
         WLoop2[1] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
@@ -1639,12 +1650,17 @@ int main()
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
+        // Calculate first CV so that we don't have to recompute it later on
+        Gluonsmeared1 = Gluon;
+        double CV = MetaCharge(Gluonsmeared1, Gluonsmeared2, rho_stout, 15);
         // auto CV_function = [](){MetaCharge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, 15);};
     // }
 
-    HeatbathKernel Heatbath(Gluon, distribution_uniform);
-    // OverrelaxationDirectKernel OverrelaxationDirect(Gluon, distribution_prob);
+    // Initialize update functors
+    HeatbathKernel               Heatbath(Gluon, distribution_uniform);
+    // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
+
     // When using HMC, the thermalization is done without accept-reject step
     if constexpr(n_hmc != 0)
     {
@@ -1670,15 +1686,15 @@ int main()
         // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
         // cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << endl;
         //-----
-        auto start_update_heatbath {std::chrono::system_clock::now()};
+        // auto start_update_heatbath {std::chrono::system_clock::now()};
         if constexpr(n_heatbath != 0)
         {
             // HeatbathSU3(Gluon, n_heatbath, distribution_uniform);
             Iterator::Checkerboard(Heatbath, n_heatbath);
         }
-        auto end_update_heatbath {std::chrono::system_clock::now()};
-        std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
-        cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << endl;
+        // auto end_update_heatbath {std::chrono::system_clock::now()};
+        // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
+        // cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << endl;
         //-----
         // auto start_update_hmc {std::chrono::system_clock::now()};
         if constexpr(n_hmc != 0)
@@ -1690,20 +1706,20 @@ int main()
         // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
         // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
         //-----
-        auto start_update_or = std::chrono::system_clock::now();
+        // auto start_update_or = std::chrono::system_clock::now();
         if constexpr(n_orelax != 0)
         {
             // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
             Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
         }
-        auto end_update_or = std::chrono::system_clock::now();
-        std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-        cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+        // auto end_update_or = std::chrono::system_clock::now();
+        // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+        // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
         //-----
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)
         {
-            MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetaCharge, 1, 4, distribution_prob, distribution_uniform);
+            MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetaCharge, CV, 1, 4, distribution_prob, distribution_uniform);
         }
         // auto end_update_meta = std::chrono::system_clock::now();
         // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};

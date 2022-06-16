@@ -99,7 +99,7 @@ struct HeatbathKernel
             Matrix_3x3 W;
             SU2_comp<floatT> subblock;
             // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, current_link.t, current_link.x, current_link.y, current_link.z, current_link.mu)).adjoint()};
+            Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, {current_link.t, current_link.x, current_link.y, current_link.z}, current_link.mu)).adjoint()};
             //-----
             // Update (0, 1) subgroup
             // W = Gluon[t][x][y][z][mu] * st_adj;

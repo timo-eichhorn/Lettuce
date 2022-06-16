@@ -77,7 +77,7 @@ namespace HMC
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            Matrix_3x3 st {WilsonAction::Staple(Gluon, t, x, y, z, mu)};
+            Matrix_3x3 st {WilsonAction::Staple(Gluon, {t, x, y, z}, mu)};
             Matrix_3x3 tmp {st * Gluon({t, x, y, z, mu}).adjoint() - Gluon({t, x, y, z, mu}) * st.adjoint()};
             Momentum({t, x, y, z, mu}) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
         }

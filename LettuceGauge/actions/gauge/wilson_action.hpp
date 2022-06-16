@@ -76,7 +76,8 @@ namespace WilsonAction
     // Compared to the definition used by Gattringer & Lang, this version is the adjoint
 
     [[nodiscard]]
-    Matrix_3x3 Staple(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
+    // Matrix_3x3 Staple(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
+    Matrix_3x3 Staple(const GaugeField&Gluon, const site_coord& current_site, const int mu) noexcept
     {
         Matrix_3x3 st;
 
@@ -91,6 +92,8 @@ namespace WilsonAction
 
         // int zp = (z + 1)%Nz;
         // int zm = (z - 1 + Nz)%Nz;
+
+        auto [t, x, y, z] = current_site;
 
         switch(mu)
         {
@@ -181,42 +184,38 @@ namespace WilsonAction
     // }
 
     // [[nodiscard]]
-    // Matrix_3x3 Staple(const GaugeField& U, const int t, const int x, const int y, const int z, const int mu) noexcept
+    // // Matrix_3x3 Staple(const GaugeField& U, const int t, const int x, const int y, const int z, const int mu) noexcept
+    // Matrix_3x3 Staple(const GaugeField&U, const site_coord& current_site, const int mu) noexcept
     // {
-    //     site_coord current_site {t, x, y, z};
-    //     Matrix_3x3 st;
-    //     // for (int nu = 0; nu < 4; ++nu)
+    //     // site_coord current_site {t, x, y, z};
+    //     // Matrix_3x3 st;
+    //     // for (int nu_offset = 1; nu_offset < 4; ++nu_offset)
     //     // {
-    //         // We could also move this insider another function and manually go through all directions?
-    //         // Alternatively, move directional loops outisde coordinate loops?
-    //         // if (nu != mu)
-    //         // {
-    //         //     site_coord site_mup     {Move< 1>(current_site, mu)};
-    //         //     site_coord site_nup     {Move< 1>(current_site, nu)};
-    //         //     site_coord site_nud     {Move<-1>(current_site, nu)};
-    //         //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
-    //         //     st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
-    //         //                   + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
-    //         //     // st.noalias() += U(site_mup    , nu)           * U(site_nup, mu).adjoint() * U(current_site, nu).adjoint()
-    //         //     //               + U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint() * U(site_nud    , nu);
-    //         // }
+    //     //     int nu {(mu + nu_offset) % 4};
+    //     //     site_coord site_mup     {Move< 1>(current_site, mu)};
+    //     //     site_coord site_nup     {Move< 1>(current_site, nu)};
+    //     //     site_coord site_nud     {Move<-1>(current_site, nu)};
+    //     //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
+    //     //     st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+    //     //                   + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
     //     // }
-    //     st.noalias() += PartialStaple(U, current_site, 0, 1);
-    //     st.noalias() += PartialStaple(U, current_site, 0, 2);
-    //     st.noalias() += PartialStaple(U, current_site, 0, 3);
-
-    //     st.noalias() += PartialStaple(U, current_site, 1, 0);
-    //     st.noalias() += PartialStaple(U, current_site, 1, 2);
-    //     st.noalias() += PartialStaple(U, current_site, 1, 3);
-
-    //     st.noalias() += PartialStaple(U, current_site, 2, 0);
-    //     st.noalias() += PartialStaple(U, current_site, 2, 1);
-    //     st.noalias() += PartialStaple(U, current_site, 2, 3);
-
-    //     st.noalias() += PartialStaple(U, current_site, 3, 0);
-    //     st.noalias() += PartialStaple(U, current_site, 3, 1);
-    //     st.noalias() += PartialStaple(U, current_site, 3, 2);
-    //     return st;
+    //     int nu1 {(mu + 1)%4};
+    //     int nu2 {(mu + 2)%4};
+    //     int nu3 {(mu + 3)%4};
+    //     site_coord site_mup      {Move< 1>(current_site, mu)};
+    //     site_coord site_nup1     {Move< 1>(current_site, nu1)};
+    //     site_coord site_nud1     {Move<-1>(current_site, nu1)};
+    //     site_coord site_mup_nud1 {Move<-1>(site_mup    , nu1)};
+    //     site_coord site_nup2     {Move< 1>(current_site, nu2)};
+    //     site_coord site_nud2     {Move<-1>(current_site, nu2)};
+    //     site_coord site_mup_nud2 {Move<-1>(site_mup    , nu2)};
+    //     site_coord site_nup3     {Move< 1>(current_site, nu3)};
+    //     site_coord site_nud3     {Move<-1>(current_site, nu3)};
+    //     site_coord site_mup_nud3 {Move<-1>(site_mup    , nu3)};
+    //     return U(current_site, nu1) * U(site_nup1, mu) * U(site_mup, nu1).adjoint() + U(site_nud1, nu1).adjoint() * U(site_nud1, mu) * U(site_mup_nud1, nu1)
+    //          + U(current_site, nu2) * U(site_nup2, mu) * U(site_mup, nu2).adjoint() + U(site_nud2, nu2).adjoint() * U(site_nud2, mu) * U(site_mup_nud2, nu2)
+    //          + U(current_site, nu3) * U(site_nup3, mu) * U(site_mup, nu3).adjoint() + U(site_nud3, nu3).adjoint() * U(site_nud3, mu) * U(site_mup_nud3, nu3);
+    //     // return st;
     // }
 
     //-----

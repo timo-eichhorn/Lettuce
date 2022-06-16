@@ -30,7 +30,7 @@ struct OverrelaxationDirectKernel
 
         bool operator()(const link_coord& current_link) const noexcept
         {
-            Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link.t, current_link.x, current_link.y, current_link.z, current_link.mu)};
+            Matrix_3x3 st {WilsonAction::Staple(Gluon, {current_link.t, current_link.x, current_link.y, current_link.z}, current_link.mu)};
             // Use normalized staple
             Matrix_SU3 or_matrix {static_cast<floatT>(1.0/6.0) * st};
             SU3::Projection::KenneyLaub(or_matrix);
@@ -79,7 +79,7 @@ struct OverrelaxationSubgroupKernel
             Matrix_3x3 W;
             SU2_comp<floatT> subblock;
             // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, current_link.t, current_link.x, current_link.y, current_link.z, current_link.mu)).adjoint()};
+            Matrix_3x3 st_adj {(WilsonAction::Staple(Gluon, {current_link.t, current_link.x, current_link.y, current_link.z}, current_link.mu)).adjoint()};
             //-----
             // Update (0, 1) subgroup
             // W = Gluon[t][x][y][z][mu] * st_adj;

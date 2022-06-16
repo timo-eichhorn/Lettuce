@@ -10,6 +10,7 @@
 // Standard C++ headers
 #include <iostream>
 #include <memory>
+#include <type_traits>
 //----------------------------------------
 // Standard C headers
 #include <cstddef>
@@ -43,21 +44,27 @@ class GaugeFieldRaw
         // Copy constructor
         GaugeFieldRaw(const GaugeFieldRaw& field_in) noexcept
         {
-            static_assert(size == field_in.size, "Can't construct GaugeFieldRaw from another instance with different size!");
+            // TODO: static_assert complains about non-integral constant expression
+            // TODO: Check if this is faster than the OpenMP version, also check if it is somehow possible to use std::execution::par_unseq (compiler complained last time)
+            // static_assert(size == field_in.size, "Can't construct GaugeFieldRaw from another instance with different size!");
+            #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
                 gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
             }
+            // std::copy(field_in.gaugefield_raw.get(), field_in.gaugefield_raw.get() + field_in.size, gaugefield_raw.get());
         }
         // Copy assignment
         // We don't need assignment chaining, so return void instead of GaugeFieldRaw&
         void operator=(const GaugeFieldRaw& field_in) noexcept
         {
-            static_assert(size == field_in.size, "Can't copy GaugeFieldRaw from another instance with different size!");
+            // static_assert(size == field_in.size, "Can't copy GaugeFieldRaw from another instance with different size!");
+            #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
                 gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
             }
+            // std::copy(field_in.gaugefield_raw.get(), field_in.gaugefield_raw.get() + field_in.size, gaugefield_raw.get());
         }
         //
         gaugeT& operator[](const std::size_t ind) noexcept
@@ -121,11 +128,12 @@ class GaugeField4D
             if (this != &field_in)
             {
                 // Check for compatible sizes
-                if (Nt != field_in.Nt or Nx != field_in.Nx or Ny != field_in.Ny or Nz != field_in.Nz)
+                // TODO: Check std::is_same(gaugeT, gaugeT)? How to get type, need to introduce additionale typedef above?
+                if (Nt != field_in.Nt or Nx != field_in.Nx or Ny != field_in.Ny or Nz != field_in.Nz or Nmu != field_in.Nmu)
                 {
                     std::cerr << "Warning: Trying to use copy assignment operator on two arrays with different sizes!" << std::endl;
                 }
-                // Copy
+                // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
@@ -135,6 +143,7 @@ class GaugeField4D
                 {
                     gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
                 }
+                // gaugefield = field_in.gaugefield;
             }
         }
         //-----
