@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
+#include "plaquette.hpp"
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
@@ -114,6 +115,7 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
         int xp = (x + 1)%Nx;
         int yp = (y + 1)%Ny;
         int zp = (z + 1)%Nz;
+        // site_coord current_site {t, x, y, z};
         // Calculate clover term using Q_mu,nu = Q_nu,mu^{dagger}
         // TODO: Rewrite using plaquette function?
         // Clov[0][0].setZero();
@@ -121,18 +123,21 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
                 + Gluon({t, x, y, z, 1}) * Gluon({tm, xp, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}).adjoint() * Gluon({tm, x, y, z, 0})
                 + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, xm, y, z, 1}).adjoint() * Gluon({tm, xm, y, z, 0}) * Gluon({t, xm, y, z, 1})
                 + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1}) * Gluon({t, x, y, z, 0}).adjoint();
+        // Clov[0] = PlaquetteI(Gluon, current_site, 0, 1) + PlaquetteII(Gluon, current_site, 0, 1) + PlaquetteIII(Gluon, current_site, 0, 1) + PlaquetteIV(Gluon, current_site, 0, 1);
         // Clov[1][0] = Clov[0][1].adjoint();
 
         Clov[1] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
                 + Gluon({t, x, y, z, 2}) * Gluon({tm, x, yp, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}).adjoint() * Gluon({tm, x, y, z, 0})
                 + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, ym, z, 2}).adjoint() * Gluon({tm, x, ym, z, 0}) * Gluon({t, x, ym, z, 2})
                 + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2}) * Gluon({t, x, y, z, 0}).adjoint();
+        // Clov[1] = PlaquetteI(Gluon, current_site, 0, 2) + PlaquetteII(Gluon, current_site, 0, 2) + PlaquetteIII(Gluon, current_site, 0, 2) + PlaquetteIV(Gluon, current_site, 0, 2);
         // Clov[2][0] = Clov[0][2].adjoint();
 
         Clov[2] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
                 + Gluon({t, x, y, z, 3}) * Gluon({tm, x, y, zp, 0}).adjoint() * Gluon({tm, x, y, z, 3}).adjoint() * Gluon({tm, x, y, z, 0})
                 + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, zm, 3}).adjoint() * Gluon({tm, x, y, zm, 0}) * Gluon({t, x, y, zm, 3})
                 + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3}) * Gluon({t, x, y, z, 0}).adjoint();
+        // Clov[2] = PlaquetteI(Gluon, current_site, 0, 3) + PlaquetteII(Gluon, current_site, 0, 3) + PlaquetteIII(Gluon, current_site, 0, 3) + PlaquetteIV(Gluon, current_site, 0, 3);
         // Clov[3][0] = Clov[0][3].adjoint();
 
         // Clov[1]1.setZero();
@@ -140,12 +145,14 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
                 + Gluon({t, x, y, z, 2}) * Gluon({t, xm, yp, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}).adjoint() * Gluon({t, xm, y, z, 1})
                 + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, ym, z, 2}).adjoint() * Gluon({t, xm, ym, z, 1}) * Gluon({t, x, ym, z, 2})
                 + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2}) * Gluon({t, x, y, z, 1}).adjoint();
+        // Clov[3] = PlaquetteI(Gluon, current_site, 1, 2) + PlaquetteII(Gluon, current_site, 1, 2) + PlaquetteIII(Gluon, current_site, 1, 2) + PlaquetteIV(Gluon, current_site, 1, 2);
         // Clov[2][1] = Clov[1][2].adjoint();
 
         Clov[4] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
                 + Gluon({t, x, y, z, 3}) * Gluon({t, xm, y, zp, 1}).adjoint() * Gluon({t, xm, y, z, 3}).adjoint() * Gluon({t, xm, y, z, 1})
                 + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, zm, 3}).adjoint() * Gluon({t, xm, y, zm, 1}) * Gluon({t, x, y, zm, 3})
                 + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3}) * Gluon({t, x, y, z, 1}).adjoint();
+        // Clov[4] = PlaquetteI(Gluon, current_site, 1, 3) + PlaquetteII(Gluon, current_site, 1, 3) + PlaquetteIII(Gluon, current_site, 1, 3) + PlaquetteIV(Gluon, current_site, 1, 3);
         // Clov[3][1] = Clov[1][3].adjoint();
 
         // Clov[2][2].setZero();
@@ -153,6 +160,7 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
                 + Gluon({t, x, y, z, 3}) * Gluon({t, x, ym, zp, 2}).adjoint() * Gluon({t, x, ym, z, 3}).adjoint() * Gluon({t, x, ym, z, 2})
                 + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, zm, 3}).adjoint() * Gluon({t, x, ym, zm, 2}) * Gluon({t, x, y, zm, 3})
                 + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3}) * Gluon({t, x, y, z, 2}).adjoint();
+        // Clov[5] = PlaquetteI(Gluon, current_site, 2, 3) + PlaquetteII(Gluon, current_site, 2, 3) + PlaquetteIII(Gluon, current_site, 2, 3) + PlaquetteIV(Gluon, current_site, 2, 3);
         // Clov[3][2] = Clov[2][3].adjoint();
         // Clov[3][3].setZero();
         // Version that uses the symmetry of F_mu,nu
