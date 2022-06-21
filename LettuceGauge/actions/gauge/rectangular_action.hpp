@@ -2,13 +2,15 @@
 #define LETTUCE_RECTANGULAR_GAUGE_ACTION_HPP
 
 // Non-standard library headers
-// ...
+#include "../../defines.hpp"
+#include "../../coords.hpp"
+#include "../../observables/wilson_loop.hpp"
 //----------------------------------------
 // Standard library headers
-// ...
+#include <omp.h>
 //----------------------------------------
 // Standard C++ headers
-// ...
+#include <complex>
 //----------------------------------------
 // Standard C headers
 // ...
@@ -44,18 +46,18 @@ namespace GaugeAction
             }
 
             [[nodiscard]]
-            double ActionLocal(const GaugeField& Gluon) noexcept
+            double ActionLocal(const link_coord& link, const Matrix_3x3& st_plaq, const Matrix_3x3& st_rect) const noexcept
             {
-                return;
+                return beta * (c_plaq * (1.0 - 1.0/3.0 * std::real((link * st_plaq.adjoint()).trace())) + c_rect * (2.0 - 1.0/3.0 * std::real((link * st_rect.adjoint()).trace())));
             }
 
             [[nodiscard]]
-            double Action(const GaugeField& Gluon) noexcept
+            double Action(const GaugeField& Gluon) const noexcept
             {
-                double sum_plaquette {0.0};
-                double sum_rectangle {0.0};
+                double sum_plaq {0.0};
+                double sum_rect {0.0};
 
-                #pragma omp parallel for reduction(+:sum_plaquette,sum_rectangle)
+                #pragma omp parallel for reduction(+:sum_plaq,sum_rect)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -68,31 +70,41 @@ namespace GaugeAction
                         sum_plaq += std::real(Plaquette(Gluon, {t, x, y, z}, mu, nu).trace());
                         // Rectangle contributions
                         // TODO: Need to implement RectangularLoop function
-                        sum_rect += std::real((RectangularLoop<1,2>(Gluon, {t, x, y, z}, mu, nu)).trace());
-                        sum_rect += std::real((RectangularLoop<2,1>(Gluon, {t, x, y, z}, mu, nu)).trace());
+                        sum_rect += std::real((RectangularLoop<1, 2>(Gluon, {t, x, y, z}, mu, nu)).trace());
+                        sum_rect += std::real((RectangularLoop<2, 1>(Gluon, {t, x, y, z}, mu, nu)).trace());
                     }
                 }
-                return beta * (6.0 * Nt * Nx * Ny * Nz - 1.0/3.0 * S);
+                return beta * (c_plaq * (6.0 * Gluon.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 - 1.0/3.0 * sum_rect));
             }
 
             [[nodiscard]]
-            double ActionNormalized() noexcept
+            double ActionNormalized(const GaugeField& Gluon) const noexcept
             {
-                return;
+                // TODO: Okay like this, or rewrite this without calling Action()?
+                return Action(Gluon) / (6.0 * beta * Gluon.Volume());
             }
 
-            [[nodiscard]]
-            Matrix_3x3 Staple(const link_coord& link) noexcept
-            {
-                return;
-            }
+            // TODO: Actually write this
+            // [[nodiscard]]
+            // Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept
+            // {
+            //     return;
+            // }
+
     };
 
+    // Template specialization for Wilson gauge action?
+    // template<>
+    // double Rectangular<1, 1.0, 0.0>::Action() const noexcept {...;}
+
     // Some commonly used improved gauge actions:
-    // c_plaq = 1 - 8 * c_rect
-    // Symanzik (Tree level) c_rect = -1/12
-    // Iwasaki:              c_rect = -0.331
-    // DBW2   :              c_rect = -1.4088
+    // For all actions we define c_plaq = 1 - 8 * c_rect
+    // -----
+    // Wilson               : c_rect =  0
+    // Symanzik (Tree level): c_rect = -1/12
+    // Iwasaki              : c_rect = -0.331
+    // DBW2                 : c_rect = -1.4088
+    // -----
     using SymanzikTreeLevel = Rectangular<2, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0>;
     using Iwasaki           = Rectangular<2, 1.0 + 8.0 * 0.331   , -0.331>;
     using DBW2              = Rectangular<2, 1.0 + 8.0 * 1.4088  , -1.4088>;

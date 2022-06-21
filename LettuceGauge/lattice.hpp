@@ -90,7 +90,7 @@ class GaugeField4D
         static constexpr std::size_t Ny  {Ny_};
         static constexpr std::size_t Nz  {Nz_};
         static constexpr std::size_t Nmu {4};
-        static constexpr std::size_t V   {Nt * Nx * Ny * Nz * Nmu};
+        static constexpr std::size_t V   {Nt * Nx * Ny * Nz};
         GaugeFieldRaw<V, gaugeT> gaugefield;
     public:
         // Constructor with four arguments (one length for each direction)
