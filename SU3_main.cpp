@@ -1390,16 +1390,16 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // auto end_topcharge = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // cout << "Time for calculating topcharge: " << topcharge_time.count() << endl;
-    auto start_topcharge_symm = std::chrono::system_clock::now();
+    // auto start_topcharge_symm = std::chrono::system_clock::now();
     TopologicalChargeSymm[0] = TopChargeGluonicSymm(Gluon);
-    auto end_topcharge_symm = std::chrono::system_clock::now();
-    std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
-    cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
-    auto start_topcharge_plaq = std::chrono::system_clock::now();
+    // auto end_topcharge_symm = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
+    // cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
+    // auto start_topcharge_plaq = std::chrono::system_clock::now();
     TopologicalChargeUnimproved[0] = TopChargeGluonicUnimproved(Gluon);
-    auto end_topcharge_plaq = std::chrono::system_clock::now();
-    std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
-    cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << endl;
+    // auto end_topcharge_plaq = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
+    // cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << endl;
 
     //-----
     // Begin smearing
@@ -1714,15 +1714,15 @@ int main()
         // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
         // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
         //-----
-        auto start_update_or = std::chrono::system_clock::now();
+        // auto start_update_or = std::chrono::system_clock::now();
         if constexpr(n_orelax != 0)
         {
             // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
             Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
         }
-        auto end_update_or = std::chrono::system_clock::now();
-        std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-        cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+        // auto end_update_or = std::chrono::system_clock::now();
+        // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+        // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
         //-----
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)

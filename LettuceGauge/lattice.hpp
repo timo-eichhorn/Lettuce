@@ -85,13 +85,14 @@ template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typ
 class GaugeField4D
 {
     private:
-        static constexpr std::size_t Nt  {Nt_};
-        static constexpr std::size_t Nx  {Nx_};
-        static constexpr std::size_t Ny  {Ny_};
-        static constexpr std::size_t Nz  {Nz_};
-        static constexpr std::size_t Nmu {4};
-        static constexpr std::size_t V   {Nt * Nx * Ny * Nz};
-        GaugeFieldRaw<V, gaugeT> gaugefield;
+        static constexpr std::size_t Nt     {Nt_};
+        static constexpr std::size_t Nx     {Nx_};
+        static constexpr std::size_t Ny     {Ny_};
+        static constexpr std::size_t Nz     {Nz_};
+        static constexpr std::size_t Nmu    {4};
+        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr std::size_t V_link {Nmu * V};
+        GaugeFieldRaw<V_link, gaugeT> gaugefield;
     public:
         // Constructor with four arguments (one length for each direction)
         GaugeField4D() noexcept
@@ -243,13 +244,14 @@ class GaugeField4DSmeared
 {
     private:
         const  int                   Nsmear;
-        static constexpr std::size_t Nt  {Nt_};
-        static constexpr std::size_t Nx  {Nx_};
-        static constexpr std::size_t Ny  {Ny_};
-        static constexpr std::size_t Nz  {Nz_};
-        static constexpr std::size_t Nmu {4};
-        static constexpr std::size_t V   {Nt * Nx * Ny * Nz * Nmu};
-        std::unique_ptr<GaugeFieldRaw<V, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V, gaugeT>[]>(Nsmear)};
+        static constexpr std::size_t Nt     {Nt_};
+        static constexpr std::size_t Nx     {Nx_};
+        static constexpr std::size_t Ny     {Ny_};
+        static constexpr std::size_t Nz     {Nz_};
+        static constexpr std::size_t Nmu    {4};
+        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr std::size_t V_link {Nmu * V};
+        std::unique_ptr<GaugeFieldRaw<V_link, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V_link, gaugeT>[]>(Nsmear)};
     public:
         // Constructor with Nsmear as argument
         GaugeField4DSmeared(const int Nsmear_in) noexcept :
@@ -267,14 +269,14 @@ class GaugeField4DSmeared
         }
         // Overload operator for access to individual smearing levels
         [[nodiscard]]
-        GaugeFieldRaw<V, gaugeT>& operator[](const int n) noexcept
+        GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) noexcept
         {
             return gaugefield[n];
         }
         // TODO: Do we want to return a potentially huge object like this by value?
         //       Can we return by const reference, or should we just leave this out?
         [[nodiscard]]
-        const GaugeFieldRaw<V, gaugeT>& operator[](const int n) const noexcept
+        const GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) const noexcept
         {
             return gaugefield[n];
         }
