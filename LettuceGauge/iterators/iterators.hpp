@@ -19,9 +19,11 @@ namespace Iterator
     template<typename funcT>
     void Sequential(funcT&& function, const int n_sweep = 1)
     {
+        #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         {
-            #pragma omp parallel for
+            // #pragma omp parallel for
+            #pragma omp for
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -37,9 +39,11 @@ namespace Iterator
     template<typename funcT, typename sumT>
     void SequentialSum(funcT&& function, sumT& sum, const int n_sweep = 1)
     {
+        #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         {
-            #pragma omp parallel for reduction(+:sum)
+            // #pragma omp parallel for reduction(+:sum)
+            #pragma omp for reduction(+:sum)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -55,11 +59,13 @@ namespace Iterator
     template<typename funcT>
     void Checkerboard(funcT&& function, const int n_sweep = 1)
     {
+        #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         for (int eo = 0; eo < 2; ++eo)
         {
-            #pragma omp parallel for
+            // #pragma omp parallel for
+            #pragma omp for
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -77,11 +83,13 @@ namespace Iterator
     template<typename funcT, typename sumT>
     void CheckerboardSum(funcT&& function, sumT& sum, const int n_sweep = 1)
     {
+        #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         for (int eo = 0; eo < 2; ++eo)
         {
-            #pragma omp parallel for reduction(+:sum)
+            // #pragma omp parallel for reduction(+:sum)
+            #pragma omp for reduction(+:sum)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)

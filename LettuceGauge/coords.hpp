@@ -114,6 +114,7 @@ struct link_coord
 };
 
 // Move site coordinates
+// TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
 template<int dist>
 [[nodiscard]]
 site_coord Move(const site_coord& site, const int direction) noexcept
@@ -161,6 +162,7 @@ site_coord Move(const site_coord& site, const int direction) noexcept
 }
 
 // Move link coordinates
+// TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
 template<int dist>
 [[nodiscard]]
 link_coord Move(const link_coord& link, const int direction) noexcept
