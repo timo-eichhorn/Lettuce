@@ -1475,7 +1475,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 
     //-----
     // Write to logfile
-    datalog << "[Step " << n_count << "]\n";
+    std::time_t log_time {std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())};
+    // datalog << "[Step " << n_count << "] " << std::ctime(&log_time) << "\n";
+    // datalog << "[Step " << n_count << "] -" << std::ctime(&log_time) << "-";
+    datalog << "[Step " << n_count << "] -" << std::put_time(std::localtime(&log_time), "%c") << "-\n";
     //-----
     if constexpr(n_hmc != 0)
     {

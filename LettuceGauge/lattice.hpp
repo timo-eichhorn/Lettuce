@@ -282,6 +282,7 @@ class GaugeField4DSmeared
         }
 };
 
-using GaugeField = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
+using GaugeField        = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
+using GaugeFieldSmeared = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
 
 #endif // LETTUCE_LATTICE_HPP

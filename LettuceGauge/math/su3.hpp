@@ -100,11 +100,11 @@ namespace SU3::Projection
     }
 
     //-----
-    // Projects a single element onto su(3) algebra
+    // Projects a single element onto su(3) algebra (traceless antihermitian)
 
-    Matrix_3x3 Algebra(const Matrix_3x3& mat)
+    Matrix_3x3 Algebra(const Matrix_3x3& mat) noexcept
     {
-        return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
+        return static_cast<floatT>(0.5) * (mat - mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat - mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
 }
 
