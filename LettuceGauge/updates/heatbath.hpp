@@ -35,7 +35,7 @@ struct HeatbathKernel
             SU2_comp<floatT> V {a_norm * A};
             SU2_comp<floatT> mat_su2;
             floatT r1, r2, r3, x1, x2, x3, lambda_sq, r0;
-            int count {0};
+            int iteration_count {0};
             do
             {
                 // Generate random number lambda_sq following a polynomially modified Gaussian distribution (cf. Gattringer & Lang (4.43))
@@ -52,11 +52,11 @@ struct HeatbathKernel
                 // Correct for factor sqrt(1 - lambda_sq) in probability distribution via accept-reject step
                 // floatT r0 {distribution_uniform(prng_vector[omp_get_thread_num()])};
                 r0 = distribution_uniform(prng_vector[omp_get_thread_num()]);
-                if (count > max_iteration)
+                if (iteration_count > max_iteration)
                 {
                     return {1.0, 0.0};
                 }
-                ++count;
+                ++iteration_count;
             }
             while (r0 * r0 + lambda_sq >= static_cast<floatT>(1.0));
 

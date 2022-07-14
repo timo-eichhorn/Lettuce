@@ -96,9 +96,9 @@ class GaugeField4D
     public:
         // Constructor with four arguments (one length for each direction)
         GaugeField4D() noexcept
-            {
-                std::cout << "Creating GaugeField4D with volume: " << V << std::endl;
-            }
+        {
+            std::cout << "Creating GaugeField4D with volume: " << V << std::endl;
+        }
         // // Delete default constructor
         // GaugeField4D() = delete;
         // Destructor
@@ -125,6 +125,7 @@ class GaugeField4D
         // TODO: Is this okay? Correctness, performance?
         void operator=(const GaugeField4D& field_in) noexcept
         {
+            // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
             // Check for self-assignments
             if (this != &field_in)
             {
@@ -251,15 +252,16 @@ class GaugeField4DSmeared
         static constexpr std::size_t Nmu    {4};
         static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
-        std::unique_ptr<GaugeFieldRaw<V_link, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V_link, gaugeT>[]>(Nsmear)};
+        // std::unique_ptr<GaugeFieldRaw<V_link, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V_link, gaugeT>[]>(Nsmear)};
+        std::unique_ptr<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]> gaugefield {std::make_unique<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]>(Nsmear)};
     public:
         // Constructor with Nsmear as argument
         GaugeField4DSmeared(const int Nsmear_in) noexcept :
-            Nsmear(Nsmear_in)
-            {
-                std::cout << "Creating GaugeField4DSmeared (Nsmear = " << Nsmear << ") with volume: " << V << std::endl;
-                // gaugefield.resize(V);
-            }
+        Nsmear(Nsmear_in)
+        {
+            std::cout << "Creating GaugeField4DSmeared (Nsmear = " << Nsmear << ") with volume: " << V << std::endl;
+            // gaugefield.resize(V);
+        }
         // Delete default constructor
         GaugeField4DSmeared() = delete;
         // Destructor
@@ -269,14 +271,16 @@ class GaugeField4DSmeared
         }
         // Overload operator for access to individual smearing levels
         [[nodiscard]]
-        GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) noexcept
+        // GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) noexcept
+        GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>& operator[](const int n) noexcept
         {
             return gaugefield[n];
         }
         // TODO: Do we want to return a potentially huge object like this by value?
         //       Can we return by const reference, or should we just leave this out?
         [[nodiscard]]
-        const GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) const noexcept
+        // const GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) const noexcept
+        const GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>& operator[](const int n) const noexcept
         {
             return gaugefield[n];
         }
@@ -284,5 +288,30 @@ class GaugeField4DSmeared
 
 using GaugeField        = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 using GaugeFieldSmeared = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
+
+// Struct to hold a pair of references to smeared fields
+// Useful when smearing multiple times, and only the final smearing level is needed
+// TODO: Make into template and move above type aliases?
+struct SmearedFieldTuple
+{
+    GaugeField& Field1;
+    GaugeField& Field2;
+    SmearedFieldTuple(GaugeField& Field1_in, GaugeField& Field2_in) noexcept :
+    Field1(Field1_in), Field2(Field2_in)
+    {}
+    ~SmearedFieldTuple()
+    {}
+    SmearedFieldTuple(const SmearedFieldTuple& tuple_in) noexcept :
+    Field1(tuple_in.Field1), Field2(tuple_in.Field2)
+    {}
+    void operator=(const SmearedFieldTuple& tuple_in) noexcept
+    {
+        if (this != &tuple_in)
+        {
+            Field1 = tuple_in.Field1;
+            Field2 = tuple_in.Field2;
+        }
+    }
+};
 
 #endif // LETTUCE_LATTICE_HPP

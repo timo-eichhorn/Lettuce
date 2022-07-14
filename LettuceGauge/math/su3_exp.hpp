@@ -232,7 +232,7 @@ namespace SU3
     }
     // Version where we reuse already computed ExpDerivativeConstants
     [[nodiscard]]
-    Matrix_SU3 exp(const ExpDerivativeConstantsConstants& expd_consts) noexcept
+    Matrix_SU3 exp(const ExpDerivativeConstants& expd_consts) noexcept
     {
         return expd_consts.denom * (expd_consts.h0 * Matrix_3x3::Identity() + expd_consts.h1 * expd_consts.Mat + expd_consts.h2 * expd_consts.Mat2);
     }

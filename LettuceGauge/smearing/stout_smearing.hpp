@@ -7,7 +7,7 @@
 #include "../math/su3_exp.hpp"
 //----------------------------------------
 // Standard library headers
-// ...
+#include <omp.h>
 //----------------------------------------
 // Standard C++ headers
 #include <complex>
@@ -107,7 +107,7 @@ Matrix_3x3 ProjectLambda(const Matrix_3x3& mat) noexcept
     return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
 }
 
-void CalculateStoutForceConstants(const GaugeField& Gluon, const GaugeField& Sigma_prev, GaugeField& Lambda, GaugeField& Exp) noexcept
+void CalculateStoutForceConstants(const GaugeField& Gluon, const GaugeField& Sigma_prev, GaugeField& Lambda, GaugeField& Exp, const floatT smear_param) noexcept
 {
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
@@ -115,21 +115,28 @@ void CalculateStoutForceConstants(const GaugeField& Gluon, const GaugeField& Sig
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        SU3::ExpDerivativeConstants expd_consts(Gluon({t, x, y, z, mu}));
-        // CalculateB(Gluon({t, x, y, z, mu}), expd_consts.B_1, expd_consts.B_2);
-        Lambda({t, x, y, z, mu}) = ProjectionLambda((Sigma_prev({t, x, y, z, mu}) * expd_consts.B_1 * Gluon({t, x, y, z, mu})).trace() * expd_consts.Mat
-                                                   + (Sigma_prev({t, x, y, z, mu}) * expd_consts.B_2 * Gluon({t, x, y, z, mu})).trace() * expd_consts.Mat2
-                                                   + expd_consts.f1 * Gluon({t, x, y, z, mu}) * Sigma_prev({t, x, y, z, mu})
-                                                   + expd_consts.f2 * (expd_consts.Mat * Gluon({t, x, y, z, mu}) * Sigma_prev({t, x, y, z, mu}) + Gluon({t, x, y, z, mu}) * Sigma_prev({t, x, y, z, mu}) * expd_consts.Mat));
-        // Since we already have expd_consts, we can also precompute the exponentials for each site
-        Exp({t, x, y, z, mu}) = SU3::exp(expd_consts);
+        link_coord current_link {t, x, y, z, mu};
+        // Calculate argument of exponential function
+        st.noalias() = WilsonAction::Staple(Gluon, current_site, mu);
+        // Omega in Peardon Morningstar paper
+        A.noalias() = st * Gluon_unsmeared(current_link).adjoint();
+        B.noalias() = A - A.adjoint();
+        C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
+        SU3::ExpDerivativeConstants expd_consts(-i<floatT> * smear_param * C);
+        // Calculate Lambda (used during stout force recursion)
+        Lambda(current_link) = ProjectionLambda((Sigma_prev(current_link) * expd_consts.B_1 * Gluon(current_link)).trace() * expd_consts.Mat
+                                              + (Sigma_prev(current_link) * expd_consts.B_2 * Gluon(current_link)).trace() * expd_consts.Mat2
+                                              + expd_consts.f1 * Gluon(current_link) * Sigma_prev(current_link)
+                                              + expd_consts.f2 * (expd_consts.Mat * Gluon(current_link) * Sigma_prev(current_link) + Gluon(current_link) * Sigma_prev(current_link) * expd_consts.Mat));
+        // Since we already have expd_consts, we can also precompute the exponentials for each site (also used during stout force recursion)
+        Exp(current_link) = SU3::exp(expd_consts);
     }
 }
 
-void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Sigma, const GaugeField& Sigma_prev, const GaugeField& Lambda, const GaugeField& Exp, const floatT smear_param) noexcept
+void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Sigma_prev, GaugeField& Sigma, GaugeField& Lambda, GaugeField& Exp, const floatT smear_param) noexcept
 {
     // Precompute Lambda for whole lattice, since values get used multiple times
-    CalculateStoutForceConstants(Gluon, Sigma_prev, Lambda, Exp);
+    CalculateStoutForceConstants(Gluon, Sigma_prev, Lambda, Exp, smear_param);
     // Recursively calculate Sigma (stout force at smearing level n - 1) from Sigma_prev (stout force at smearing level n)
     // Here, Gluon refers to the field at smearing level n - 1
     Matrix_3x3 st;
@@ -148,12 +155,10 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Sigma, const
         for (int mu = 0; mu < 4; ++mu)
         {
             link_coord current_link {t, x, y, z, mu};
+            // Staple is used both during the calculation of stout force constants and below during the actual recursion, also precompute whole array?
             st.noalias() = WilsonAction::Staple(Gluon, current_site, mu);
-            // Omega in Peardon Morningstar paper
-            A.noalias() = st * Gluon_unsmeared(current_link).adjoint();
-            B.noalias() = A - A.adjoint();
-            C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // Stout force
+            force_sum = Matrix_3x3::Zero();
             for (int nu = 0; nu < 4; ++nu)
             {
                 // TODO: Is there a directional symmetry we can use instead of checking this?
@@ -163,14 +168,14 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Sigma, const
                     site_coord site_mup     = Move< 1>(current_site, mu);
                     site_coord site_nup     = Move< 1>(current_site, nu);
                     site_coord site_nud     = Move<-1>(current_site, nu);
-                    site_coord site_mup_nud = Move<-1>(site_mu     , nu);
+                    site_coord site_mup_nud = Move<-1>(site_mup    , nu);
 
-                    force_sum = Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint() * Gluon (current_site, nu).adjoint()   * Lambda(current_site, nu)
-                              + Gluon (site_mup_nud, nu).adjoint() * Gluon (site_nud    , mu).adjoint() * Lambda(site_nud    , mu)             * Gluon (site_nud    , nu)
-                              + Gluon (site_mup_nud, nu).adjoint() * Lambda(site_mup_nud, nu)           * Gluon (site_nud    , mu).adjoint()   * Gluon (site_nud    , nu)
-                              - Gluon (site_mup_nud, nu).adjoint() * Gluon (site_nud    , mu).adjoint() * Lambda(site_nud    , nu)             * Gluon (site_nud    , nu)
-                              - Lambda(site_mup    , nu)           * Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint()   * Gluon (current_site, nu).adjoint()
-                              + Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint() * Gluon (site_nup    , mu)             * Gluon (current_site, nu).adjoint();
+                    force_sum += Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint() * Gluon (current_site, nu).adjoint()   * Lambda(current_site, nu)
+                               + Gluon (site_mup_nud, nu).adjoint() * Gluon (site_nud    , mu).adjoint() * Lambda(site_nud    , mu)             * Gluon (site_nud    , nu)
+                               + Gluon (site_mup_nud, nu).adjoint() * Lambda(site_mup_nud, nu)           * Gluon (site_nud    , mu).adjoint()   * Gluon (site_nud    , nu)
+                               - Gluon (site_mup_nud, nu).adjoint() * Gluon (site_nud    , mu).adjoint() * Lambda(site_nud    , nu)             * Gluon (site_nud    , nu)
+                               - Lambda(site_mup    , nu)           * Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint()   * Gluon (current_site, nu).adjoint()
+                               + Gluon (site_mup    , nu)           * Gluon (site_nup    , mu).adjoint() * Lambda(site_nup    , mu)             * Gluon (current_site, nu).adjoint();
                 }
             }
             Sigma(current_link) = Sigma_prev(current_link) * Exp(current_link) + i<floatT> * st.adjoint() * Lambda(current_link)
