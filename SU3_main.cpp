@@ -12,12 +12,15 @@
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
 #include "LettuceGauge/metadynamics.hpp"
+#include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
 #include "LettuceGauge/observables/polyakov_loop.hpp"
 #include "LettuceGauge/observables/topological_charge.hpp"
 #include "LettuceGauge/observables/wilson_loop.hpp"
+#include "LettuceGauge/smearing/stout_smearing.hpp"
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
+#include "LettuceGauge/updates/hmc_metadynamics.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
@@ -69,8 +72,9 @@ GaugeField                   Gluonsmeared2;
 // TODO: Move to large if constexpr environment together with entire metadynamics code
 GaugeField                   Gluonsmeared3;
 GaugeField                   Gluonchain;
-std::unique_ptr<Full_tensor> F_tensor      {std::make_unique<Full_tensor>()};
-std::unique_ptr<Full_tensor> Q_tensor      {std::make_unique<Full_tensor>()};
+// FullTensor                   Clover_array;
+// std::unique_ptr<Full_tensor> F_tensor      {std::make_unique<Full_tensor>()};
+// std::unique_ptr<Full_tensor> Q_tensor      {std::make_unique<Full_tensor>()};
 
 //-----
 // Overload << for vectors and arrays?
@@ -177,7 +181,8 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "n_hmc = " << n_hmc << "\n";
     datalog << "n_orelax = " << n_orelax << "\n";
     datalog << "metadynamics_enabled = " << metadynamics_enabled << "\n";
-    datalog << "metapotential_updated = " << metapotential_updated << "\n"; 
+    datalog << "metapotential_updated = " << metapotential_updated << "\n";
+    datalog << "n_smear_meta = " << n_smear_meta << "\n";
     datalog << "END_PARAMS\n" << endl;
     datalog.close();
     datalog.clear();
@@ -605,91 +610,6 @@ Matrix_SU3 CayleyMap(Matrix_3x3 Mat)
 }
 
 //-----
-// Stout smearing of gluon fields in all 4 directions
-
-void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeared, const floatT smear_param = 0.12)
-{
-    Matrix_3x3 Sigma;
-    Matrix_3x3 A;
-    Matrix_3x3 B;
-    Matrix_3x3 C;
-
-    // #pragma omp parallel for collapse(4) private(Sigma, A, B, C, D)
-    #pragma omp parallel for private(Sigma, A, B, C)
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    {
-        for (int mu = 0; mu < 4; ++mu)
-        {
-            // int coord {(((t * 32 + x) * 32 + y) * 32 + z) * 4 + mu};
-            // int coord{t * 131072 + x * 4096 + y * 128 + z * 4 + mu};
-            Sigma.noalias() = WilsonAction::Staple(Gluon_unsmeared, {t, x, y, z}, mu);
-            // A.noalias() = Sigma * Gluon_unsmeared(t, x, y, z, mu).adjoint();
-            A.noalias() = Sigma * Gluon_unsmeared({t, x, y, z, mu}).adjoint();
-            B.noalias() = A - A.adjoint();
-            C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-            // Gluon_smeared(t, x, y, z, mu) = (smear_param * C).exp() * Gluon_unsmeared(t, x, y, z, mu);
-            Gluon_smeared({t, x, y, z, mu}) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared({t, x, y, z, mu});
-            // Gluon_smeared[t][x][y][z][mu] = CayleyMap(i<floatT> * smear_param * C) * Gluon_unsmeared[t][x][y][z][mu];
-            // ProjectionSU3Single(Gluon_smeared(t, x, y, z, mu));
-            SU3::Projection::GramSchmidt(Gluon_smeared({t, x, y, z, mu}));
-        }
-    }
-}
-
-// [[nodiscard]]
-// SmearedFieldTuple StoutSmearingN(GaugeField& Gluon1, GaugeField& Gluon2, const int n_smear, const floatT smear_param = 0.12)
-// {
-//     for (int smear_count = 0; smear_count < n_smear; ++smear_count)
-//     {
-//         if (smear_count % 2 == 0)
-//         {
-//             StoutSmearing4D(Gluon1, Gluon2, smear_param);
-//         }
-//         else
-//         {
-//             StoutSmearing4D(Gluon2, Gluon1, smear_param);
-//         }
-//     }
-//     if (n_smear % 2 == 0)
-//     {
-//         return {Gluon1, Gluon2};
-//     }
-//     else
-//     {
-//         return {Gluon2, Gluon1};
-//     }
-// }
-
-// TODO: This is potentially dangerous, since we need to make sure we use the correct Gluon array afterwards,
-//       which depends on n_smear. For even n_smear, we need to use Gluon1, for odd n_smear we need to use Gluon2!
-
-void StoutSmearingN(GaugeField& Gluon1, GaugeField& Gluon2, const int N, const floatT smear_param = 0.12)
-{
-    for (int smear_count = 0; smear_count < N; ++smear_count)
-    {
-        if (smear_count % 2 == 0)
-        {
-            StoutSmearing4D(Gluon1, Gluon2, smear_param);
-        }
-        else
-        {
-            StoutSmearing4D(Gluon2, Gluon1, smear_param);
-        }
-    }
-}
-
-// void StoutSmearingN(GaugeFieldSmeared& SmearedFields, const int offset, const int n_smear, const floatT smear_param = 0.12)
-// {
-//     for (int smear_count = 0; smear_count < n_smear; ++smear_count)
-//     {
-//         StoutSmearing4D(SmearedFields[(offset + smear_count) % 2], SmearedFields[(offset + smear_count + 1) % 2], smear_param);
-//     }
-// }
-
-//-----
 // Wilson flow using some integrator
 // TODO: For now with fixed step-size, later implement adaptive step size?
 
@@ -849,159 +769,6 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
         Gluon = Gluon_temp;
     }
     #endif
-}
-
-//-----
-// Calculates clover term
-
-// template<int Nmu>
-// void Clover(const Gl_Lattice& Gluon, Full_tensor& Q)
-void Clover(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& Clov, const int Nmu)
-{
-    // Gl_Lattice Gluonchain;
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    {
-        for (int mu = 0; mu < 4; ++mu)
-        {
-            Gluonchain({t, x, y, z, mu}).setIdentity();
-        }
-        for (int n = 0; n < Nmu; ++ n)
-        {
-            Gluonchain({t, x, y, z, 0}) *= Gluon({(t + n)%Nt, x, y, z, 0});
-            Gluonchain({t, x, y, z, 1}) *= Gluon({t, (x + n)%Nx, y, z, 1});
-            Gluonchain({t, x, y, z, 2}) *= Gluon({t, x, (y + n)%Ny, z, 2});
-            Gluonchain({t, x, y, z, 3}) *= Gluon({t, x, y, (z + n)%Nz, 3});
-        }
-    }
-
-    #pragma omp parallel for
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    {
-        int tm = (t - Nmu + Nt)%Nt;
-        int xm = (x - Nmu + Nx)%Nx;
-        int ym = (y - Nmu + Ny)%Ny;
-        int zm = (z - Nmu + Nz)%Nz;
-        int tp = (t + Nmu)%Nt;
-        int xp = (x + Nmu)%Nx;
-        int yp = (y + Nmu)%Ny;
-        int zp = (z + Nmu)%Nz;
-
-        Clov[t][x][y][z][0][0].setZero();
-        Clov[t][x][y][z][0][1] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() * Gluon({t, x, y, z, 1}).adjoint()
-                               + Gluon({t, x, y, z, 1}) * Gluon({tm, xp, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}).adjoint() * Gluon({tm, x, y, z, 0})
-                               + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, xm, y, z, 1}).adjoint() * Gluon({tm, xm, y, z, 0}) * Gluon({t, xm, y, z, 1})
-                               + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1}) * Gluon({t, x, y, z, 0}).adjoint();
-        Clov[t][x][y][z][1][0] = Clov[t][x][y][z][0][1].adjoint();
-
-        Clov[t][x][y][z][0][2] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                               + Gluon({t, x, y, z, 2}) * Gluon({tm, x, yp, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}).adjoint() * Gluon({tm, x, y, z, 0})
-                               + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, ym, z, 2}).adjoint() * Gluon({tm, x, ym, z, 0}) * Gluon({t, x, ym, z, 2})
-                               + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2}) * Gluon({t, x, y, z, 0}).adjoint();
-        Clov[t][x][y][z][2][0] = Clov[t][x][y][z][0][2].adjoint();
-
-        Clov[t][x][y][z][0][3] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                               + Gluon({t, x, y, z, 3}) * Gluon({tm, x, y, zp, 0}).adjoint() * Gluon({tm, x, y, z, 3}).adjoint() * Gluon({tm, x, y, z, 0})
-                               + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, zm, 3}).adjoint() * Gluon({tm, x, y, zm, 0}) * Gluon({t, x, y, zm, 3})
-                               + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3}) * Gluon({t, x, y, z, 0}).adjoint();
-        Clov[t][x][y][z][3][0] = Clov[t][x][y][z][0][3].adjoint();
-
-        Clov[t][x][y][z][1][1].setZero();
-        Clov[t][x][y][z][1][2] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                               + Gluon({t, x, y, z, 2}) * Gluon({t, xm, yp, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}).adjoint() * Gluon({t, xm, y, z, 1})
-                               + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, ym, z, 2}).adjoint() * Gluon({t, xm, ym, z, 1}) * Gluon({t, x, ym, z, 2})
-                               + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2}) * Gluon({t, x, y, z, 1}).adjoint();
-        Clov[t][x][y][z][2][1] = Clov[t][x][y][z][1][2].adjoint();
-
-        Clov[t][x][y][z][1][3] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                               + Gluon({t, x, y, z, 3}) * Gluon({t, xm, y, zp, 1}).adjoint() * Gluon({t, xm, y, z, 3}).adjoint() * Gluon({t, xm, y, z, 1})
-                               + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, zm, 3}).adjoint() * Gluon({t, xm, y, zm, 1}) * Gluon({t, x, y, zm, 3})
-                               + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3}) * Gluon({t, x, y, z, 1}).adjoint();
-        Clov[t][x][y][z][3][1] = Clov[t][x][y][z][1][3].adjoint();
-
-        Clov[t][x][y][z][2][2].setZero();
-        Clov[t][x][y][z][2][3] = Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                               + Gluon({t, x, y, z, 3}) * Gluon({t, x, ym, zp, 2}).adjoint() * Gluon({t, x, ym, z, 3}).adjoint() * Gluon({t, x, ym, z, 2})
-                               + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, zm, 3}).adjoint() * Gluon({t, x, ym, zm, 2}) * Gluon({t, x, y, zm, 3})
-                               + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3}) * Gluon({t, x, y, z, 2}).adjoint();
-        Clov[t][x][y][z][3][2] = Clov[t][x][y][z][2][3].adjoint();
-        Clov[t][x][y][z][3][3].setZero();
-    }
-}
-
-//-----
-// Calculates the field strength tensor using clover definition
-
-void Fieldstrengthtensor(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
-{
-    Clover(Gluon, Gluonchain, Q, Nmu);
-
-    #pragma omp parallel for
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    for (int mu = 0; mu < 4; ++mu)
-    for (int nu = 0; nu < 4; ++nu)
-    {
-        // F[t][x][y][z][mu][nu] = std::complex<floatT> (0.0, - 0.125) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-        // F[t][x][y][z][mu][nu] = std::complex<floatT> (0.0, - 1.0 / (8 * Nmu * Nmu)) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-        // F[t][x][y][z][mu][nu] = -i<floatT>/(8.0 * Nmu * Nmu) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-        F[t][x][y][z][mu][nu] = -i<floatT>/(8.f * Nmu * Nmu) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-    }
-
-    // TODO: Rewrite like this
-    // Local_tensor Q;
-    // #pragma omp parallel for
-    // for (int t = 0; t < Nt; ++t)
-    // for (int x = 0; x < Nx; ++x)
-    // for (int y = 0; y < Ny; ++y)
-    // for (int z = 0; z < Nz; ++z)
-    // {
-    //     // Insert clover calculation here
-    //     for (int mu = 0; mu < 4; ++mu)
-    //     for (int nu = 0; nu < 4; ++nu)
-    //     {
-    //         // F[t][x][y][z][mu][nu] = std::complex<floatT> (0.0, - 0.125) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-    //         // F[t][x][y][z][mu][nu] = std::complex<floatT> (0.0, - 1.0 / (8 * Nmu * Nmu)) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-    //         // F[t][x][y][z][mu][nu] = -i<floatT>/(8.0 * Nmu * Nmu) * (Q[t][x][y][z][mu][nu] - Q[t][x][y][z][nu][mu]);
-    //         F[t][x][y][z][mu][nu] = -i<floatT>/8.f * (Q[mu][nu] - Q[nu][mu]);
-    //     }
-    // }
-}
-
-//-----
-// Calculates energy density from field strength tensor
-
-[[nodiscard]]
-double Energy_density(const GaugeField& Gluon, GaugeField& Gluonchain, Full_tensor& F, Full_tensor& Q, const int Nmu)
-{
-    cout << "\nBeginning of function" << endl;
-    double e_density {0.0};
-
-    cout << "\nCalculating field strength tensor" << endl;
-    Fieldstrengthtensor(Gluon, Gluonchain, F, Q, Nmu);
-    cout << "\nCalculated field strength tensor" << endl;
-
-    #pragma omp parallel for reduction(+:e_density)
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    for (int mu = 0; mu < 4; ++mu)
-    for (int nu = 0; nu < 4; ++nu)
-    {
-        e_density += std::real((F[t][x][y][z][mu][nu] * F[t][x][y][z][mu][nu]).trace());
-    }
-    // e_density *= 1.0/(2.0 * Nx * Ny * Nz * Nt * Nmu * Nmu);
-    e_density *= 1.0/(2.0 * 9.0 * Nx * Ny * Nz * Nt);
-    // cout << e_density << "\n";
-    return e_density;
 }
 
 //-----
@@ -1322,7 +1089,7 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     // Iterator::Checkerboard(, n_sweep_heatbath);
     // Iterator::Checkerboard(OverrelaxationSubgroup, n_sweep_heatbath);
     // Get new value of collective variable
-    double CV_new {CV_function(Gluon1, Gluon2, Gluon3, 10, rho_stout)};
+    double CV_new {CV_function(Gluon1, Gluon2, Gluon3, n_smear_meta, rho_stout)};
     //-----
     // TODO: Calculate difference in metapotential
     double DeltaV {Metapotential.ReturnPotential(CV_new) - Metapotential.ReturnPotential(CV_old)};
@@ -1749,6 +1516,196 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     datalog << TopologicalChargeUnimproved.back() << "\n" << endl;
 }
 
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
+{
+    vector<double> Action(n_smear + 1);
+    vector<double> WLoop2(n_smear + 1);
+    vector<double> WLoop4(n_smear + 1);
+    vector<double> WLoop8(n_smear + 1);
+    vector<double> PLoopRe(n_smear + 1);
+    vector<double> PLoopIm(n_smear + 1);
+    vector<std::complex<double>> PLoop(n_smear + 1);
+    // vector<double> TopologicalCharge(n_smear + 1);
+    vector<double> TopologicalChargeSymm(n_smear + 1);
+    vector<double> TopologicalChargeUnimproved(n_smear + 1);
+
+    // Unsmeared observables
+    // auto start_action = std::chrono::system_clock::now();
+    Action[0] = WilsonAction::ActionNormalized(Gluon);
+    // auto end_action = std::chrono::system_clock::now();
+    // std::chrono::duration<double> action_time = end_action - start_action;
+    // cout << "Time for calculating action: " << action_time.count() << endl;
+
+    // auto start_wilson = std::chrono::system_clock::now();
+    WLoop2[0] = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
+    // auto end_wilson = std::chrono::system_clock::now();
+    // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 2: " << wilson_time.count() << endl;
+
+    // start_wilson = std::chrono::system_clock::now();
+    WLoop4[0] = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
+    // end_wilson = std::chrono::system_clock::now();
+    // wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 4: " << wilson_time.count() << endl;
+
+    // start_wilson = std::chrono::system_clock::now();
+    WLoop8[0] = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
+    // end_wilson = std::chrono::system_clock::now();
+    // wilson_time = end_wilson - start_wilson;
+    // cout << "Time for calculating wilson 8: " << wilson_time.count() << endl;
+
+    // auto start_polyakov = std::chrono::system_clock::now();
+    PLoop[0] = PolyakovLoop(Gluon);
+    // auto end_polyakov = std::chrono::system_clock::now();
+    // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
+    // cout << "Time for calculating Polyakov: " << polyakov_time.count() << endl;
+
+    // auto start_topcharge = std::chrono::system_clock::now();
+    // TopologicalCharge[0] = TopChargeGluonic(Gluon);
+    // auto end_topcharge = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
+    // cout << "Time for calculating topcharge: " << topcharge_time.count() << endl;
+    // auto start_topcharge_symm = std::chrono::system_clock::now();
+    TopologicalChargeSymm[0] = TopChargeGluonicSymm(Gluon);
+    // auto end_topcharge_symm = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
+    // cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
+    // auto start_topcharge_plaq = std::chrono::system_clock::now();
+    TopologicalChargeUnimproved[0] = TopChargeGluonicUnimproved(Gluon);
+    // auto end_topcharge_plaq = std::chrono::system_clock::now();
+    // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
+    // cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << endl;
+
+    //-----
+    // Begin smearing
+    if (n_smear > 0)
+    {
+        // Apply smearing
+        // auto start_smearing = std::chrono::system_clock::now();
+        StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        // auto end_smearing = std::chrono::system_clock::now();
+        // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
+        // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
+        // Calculate observables
+        Action[1] = WilsonAction::ActionNormalized(Gluonsmeared1);
+        WLoop2[1] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+        WLoop4[1] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+        WLoop8[1] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+        PLoop[1]  = PolyakovLoop(Gluonsmeared1);
+        // TopologicalCharge[1] = TopChargeGluonic(Gluonsmeared1);
+        TopologicalChargeSymm[1] = TopChargeGluonicSymm(Gluonsmeared1);
+        TopologicalChargeUnimproved[1] = TopChargeGluonicUnimproved(Gluonsmeared1);
+    }
+
+    //-----
+    // Further smearing steps
+    for (int smear_count = 2; smear_count <= n_smear; ++smear_count)
+    {
+        // Even
+        if (smear_count % 2 == 0)
+        {
+            // Apply smearing
+            // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
+            StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            // TODO: FIX THIS, INCORRECT IF n_smear_skip is even!
+            // if (n_smear_skip % 2 == 0)
+            // {
+            //     // placeholder
+            // }
+            // else
+            // {
+            //     // placeholder
+            // }
+            // Calculate observables
+            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared2);
+            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
+            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
+            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
+            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared2);
+            // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
+            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared2);
+            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
+        }
+        // Odd
+        else
+        {
+            // Apply smearing
+            // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
+            StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            // Calculate observables
+            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
+            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared1);
+            // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared1);
+            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared1);
+            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
+        }
+    }
+
+    //-----
+    std::transform(PLoop.begin(), PLoop.end(), PLoopRe.begin(), [](const auto& element){return std::real(element);});
+    std::transform(PLoop.begin(), PLoop.end(), PLoopIm.begin(), [](const auto& element){return std::imag(element);});
+
+    //-----
+    // Write to logfile
+    std::time_t log_time {std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())};
+    // datalog << "[Step " << n_count << "] " << std::ctime(&log_time) << "\n";
+    // datalog << "[Step " << n_count << "] -" << std::ctime(&log_time) << "-";
+    datalog << "[Step " << n_count << "] -" << std::put_time(std::localtime(&log_time), "%c") << "-\n";
+    //-----
+    if constexpr(n_hmc != 0)
+    {
+        datalog << "DeltaH: " << DeltaH << "\n";
+    }
+    //-----
+    datalog << "Wilson_Action: ";
+    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
+    datalog << Action.back() << "\n";
+    //-----
+    datalog << "Wilson_loop(L=2): ";
+    // std::copy(WLoop2.cbegin(), std::prev(WLoop2.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(WLoop2), std::prev(std::cend(WLoop2)), std::ostream_iterator<double>(datalog, " "));
+    datalog << WLoop2.back() << "\n";
+    //-----
+    datalog << "Wilson_loop(L=4): ";
+    // std::copy(WLoop4.cbegin(), std::prev(WLoop4.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(WLoop4), std::prev(std::cend(WLoop4)), std::ostream_iterator<double>(datalog, " "));
+    datalog << WLoop4.back() << "\n";
+    //-----
+    datalog << "Wilson_loop(L=8): ";
+    // std::copy(WLoop8.cbegin(), std::prev(WLoop8.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(WLoop8), std::prev(std::cend(WLoop8)), std::ostream_iterator<double>(datalog, " "));
+    datalog << WLoop8.back() << "\n"; //<< endl;
+    //-----
+    datalog << "Polyakov_loop(Re): ";
+    std::copy(std::cbegin(PLoopRe), std::prev(std::cend(PLoopRe)), std::ostream_iterator<double>(datalog, " "));
+    datalog << PLoopRe.back() << "\n";
+    //-----
+    datalog << "Polyakov_loop(Im): ";
+    std::copy(std::cbegin(PLoopIm), std::prev(std::cend(PLoopIm)), std::ostream_iterator<double>(datalog, " "));
+    datalog << PLoopIm.back() << "\n";
+
+
+    // datalog << "TopChargeClov: ";
+    // std::copy(std::cbegin(TopologicalCharge), std::prev(std::cend(TopologicalCharge)), std::ostream_iterator<double>(datalog, " "));
+    // datalog << TopologicalCharge.back() << "\n"; //<< endl;
+
+    datalog << "TopChargeClov: ";
+    std::copy(std::cbegin(TopologicalChargeSymm), std::prev(std::cend(TopologicalChargeSymm)), std::ostream_iterator<double>(datalog, " "));
+    datalog << TopologicalChargeSymm.back() << "\n"; //<< endl;
+
+    datalog << "TopChargePlaq: ";
+    std::copy(std::cbegin(TopologicalChargeUnimproved), std::prev(std::cend(TopologicalChargeUnimproved)), std::ostream_iterator<double>(datalog, " "));
+    datalog << TopologicalChargeUnimproved.back() << "\n";
+
+    double CV_current {Metapotential.ReturnCV_current()};
+    datalog << "CV_MetaD: " << CV_current << "\n";
+    datalog << "Metapotential: " << Metapotential.ReturnPotential(CV_current) << "\n" << endl;
+}
+
 //-----
 
 int main()
@@ -1873,25 +1830,43 @@ int main()
     // MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
     // Observables(*Gluon, *Gluonchain, wilsonlog, 2, n_smear);
 
+    // Initialize update functors
+    HeatbathKernel               Heatbath(Gluon, distribution_uniform);
+    // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
+    OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
+
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
+        // TopBiasPotential.LoadPotential("metapotential_10.txt");
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        // Calculate first CV so that we don't have to recompute it later on
+        // TopBiasPotential.SymmetrizePotential();
+
+        // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
+        // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
+        // for (int i = 0; i < 5; ++i)
+        // {
+        //     Iterator::Checkerboard(Heatbath, 1);
+        //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+        // }
+        // // // Run one time with reuse_constants = false, since we need to calculate them once at the beginning
+        // HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, false, n_hmc, true, distribution_prob);
+        // for (int n_count = 0; n_count < n_run; ++n_count)
+        // {
+        //     HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
+        //     Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
+        // }
+
+        // Calculate first CV so that we don't have to recompute it later on (Metadynamics with local updates)
         double CV {0.0};
-        if constexpr(metadynamics_enabled)
-        {
-            CV = MetaCharge(Gluon, Gluonsmeared1, Gluonsmeared2, 10, rho_stout);
-        }
+        // if constexpr(metadynamics_enabled)
+        // {
+        //     CV = MetaCharge(Gluon, Gluonsmeared1, Gluonsmeared2, n_smear_meta, rho_stout);
+        // }
         // auto CV_function = [](){MetaCharge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, 15);};
     // }
-
-    // Initialize update functors
-    HeatbathKernel               Heatbath(Gluon, distribution_uniform);
-    // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
-    OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
 
     // When using HMC, the thermalization is done without accept-reject step
     if constexpr(n_hmc != 0)
@@ -1969,6 +1944,17 @@ int main()
             }
         }
     }
+    // GaugeFieldSmeared SmearedField(12);
+    // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts(11);
+    // SmearedField[0] = Gluon;
+    // for (int n_smear = 0; n_smear < 11; ++n_smear)
+    // {
+    //     // StoutSmearing4D(SmearedField[n_smear], SmearedField[n_smear + 1], rho_stout);
+    //     StoutSmearing4DWithConstants(SmearedField[n_smear], SmearedField[n_smear + 1], Exp_consts[n_smear], rho_stout);
+    // }
+    // std::cout << TopChargeGluonicSymm(SmearedField[11]);
+    // CalculateClover(SmearedField[11], Clover_array);
+    // std::cout << TopChargeGluonicSymm(Clover_array);
 
     auto end {std::chrono::system_clock::now()};
     std::chrono::duration<double> elapsed_seconds {end - startcalc};

@@ -35,6 +35,9 @@ class GaugeFieldRaw
         template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
         friend class GaugeField4DSmeared;
 
+        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        friend class FullTensor4D;
+
         std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
         static constexpr std::size_t size {size_};
         // Default constructor (apparantly not allowed to be marked as noexcept, compiler will complain)
@@ -77,7 +80,7 @@ class GaugeFieldRaw
         }
 };
 
-// This class acts as a general container for a gauge fields in 4 dimensions
+// This class acts as a general container for gauge fields in 4 dimensions
 // The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
 // TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
@@ -284,10 +287,175 @@ class GaugeField4DSmeared
         {
             return gaugefield[n];
         }
+        int ReturnNsmear() const noexcept
+        {
+            return Nsmear;
+        }
+};
+
+// This class acts as a general container for a (4x4)-component tensor in 4 dimensions
+// The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
+// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
+template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
+class FullTensor4D
+{
+    private:
+        static constexpr std::size_t Nt     {Nt_};
+        static constexpr std::size_t Nx     {Nx_};
+        static constexpr std::size_t Ny     {Ny_};
+        static constexpr std::size_t Nz     {Nz_};
+        static constexpr std::size_t Nmu    {4};
+        static constexpr std::size_t Nnu    {4};
+        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr std::size_t V_link {Nmu * Nnu * V};
+        GaugeFieldRaw<V_link, gaugeT> gaugefield;
+    public:
+        // Constructor with four arguments (one length for each direction)
+        FullTensor4D() noexcept
+        {
+            std::cout << "Creating FullTensor4D with volume: " << V << std::endl;
+        }
+        // // Delete default constructor
+        // FullTensor4D() = delete;
+        // Destructor
+        ~FullTensor4D()
+        {
+            std::cout << "Deleting FullTensor4D with volume: " << V << std::endl;
+        }
+        // Copy constructor
+        // FullTensor4D(const FullTensor4D& field_in) noexcept :
+        //     Nt(field_in.Nt), Nx(field_in.Nx), Ny(field_in.Ny), Nz(field_in.Nz), V(field_in.Nt * field_in.Nx * field_in.Ny * field_in.Nz * field_in.Nmu)
+        //     {
+        //         #pragma omp parallel for
+        //         for (int t = 0; t < Nt; ++t)
+        //         for (int x = 0; x < Nx; ++x)
+        //         for (int y = 0; y < Ny; ++y)
+        //         for (int z = 0; z < Nz; ++z)
+        //         for (int mu = 0; mu < Nmu; ++mu)
+        //         {
+        //             gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
+        //         }
+        //     }
+        // Copy assignment
+        // We don't need assignment chaining, so return void instead of FullTensor4D&
+        // TODO: Is this okay? Correctness, performance?
+        void operator=(const FullTensor4D& field_in) noexcept
+        {
+            // std::cout << "Copy assignment operator of FullTensor4D used" << std::endl;
+            // Check for self-assignments
+            if (this != &field_in)
+            {
+                // Check for compatible sizes
+                // TODO: Check std::is_same(gaugeT, gaugeT)? How to get type, need to introduce additionale typedef above?
+                if (Nt != field_in.Nt or Nx != field_in.Nx or Ny != field_in.Ny or Nz != field_in.Nz or Nmu != field_in.Nmu or Nnu != field_in.Nnu)
+                {
+                    std::cerr << "Warning: Trying to use copy assignment operator on two arrays with different sizes!" << std::endl;
+                }
+                // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
+                #pragma omp parallel for
+                for (int t = 0; t < Nt; ++t)
+                for (int x = 0; x < Nx; ++x)
+                for (int y = 0; y < Ny; ++y)
+                for (int z = 0; z < Nz; ++z)
+                for (int mu = 0; mu < Nmu; ++mu)
+                for (int nu = 0; nu < Nnu; ++nu)
+                {
+                    gaugefield[LinearCoordinate(t, x, y, z, mu, nu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
+                }
+                // gaugefield = field_in.gaugefield;
+            }
+        }
+        //-----
+        // Access gauge links via single integer coordinate
+        gaugeT& operator()(const std::size_t linear_coord) noexcept
+        {
+            return gaugefield[linear_coord];
+        }
+        gaugeT operator()(const std::size_t linear_coord) const noexcept
+        {
+            return gaugefield[linear_coord];
+        }
+        // -----
+        // Access gauge links via site_coord and two directions
+        gaugeT& operator()(const site_coord& site, const int mu, const int nu) noexcept
+        {
+            return gaugefield[LinearCoordinate(site, mu, nu)];
+        }
+        gaugeT operator()(const site_coord& site, const int mu, const int nu) const noexcept
+        {
+            return gaugefield[LinearCoordinate(site, mu, nu)];
+        }
+        // -----
+        // Access gauge links via link_coord
+        // gaugeT& operator()(const link_coord& coord) noexcept
+        // {
+        //     return gaugefield[LinearCoordinate(coord)];
+        // }
+        // gaugeT operator()(const link_coord& coord) const noexcept
+        // {
+        //     return gaugefield[LinearCoordinate(coord)];
+        // }
+        // Access gauge links via 6 ints
+        // [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
+        gaugeT& operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
+        {
+            return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
+        }
+        // [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
+        gaugeT operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
+        {
+            return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
+        }
+        std::size_t Volume() const noexcept
+        {
+            return V;
+        }
+        std::size_t Length(const int direction) const noexcept
+        {
+            switch(direction)
+            {
+                case 0:
+                    return Nt;
+                case 1:
+                    return Nx;
+                case 2:
+                    return Ny;
+                case 3:
+                    return Nz;
+                default:
+                    return 0;
+            }
+        }
+    private:
+        // -----
+        // TODO: Do we need modulo here? Also, it is probably preferable to make the layout/coordinate function a (template) parameter of the class
+        //       For lattice lengths that are powers of two, we can replace x%Nx by x&(Nx-1) (possibly faster?)
+        // Transform 5 integers into linear coordinate (direction is the fastest index)
+        [[nodiscard]]
+        inline std::size_t LinearCoordinate(const site_coord& site, const int mu, const int nu) const noexcept
+        {
+            return ((((site.t * Nx + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu) * Nnu + nu;
+        }
+        // [[nodiscard]]
+        // inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
+        // {
+        //     return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu;
+        // }
+        [[nodiscard]]
+        inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
+        {
+            return ((((t * Nx + x) * Ny + y) * Nz + z) * Nmu + mu) * Nnu + nu;
+        }
+        // Transform 5 integers into linear coordinate (direction is the slowest index)
+        // int LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
+        // {
+        //     return (((mu * Nmu + t) * Nx + x) * Ny + y) * Nz + z;
+        // }
 };
 
 using GaugeField        = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 using GaugeFieldSmeared = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
+using FullTensor        = FullTensor4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 
 // Struct to hold a pair of references to smeared fields
 // Useful when smearing multiple times, and only the final smearing level is needed

@@ -202,6 +202,35 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
 }
 
 [[nodiscard]]
+double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
+{
+    double Q {0.0};
+    #pragma omp parallel for reduction(+:Q)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        std::array<Matrix_3x3, 6> F;
+        //-----
+        // F[0][1]
+        F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
+        // F[0][2]
+        F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
+        // F[0][3]
+        F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
+        // F[1][2]
+        F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
+        // F[1][3]
+        F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
+        // F[2][3]
+        F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
+        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+    }
+    return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
+}
+
+[[nodiscard]]
 double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};

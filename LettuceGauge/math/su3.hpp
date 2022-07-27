@@ -106,6 +106,13 @@ namespace SU3::Projection
     {
         return static_cast<floatT>(0.5) * (mat - mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat - mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
+
+    // Projects a single element onto traceless hermitian matrix
+
+    Matrix_3x3 TracelessHermitian(const Matrix_3x3& mat) noexcept
+    {
+        return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
+    }
 }
 
 namespace SU3::Tests
@@ -137,7 +144,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (Unitarity(Gluon({t, x, y, z, mu}), prec) != true)
+            if (not Unitarity(Gluon({t, x, y, z, mu}), prec))
             {
                 IsUnitary = false;
                 return IsUnitary;
@@ -172,7 +179,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (Special(Gluon({t, x, y, z, mu}), prec) != true)
+            if (not Special(Gluon({t, x, y, z, mu}), prec))
             {
                 IsSpecial = false;
                 return IsSpecial;
@@ -187,7 +194,7 @@ namespace SU3::Tests
     [[nodiscard]]
     bool TestSU3(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
-        if ((Matrix_SU3::Identity() - Mat.adjoint() * Mat).norm() > prec && std::abs(Mat.determinant() - static_cast<floatT>(1.0)) > prec)
+        if ((Matrix_SU3::Identity() - Mat.adjoint() * Mat).norm() > prec or std::abs(Mat.determinant() - static_cast<floatT>(1.0)) > prec)
         {
             return false;
         }
@@ -207,7 +214,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (TestSU3(Gluon({t, x, y, z, mu}), prec) != true)
+            if (not TestSU3(Gluon({t, x, y, z, mu}), prec))
             {
                 InGroup = false;
                 return InGroup;
@@ -218,11 +225,12 @@ namespace SU3::Tests
 
     //-----
     // Test if a matrix is a su(3) algebra element (up to a certain precision)
+    // NOTE: Technically this checks if a matrix is traceless and hermitian, while su(3) matrices are anti-hermitian
 
     [[nodiscard]]
     bool Testsu3(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
-        if ((Mat - Mat.adjoint()).norm() > prec && std::abs(Mat.trace()) > prec)
+        if ((Mat - Mat.adjoint()).norm() > prec or std::abs(Mat.trace()) > prec)
         {
             return false;
         }
@@ -231,6 +239,8 @@ namespace SU3::Tests
             return true;
         }
     }
+
+    // NOTE: Technically this checks if a matrix is traceless and hermitian, while su(3) matrices are anti-hermitian
 
     [[nodiscard]]
     bool Testsu3All(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
@@ -242,7 +252,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (Testsu3(Gluon({t, x, y, z, mu}), prec) != true)
+            if (not Testsu3(Gluon({t, x, y, z, mu}), prec))
             {
                 InAlgebra = false;
                 return InAlgebra;

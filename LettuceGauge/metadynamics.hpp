@@ -25,6 +25,7 @@ class MetaBiasPotential
 {
 private:
     std::vector<double> bin_count;
+    double CV_current;
     double CV_min, CV_max;
     size_t bin_number;
     size_t edge_number;
@@ -114,9 +115,21 @@ public:
     }
 
     //-----
+    // Symmetrize potential
+    void SymmetrizePotential() noexcept
+    {
+        // At the time of writing this I'm too lazy to write this without a copy (bin_count_reverse), and this way it at least looks cleaner than manually looping through bin_count
+        // TODO: Ranges to the rescue to have a reverse view?
+        std::vector<double> bin_count_reverse = bin_count;
+        std::reverse_copy(bin_count.cbegin(), bin_count.cend(), bin_count_reverse.begin());
+        std::transform(bin_count.begin(), bin_count.end(), bin_count_reverse.cbegin(), bin_count.begin(), [](auto element, auto element_reverse){return 0.5 * (element + element_reverse);});
+        std::cout << "Metapotential symmetrized!" << std::endl;
+    }
+
+    //-----
     // Create a penalty weight starting for values below CV_lower and values above CV_upper
 
-    void AddPenaltyWeight(const double CV_lower, const double CV_upper, const std::string& filename)
+    void AddPenaltyWeight(const double CV_lower, const double CV_upper, const std::string& filename) noexcept
     {
         assert(CV_lower < CV_upper);
         int lower_index {static_cast<int>(std::floor((CV_lower - CV_min) * bin_width_inverse))};
@@ -150,7 +163,7 @@ public:
         binlog.clear();
     }
 
-    void SubtractPenaltyWeight(const double CV_lower, const double CV_upper)
+    void SubtractPenaltyWeight(const double CV_lower, const double CV_upper) noexcept
     {
         assert(CV_lower < CV_upper);
         int lower_index {static_cast<int>(std::floor((CV_lower - CV_min) * bin_width_inverse))};
@@ -165,6 +178,42 @@ public:
             double CV {CV_min + ind * bin_width};
             bin_count[ind] -= threshold_weight * std::pow((CV - CV_upper), 2);
         }
+    }
+
+    //-----
+    // Returns bin_width
+
+    double ReturnBinWidth() const noexcept
+    {
+        return bin_width;
+    }
+
+    //-----
+    // Returns bin_width_inverse (required for HMC force calculation)
+
+    double ReturnBinWidthInverse() const noexcept
+    {
+        return bin_width_inverse;
+    }
+
+    double ReturnDerivative(const double CV) const noexcept
+    {
+        // TODO: Add bounds checks just like with ReturnPotential()?
+        int bin_index {static_cast<int>(std::floor((CV - CV_min) * bin_width_inverse))};
+        double interpolation_constant {(CV - (CV_min + bin_index * bin_width)) * bin_width_inverse};
+        // std::cout << bin_index << std::endl;
+        // std::cout << CV << std::endl;
+        return 0.5 * (bin_count[bin_index + 1] - bin_count[bin_index]);
+    }
+
+    void SetCV_current(const double CV_in) noexcept
+    {
+        CV_current = CV_in;
+    }
+
+    double ReturnCV_current() const noexcept
+    {
+        return CV_current;
     }
 
     //-----
@@ -264,7 +313,8 @@ public:
         binload.seekg(0, binload.beg);
         // Start reading parameters
         std::getline(binload, current_line);
-        if (current_line == program_version)
+        // if (current_line == program_version)
+        if (true)
         {
             std::cout << "Loading metadynamics potential from: " << filename << "\n";
             std::cout << "The file has " << linecount << " lines in total." << std::endl;

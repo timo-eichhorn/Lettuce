@@ -4,6 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 #include "../math/su3.hpp"
+#include "../math/su3_exp.hpp"
 #include "../actions/gauge/wilson_action.hpp"
 //----------------------------------------
 // Standard library headers
@@ -38,14 +39,15 @@ namespace HMC
             floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
             floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
             floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-            // Random momentum in su(3)
+            // Random momentum in su(3) given by phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann matrix)
+            // Technically A is a traceless hermitian matrix, while su(3) matrices are anti-hermitian
             Matrix_3x3 A;
             A << std::complex<floatT>(phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi1,-phi2),std::complex<floatT>(phi4,-phi5),
                  std::complex<floatT>(phi1,phi2),                std::complex<floatT>(-phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi6,-phi7),
                  std::complex<floatT>(phi4,phi5),                std::complex<floatT>(phi6,phi7),std::complex<floatT>(-2.0*phi8/sqrt(3.0),0.0);
             Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
         }
-        // std::cout << "Random momenta lie in algebra: " << Testsu3All(Momentum, 1e-12) << std::endl;
+        // std::cout << "Random momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
     }
 
     //-----
@@ -62,7 +64,7 @@ namespace HMC
         {
             Momentum({t, x, y, z, mu}) = -Momentum({t, x, y, z, mu});
         }
-        // std::cout << "Momenta lie in algebra: " << Testsu3All(Momentum, 1e-12) << std::endl;
+        // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
     }
 
     //-----
@@ -77,11 +79,12 @@ namespace HMC
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            Matrix_3x3 st {WilsonAction::Staple(Gluon, {t, x, y, z}, mu)};
-            Matrix_3x3 tmp {st * Gluon({t, x, y, z, mu}).adjoint() - Gluon({t, x, y, z, mu}) * st.adjoint()};
-            Momentum({t, x, y, z, mu}) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
+            link_coord current_link {t, x, y, z, mu};
+            Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
+            Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
+            Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
         }
-        // std::cout << "Momenta lie in algebra: " << Testsu3All(Momentum, 1e-12) << std::endl;
+        // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
     }
 
     //-----
@@ -96,18 +99,14 @@ namespace HMC
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            // Gluon[t][x][y][z][mu] += epsilon * Momentum[t][x][y][z][mu];
-            Matrix_3x3 tmp_mat {(i<floatT> * epsilon * Momentum({t, x, y, z, mu})).exp()};
-            // SU3::Projection::GramSchmidt(tmp_mat);
+            // Matrix_3x3 tmp_mat {(i<floatT> * epsilon * Momentum({t, x, y, z, mu})).exp()};
+            Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
             Gluon({t, x, y, z, mu}) = tmp_mat * Gluon({t, x, y, z, mu});
             SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
-            // Gluon[t][x][y][z][mu] = (-epsilon * Momentum[t][x][y][z][mu]).exp() * Gluon[t][x][y][z][mu];
-            // Gluon[t][x][y][z][mu] = CayleyMap(-0.5 * epsilon * Momentum[t][x][y][z][mu]) * Gluon[t][x][y][z][mu];
-            // Gluon[t][x][y][z][mu] = (-i<floatT> * epsilon * Momentum[t][x][y][z][mu]).exp();
         }
         // std::cout << "new test: " << TestSU3All(Gluon, 1e-8) << std::endl;
         // std::cout << "new test: " << Gluon[1][3][4][7][2].determinant() << "\n" << Gluon[1][3][4][7][2] * Gluon[1][3][4][7][2].adjoint() << "\n" << std::endl;
-        // std::cout << "Fields lie in group: " << TestSU3All(Gluon, 1e-12) << std::endl;
+        // std::cout << "Fields lie in group: " << SU3::TestSU3All(Gluon, 1e-12) << std::endl;
     }
 
     [[nodiscard]]
@@ -309,6 +308,7 @@ namespace HMC
         #else
         double q {distribution_prob(generator_rand)};
         #endif
+        // TODO: Probably shouldnt use a global variable for DeltaH?
         DeltaH = energy_new - energy_old;
         if (metropolis_step)
         {

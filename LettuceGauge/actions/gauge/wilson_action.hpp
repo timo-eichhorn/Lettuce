@@ -77,7 +77,7 @@ namespace WilsonAction
 
     [[nodiscard]]
     // Matrix_3x3 Staple(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
-    Matrix_3x3 Staple(const GaugeField&Gluon, const site_coord& current_site, const int mu) noexcept
+    Matrix_3x3 Staple(const GaugeField& Gluon, const site_coord& current_site, const int mu) noexcept
     {
         Matrix_3x3 st;
 
@@ -166,6 +166,78 @@ namespace WilsonAction
                 // st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 3}) * Gluon({tm, x, y, zp, 0});
                 // st.noalias() += Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 3}) * Gluon({t, xm, y, zp, 1});
                 // st.noalias() += Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 3}) * Gluon({t, x, ym, zp, 2});
+            }
+            break;
+        }
+        return st;
+    }
+
+    [[nodiscard]]
+    // Matrix_3x3 Staple(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu) noexcept
+    Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& current_link) noexcept
+    {
+        Matrix_3x3 st;
+        auto [t, x, y, z, mu] = current_link;
+
+        switch(mu)
+        {
+            case 0:
+            {
+                int tp {(t + 1)%Nt};
+                int xp {(x + 1)%Nx};
+                int xm {(x - 1 + Nx)%Nx};
+                int yp {(y + 1)%Ny};
+                int ym {(y - 1 + Ny)%Ny};
+                int zp {(z + 1)%Nz};
+                int zm {(z - 1 + Nz)%Nz};
+                st.noalias() = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 0}) * Gluon({tp, x, y, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1})
+                             + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 0}) * Gluon({tp, x, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2})
+                             + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 0}) * Gluon({tp, x, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3});
+            }
+            break;
+
+            case 1:
+            {
+                int tp {(t + 1)%Nt};
+                int tm {(t - 1 + Nt)%Nt};
+                int xp {(x + 1)%Nx};
+                int yp {(y + 1)%Ny};
+                int ym {(y - 1 + Ny)%Ny};
+                int zp {(z + 1)%Nz};
+                int zm {(z - 1 + Nz)%Nz};
+                st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}) * Gluon({tm, xp, y, z, 0})
+                             + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 1}) * Gluon({t, xp, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2})
+                             + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 1}) * Gluon({t, xp, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3});
+            }
+            break;
+
+            case 2:
+            {
+                int tp {(t + 1)%Nt};
+                int tm {(t - 1 + Nt)%Nt};
+                int xp {(x + 1)%Nx};
+                int xm {(x - 1 + Nx)%Nx};
+                int yp {(y + 1)%Ny};
+                int zp {(z + 1)%Nz};
+                int zm {(z - 1 + Nz)%Nz};
+                st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}) * Gluon({tm, x, yp, z, 0})
+                             + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}) * Gluon({t, xm, yp, z, 1})
+                             + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 2}) * Gluon({t, x, yp, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3});
+            }
+            break;
+
+            case 3:
+            {
+                int tp {(t + 1)%Nt};
+                int tm {(t - 1 + Nt)%Nt};
+                int xp {(x + 1)%Nx};
+                int xm {(x - 1 + Nx)%Nx};
+                int yp {(y + 1)%Ny};
+                int ym {(y - 1 + Ny)%Ny};
+                int zp {(z + 1)%Nz};
+                st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 3}) * Gluon({tm, x, y, zp, 0})
+                             + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 3}) * Gluon({t, xm, y, zp, 1})
+                             + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 3}) * Gluon({t, x, ym, zp, 2});
             }
             break;
         }
