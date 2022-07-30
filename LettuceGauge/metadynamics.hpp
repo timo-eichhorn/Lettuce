@@ -199,11 +199,13 @@ public:
     double ReturnDerivative(const double CV) const noexcept
     {
         // TODO: Add bounds checks just like with ReturnPotential()?
+        //       Also what about the penalty potential?
         int bin_index {static_cast<int>(std::floor((CV - CV_min) * bin_width_inverse))};
-        double interpolation_constant {(CV - (CV_min + bin_index * bin_width)) * bin_width_inverse};
+        // double interpolation_constant {(CV - (CV_min + bin_index * bin_width)) * bin_width_inverse};
         // std::cout << bin_index << std::endl;
         // std::cout << CV << std::endl;
-        return 0.5 * (bin_count[bin_index + 1] - bin_count[bin_index]);
+        // return 0.5 * (bin_count[bin_index + 1] - bin_count[bin_index]);
+        return bin_width_inverse * (bin_count[bin_index + 1] - bin_count[bin_index]);
     }
 
     void SetCV_current(const double CV_in) noexcept

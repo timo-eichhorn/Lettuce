@@ -86,6 +86,7 @@ Matrix_3x3 CloverDerivativeComponent(const GaugeField& Gluon, const FullTensor& 
     site_coord site_mup_nup = Move< 1>(site_mup, nu);
     site_coord site_mup_nud = Move<-1>(site_mup, nu);
 
+    // TODO: We can probably move the first multiplication outside into the function CloverDerivative(), would go from 6 -> 1 multiplications (although relatively speaking it's not that much)
     return Gluon(current_site, mu) * (Gluon(site_mup, nu)               * Gluon(site_nup, mu).adjoint()     * Gluon(current_site, nu).adjoint() * Clover(current_site, rho, sigma)
                                     + Gluon(site_mup, nu)               * Gluon(site_nup, mu).adjoint()     * Clover(site_nup, rho, sigma)      * Gluon(current_site, nu).adjoint()
                                     + Gluon(site_mup, nu)               * Clover(site_mup_nup, rho, sigma)  * Gluon(site_nup, mu).adjoint()     * Gluon(current_site, nu).adjoint()
@@ -151,8 +152,10 @@ Matrix_3x3 CloverDerivative(const GaugeField& Gluon, const FullTensor& Clover, c
     // Without the trace we would get two times the hermitian part, with the trace it's only the real part (?)
     // derivative_component = -static_cast<floatT>(4.0/64.0) * (static_cast<floatT>(1.0/3.0) * derivative_component.trace() * Matrix_3x3::Identity() - derivative_component).real();
     Matrix_3x3 tmp {derivative_component - derivative_component.adjoint()};
-    return -static_cast<floatT>(1.0/32.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-    
+    // TODO: I think this is not correct yet, since it includes the prefactor coming from the field strength tensor, but not the prefactor 1/(32 pi^2) from the charge definition
+    // return -static_cast<floatT>(1.0/32.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
+    // This should hopefully be correct
+    return -static_cast<floatT>(1.0/(1024.0 * pi<floatT> * pi<floatT>)) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
 }
 
 #endif // LETTUCE_CLOVER_HPP

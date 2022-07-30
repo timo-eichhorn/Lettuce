@@ -115,7 +115,7 @@ namespace HMC_MetaD
         // TODO: This includes the interpolation constant. Is this correct, or do we really only need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
         //       We could try to use a center difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
         double CV_old {TopChargeGluonicSymm(Clover)};
-        std::cout << "CV_old: " << CV_old << std::endl;
+        // std::cout << "CV_old: " << CV_old << std::endl;
         double potential_derivative = Metapotential.ReturnDerivative(CV_old);
         // Calculate clover derivative
         #pragma omp parallel for
@@ -126,21 +126,21 @@ namespace HMC_MetaD
         for (int mu = 0; mu < 4; ++mu)
         {
             site_coord current_site {t, x, y, z};
-            // ForceFatLink(current_site, mu) = i<floatT> * potential_derivative * CloverDerivative(SmearedFields[n_smear_meta], Clover, current_site, mu);
+            ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(SmearedFields[n_smear_meta], Clover, current_site, mu);
             // What if we use the staple on the smeared field instead of the clover for testing?
-            Matrix_3x3 st {WilsonAction::Staple(SmearedFields[n_smear_meta], {t, x, y, z}, mu)};
-            Matrix_3x3 tmp {st * SmearedFields[n_smear_meta]({t, x, y, z, mu}).adjoint() - SmearedFields[n_smear_meta]({t, x, y, z, mu}) * st.adjoint()};
-            ForceFatLink({t, x, y, z, mu}) -= i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
+            // Matrix_3x3 st {WilsonAction::Staple(SmearedFields[n_smear_meta], {t, x, y, z}, mu)};
+            // Matrix_3x3 tmp {st * SmearedFields[n_smear_meta]({t, x, y, z, mu}).adjoint() - SmearedFields[n_smear_meta]({t, x, y, z, mu}) * st.adjoint()};
+            // ForceFatLink(current_site, mu) = beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
         }
-        std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
-        std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
+        // std::cout << "Clover derivative:\n" << ForceFatLink({4,2,6,7,1}) << std::endl;
+        // std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
         // Finally perform the stout force recursion
         // Exp is calculated inside the StoutForceRecrusion function, we only need to pass an array of fitting shape
         for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
         {
             // TODO: Replace global variable rho_stout with parameter?
-            StoutForceRecursion(SmearedFields[smear_count - 1], ForceFatLink, Exp_consts[smear_count - 1], rho_stout);
-            std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
+            StoutForceRecursion(SmearedFields[smear_count - 1], SmearedFields[smear_count], ForceFatLink, Exp_consts[smear_count - 1], rho_stout);
+            // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
         }
 
         // #pragma omp parallel for
@@ -153,7 +153,7 @@ namespace HMC_MetaD
         //     ForceFatLink({t, x, y, z, mu}) = SmearedFields[0]({t, x, y, z, mu}) * ForceFatLink({t, x, y, z, mu});
         // }
         // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
-        std::cout << "Momenta (MetaD-contribution) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
+        // std::cout << "Momenta (MetaD-contribution) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
     }
 
     //-----
@@ -161,7 +161,7 @@ namespace HMC_MetaD
 
     void UpdateMomenta(GaugeField& Gluon, GaugeField& Momentum, MetaBiasPotential& Metapotential, FullTensor& Clover, GaugeFieldSmeared& SmearedFields, GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const int n_smear_meta, const bool reuse_constants, const floatT epsilon) noexcept
     {
-        std::cout << "Start of UpdateMomenta" << std::endl;
+        // std::cout << "Start of UpdateMomenta" << std::endl;
         // We need a separate array for the fat-link contribution
         static GaugeField ForceFatLink;
         CalculateTopologicalForce(Gluon, ForceFatLink, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, reuse_constants);
@@ -178,11 +178,12 @@ namespace HMC_MetaD
             // This is the usual (thin-link) contribution to the momenta
             Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
             Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
-            Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-            // Now comes the fat-link contribution
-            Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
+            // Update with both the thin-link and fat-link contribution at the same time
+            Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity()) + ForceFatLink(current_link));
+            // // Now comes the fat-link contribution
+            // Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
         }
-        std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
+        // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
     }
 
     //-----
@@ -400,20 +401,21 @@ namespace HMC_MetaD
         if (not reuse_constants)
         {
             CV_old = MetaChargeWithConstants(Gluon, SmearedFields, Clover, Exp_consts, n_smear_meta, rho_stout);
-            std::cout << "CV_old: " << CV_old << std::endl;
+            // std::cout << "CV_old: " << CV_old << std::endl;
         }
         double energy_old {Hamiltonian(Gluon, Momentum) + Metapotential.ReturnPotential(CV_old)};
-        double energy_diff_nonMD {-Hamiltonian(Gluon, Momentum)};
+        // double energy_diff_nonMD {-Hamiltonian(Gluon, Momentum)};
 
         // Perform integration with chosen integrator
         Integrator(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, n_step);
 
         // Calculate energy after time evolution
         double CV_new {MetaCharge(Gluon, SmearedFields, n_smear_meta, rho_stout)};
+        // double CV_new {MetaChargeWithConstants(Gluon, SmearedFields, Clover, Exp_consts, n_smear_meta, rho_stout)};
         double energy_new {Hamiltonian(Gluon, Momentum) + Metapotential.ReturnPotential(CV_new)};
-        energy_diff_nonMD += Hamiltonian(Gluon, Momentum);
-        std::cout << "Energy difference (without MetaD): " << energy_diff_nonMD << std::endl;
-        std::cout << "Energy difference (MetaD): " << energy_new - energy_old - energy_diff_nonMD << std::endl;
+        // energy_diff_nonMD += Hamiltonian(Gluon, Momentum);
+        // std::cout << "Energy difference (without MetaD): " << energy_diff_nonMD << std::endl;
+        // std::cout << "Energy difference (MetaD): " << energy_new - energy_old - energy_diff_nonMD << std::endl;
         // Metropolis accept-reject step
         double p {std::exp(-energy_new + energy_old)};
         #if defined(_OPENMP)

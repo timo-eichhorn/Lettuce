@@ -1840,19 +1840,22 @@ int main()
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
-        // TopBiasPotential.LoadPotential("metapotential_10.txt");
+        TopBiasPotential.LoadPotential("metapotential_22.txt");
+        TopBiasPotential.SymmetrizePotential();
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        // TopBiasPotential.SymmetrizePotential();
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-        // for (int i = 0; i < 5; ++i)
-        // {
-        //     Iterator::Checkerboard(Heatbath, 1);
-        //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-        // }
-        // // // Run one time with reuse_constants = false, since we need to calculate them once at the beginning
-        // HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, false, n_hmc, true, distribution_prob);
+        for (int i = 0; i < 5; ++i)
+        {
+            Iterator::Checkerboard(Heatbath, 1);
+            Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+        }
+        // // Run one time with reuse_constants = false, since we need to calculate them once at the beginning
+        if constexpr(metadynamics_enabled)
+        {
+            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, false, n_hmc, true, distribution_prob);
+        }
         // for (int n_count = 0; n_count < n_run; ++n_count)
         // {
         //     HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
@@ -1869,16 +1872,16 @@ int main()
     // }
 
     // When using HMC, the thermalization is done without accept-reject step
-    if constexpr(n_hmc != 0)
-    {
-        datalog << "[HMC start thermalization]\n";
-        for (int n_count = 0; n_count < 20; ++n_count)
-        {
-            // std::cout << "HMC accept/reject (therm): " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::Leapfrog, 100, false, distribution_prob) << std::endl;
-            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-        }
-        datalog << "[HMC end thermalization]\n" << std::endl;
-    }
+    // if constexpr(n_hmc != 0)
+    // {
+    //     datalog << "[HMC start thermalization]\n";
+    //     for (int n_count = 0; n_count < 20; ++n_count)
+    //     {
+    //         // std::cout << "HMC accept/reject (therm): " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::Leapfrog, 100, false, distribution_prob) << std::endl;
+    //         HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
+    //     }
+    //     datalog << "[HMC end thermalization]\n" << std::endl;
+    // }
 
     for (int n_count = 0; n_count < n_run; ++n_count)
     {
@@ -1907,7 +1910,7 @@ int main()
         if constexpr(n_hmc != 0)
         {
             // std::cout << "HMC accept/reject: " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::OMF_4, n_hmc, true, distribution_prob) << std::endl;
-            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
+            // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
         }
         // auto end_update_hmc {std::chrono::system_clock::now()};
         // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
@@ -1926,7 +1929,8 @@ int main()
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)
         {
-            MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, 1, 4, distribution_prob, distribution_uniform);
+            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
+            // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, 1, 4, distribution_prob, distribution_uniform);
         }
         // auto end_update_meta = std::chrono::system_clock::now();
         // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
@@ -1944,17 +1948,6 @@ int main()
             }
         }
     }
-    // GaugeFieldSmeared SmearedField(12);
-    // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts(11);
-    // SmearedField[0] = Gluon;
-    // for (int n_smear = 0; n_smear < 11; ++n_smear)
-    // {
-    //     // StoutSmearing4D(SmearedField[n_smear], SmearedField[n_smear + 1], rho_stout);
-    //     StoutSmearing4DWithConstants(SmearedField[n_smear], SmearedField[n_smear + 1], Exp_consts[n_smear], rho_stout);
-    // }
-    // std::cout << TopChargeGluonicSymm(SmearedField[11]);
-    // CalculateClover(SmearedField[11], Clover_array);
-    // std::cout << TopChargeGluonicSymm(Clover_array);
 
     auto end {std::chrono::system_clock::now()};
     std::chrono::duration<double> elapsed_seconds {end - startcalc};
