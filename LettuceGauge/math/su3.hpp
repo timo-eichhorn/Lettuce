@@ -19,6 +19,248 @@
 // TODO: Implement own SU(3) class (e.g. with compression)?
 // Provides functions relevant for SU(3) elements like group projections
 
+
+// The Gell-Mann matrices lambda_i are traceless hermitian (3x3)-matrices that generate the SU(3) in it's defining representation
+// Namely, any group element U may be written as U = exp(i * 0.5 * alpha_j * lambda_j), where alpha_j are eight real coefficients and the summation over j is implicit
+namespace SU3::Generators
+{
+    // The following functions return the unnormalized Gell-Mann matrices
+    [[nodiscard]]
+    Matrix_3x3 lambda1() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0, 1.0, 0.0,
+               1.0, 0.0, 0.0,
+               0.0, 0.0, 0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda2() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0      , -i<floatT>, 0.0,
+               i<floatT>,  0.0      , 0.0,
+               0.0      ,  0.0      , 0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda3() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 1.0,  0.0, 0.0,
+               0.0, -1.0, 0.0,
+               0.0,  0.0, 0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda4() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0, 0.0, 1.0,
+               0.0, 0.0, 0.0,
+               1.0, 0.0, 0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda5() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0      , 0.0, -i<floatT>,
+               0.0      , 0.0,  0.0,
+               i<floatT>, 0.0,  0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda6() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0, 0.0, 0.0,
+               0.0, 0.0, 1.0,
+               0.0, 1.0, 0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda7() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 0.0, 0.0      ,  0.0,
+               0.0, 0.0      , -i<floatT>,
+               0.0, i<floatT>,  0.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda8() noexcept
+    {
+        Matrix_3x3 tmp;
+        tmp << 1.0, 0.0,  0.0,
+               0.0, 1.0,  0.0,
+               0.0, 0.0, -2.0;
+        return static_cast<floatT>(1.0/std::sqrt(3.0)) * tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 lambda(const int i) noexcept
+    {
+        switch(i)
+        {
+            case 1:
+                return lambda1();
+            case 2:
+                return lambda2();
+            case 3:
+                return lambda3();
+            case 4:
+                return lambda4();
+            case 5:
+                return lambda5();
+            case 6:
+                return lambda6();
+            case 7:
+                return lambda7();
+            case 8:
+                return lambda8();
+            default:
+                return Matrix_3x3::Zero();
+        }
+    }
+
+    // The following functions return exp(i * 0.5 * alpha_j * lambda_j) for a fixed index j (NO summation!)
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda1(const floatT alpha_1) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_1};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp << c_phi            , i<floatT> * s_phi, 0.0,
+               i<floatT> * s_phi, c_phi            , 0.0,
+               0.0              , 0.0              , 1.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda2(const floatT alpha_2) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_2};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp <<  c_phi, s_phi, 0.0,
+               -s_phi, c_phi, 0.0,
+                0.0  , 0.0  , 1.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda3(const floatT alpha_3) noexcept
+    {
+        floatT               phi       {static_cast<floatT>(0.5) * alpha_3};
+        std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+        Matrix_3x3           tmp;
+        tmp << exp_i_phi, 0.0                 , 0.0,
+               0.0      , std::conj(exp_i_phi), 0.0,
+               0.0      , 0.0                 , 1.0;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda4(const floatT alpha_4) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_4};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp << c_phi            , 0.0, i<floatT> * s_phi,
+               0.0              , 1.0, 0.0,
+               i<floatT> * s_phi, 0.0, c_phi;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda5(const floatT alpha_5) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_5};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp <<  c_phi, 0.0, s_phi,
+                0.0  , 1.0, 0.0,
+               -s_phi, 0.0, c_phi;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda6(const floatT alpha_6) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_6};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp << 1.0, 0.0              , 0.0,
+               0.0, c_phi            , i<floatT> * s_phi,
+               0.0, i<floatT> * s_phi, c_phi;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda7(const floatT alpha_7) noexcept
+    {
+        floatT       phi   {static_cast<floatT>(0.5) * alpha_7};
+        floatT       s_phi {std::sin(phi)};
+        floatT       c_phi {std::cos(phi)};
+        Matrix_3x3   tmp;
+        tmp << 1.0, 0.0  ,  0.0,
+               0.0,  c_phi, s_phi,
+               0.0, -s_phi, c_phi;
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda8(const floatT alpha_8) noexcept
+    {
+        floatT               phi       {static_cast<floatT>(0.5/std::sqrt(3.0)) * alpha_8};
+        std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+        Matrix_3x3           tmp;
+        tmp << exp_i_phi, 0.0      , 0.0,
+               0.0      , exp_i_phi, 0.0,
+               0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
+        return tmp;
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Exp_lambda(const int i, const floatT alpha_i) noexcept
+    {
+        switch(i)
+        {
+            case 1:
+                return Exp_lambda1(alpha_i);
+            case 2:
+                return Exp_lambda2(alpha_i);
+            case 3:
+                return Exp_lambda3(alpha_i);
+            case 4:
+                return Exp_lambda4(alpha_i);
+            case 5:
+                return Exp_lambda5(alpha_i);
+            case 6:
+                return Exp_lambda6(alpha_i);
+            case 7:
+                return Exp_lambda7(alpha_i);
+            case 8:
+                return Exp_lambda8(alpha_i);
+            default:
+                return Matrix_3x3::Identity();
+        }
+    }
+}
+
 namespace SU3::Projection
 {
     // Projects a single link back on SU(3) via Gram-Schmidt

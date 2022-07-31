@@ -93,19 +93,15 @@ namespace HMC_MetaD
 
     //-----
     // Calculate topological Force/fat-link contribution from the metapotential
-    void CalculateTopologicalForce(GaugeField& Gluon, GaugeField& ForceFatLink, MetaBiasPotential& Metapotential, FullTensor& Clover, GaugeFieldSmeared& SmearedFields, GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const int n_smear_meta, const bool reuse_constants) noexcept
+    void CalculateTopologicalForce(GaugeField& Gluon, GaugeField& ForceFatLink, MetaBiasPotential& Metapotential, FullTensor& Clover, GaugeFieldSmeared& SmearedFields, GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const int n_smear_meta) noexcept
     {
-        // We might not need to calculate everything if it was already precomputed outside
-        if (not reuse_constants)
+        // This is the Metadynamics (fat-link) contribution to the momenta
+        // First we need to smear the fields n_smear_meta times and store all intermediate fields
+        SmearedFields[0] = Gluon;
+        for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
         {
-            // This is the Metadynamics (fat-link) contribution to the momenta
-            // First we need to smear the fields n_smear_meta times and store all intermediate fields
-            SmearedFields[0] = Gluon;
-            for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
-            {
-                // TODO: Replace global variable rho_stout with parameter?
-                StoutSmearing4DWithConstants(SmearedFields[smear_count], SmearedFields[smear_count + 1], Exp_consts[smear_count], rho_stout);
-            }
+            // TODO: Replace global variable rho_stout with parameter?
+            StoutSmearing4DWithConstants(SmearedFields[smear_count], SmearedFields[smear_count + 1], Exp_consts[smear_count], rho_stout);
         }
         // Now we need the derivative of the metapotential and the contribution of the clover term
         // Calculate clover term on field that was smeared the most
@@ -126,11 +122,9 @@ namespace HMC_MetaD
         for (int mu = 0; mu < 4; ++mu)
         {
             site_coord current_site {t, x, y, z};
+            // TODO: This should be a negative sign, since the force is given by the negative derivative of the potential?
+            //       There is another minus later on in the momentum update
             ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(SmearedFields[n_smear_meta], Clover, current_site, mu);
-            // What if we use the staple on the smeared field instead of the clover for testing?
-            // Matrix_3x3 st {WilsonAction::Staple(SmearedFields[n_smear_meta], {t, x, y, z}, mu)};
-            // Matrix_3x3 tmp {st * SmearedFields[n_smear_meta]({t, x, y, z, mu}).adjoint() - SmearedFields[n_smear_meta]({t, x, y, z, mu}) * st.adjoint()};
-            // ForceFatLink(current_site, mu) = beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
         }
         // std::cout << "Clover derivative:\n" << ForceFatLink({4,2,6,7,1}) << std::endl;
         // std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
@@ -142,29 +136,17 @@ namespace HMC_MetaD
             StoutForceRecursion(SmearedFields[smear_count - 1], SmearedFields[smear_count], ForceFatLink, Exp_consts[smear_count - 1], rho_stout);
             // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
         }
-
-        // #pragma omp parallel for
-        // for (int t = 0; t < Nt; ++t)
-        // for (int x = 0; x < Nx; ++x)
-        // for (int y = 0; y < Ny; ++y)
-        // for (int z = 0; z < Nz; ++z)
-        // for (int mu = 0; mu < 4; ++mu)
-        // {
-        //     ForceFatLink({t, x, y, z, mu}) = SmearedFields[0]({t, x, y, z, mu}) * ForceFatLink({t, x, y, z, mu});
-        // }
-        // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
-        // std::cout << "Momenta (MetaD-contribution) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
     }
 
     //-----
     // Update momenta for HMC
 
-    void UpdateMomenta(GaugeField& Gluon, GaugeField& Momentum, MetaBiasPotential& Metapotential, FullTensor& Clover, GaugeFieldSmeared& SmearedFields, GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const int n_smear_meta, const bool reuse_constants, const floatT epsilon) noexcept
+    void UpdateMomenta(GaugeField& Gluon, GaugeField& Momentum, MetaBiasPotential& Metapotential, FullTensor& Clover, GaugeFieldSmeared& SmearedFields, GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const int n_smear_meta, const floatT epsilon) noexcept
     {
         // std::cout << "Start of UpdateMomenta" << std::endl;
         // We need a separate array for the fat-link contribution
         static GaugeField ForceFatLink;
-        CalculateTopologicalForce(Gluon, ForceFatLink, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, reuse_constants);
+        CalculateTopologicalForce(Gluon, ForceFatLink, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta);
 
         // Update momenta
         #pragma omp parallel for
@@ -234,14 +216,14 @@ namespace HMC_MetaD
         floatT epsilon {static_cast<floatT>(1.0)/n_step};
         // Perform integration
         // Momentum updates are merged in the loop
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, true, 0.5 * epsilon);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, 0.5 * epsilon);
         for (int step_count = 0; step_count < n_step - 1; ++step_count)
         {
             UpdateFields(Gluon, Momentum, epsilon);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, epsilon);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, epsilon);
         }
         UpdateFields(Gluon, Momentum, epsilon);
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, 0.5 * epsilon);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, 0.5 * epsilon);
     }
     //-----
     // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
@@ -258,11 +240,11 @@ namespace HMC_MetaD
         // Perform integration
         for (int step_count = 0; step_count < n_step; ++step_count)
         {
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
         }
     }
     //-----
@@ -278,18 +260,18 @@ namespace HMC_MetaD
         double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
         // Perform integration
         // Momentum updates are merged in the loop
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, true, alpha);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
         UpdateFields(Gluon, Momentum, beta);
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
         UpdateFields(Gluon, Momentum, beta);
         for (int step_count = 0; step_count < n_step - 1; ++step_count)
         {
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, 2.0 * alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, 2.0 * alpha);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, beta);
         }
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
     }
     //-----
     // Omelyan-Mryglod-Folk fourth order minimum norm integrator
@@ -310,19 +292,19 @@ namespace HMC_MetaD
         // Momentum updates are not merged in the loop
         for (int step_count = 0; step_count < n_step; ++step_count)
         {
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, delta);
 
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
             UpdateFields(Gluon, Momentum, nu);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
 
             UpdateFields(Gluon, Momentum, delta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
         }
     }
     //-----
@@ -341,36 +323,34 @@ namespace HMC_MetaD
         double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
         // Perform integration
         // Momentum updates are merged in the loop
-        // In contrast to the main HMC function, here reuse_constants = true only applies to the first momentum update!
-        // After each momentum update the constants get changed and we need to recompute them
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, true, alpha);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
         UpdateFields(Gluon, Momentum, beta);
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
         UpdateFields(Gluon, Momentum, delta);
 
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
         UpdateFields(Gluon, Momentum, nu);
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
 
         UpdateFields(Gluon, Momentum, delta);
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
         UpdateFields(Gluon, Momentum, beta);
         for (int step_count = 0; step_count < n_step - 1; ++step_count)
         {
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, 2.0 * alpha);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, 2.0 * alpha);
             UpdateFields(Gluon, Momentum, beta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, delta);
 
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
             UpdateFields(Gluon, Momentum, nu);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, mu);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, mu);
 
             UpdateFields(Gluon, Momentum, delta);
-            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, gamma);
+            UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, gamma);
             UpdateFields(Gluon, Momentum, beta);
         }
-        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, false, alpha);
+        UpdateMomenta(Gluon, Momentum, Metapotential, Clover, SmearedFields, Exp_consts, n_smear_meta, alpha);
     }
 
     //-----
@@ -380,7 +360,7 @@ namespace HMC_MetaD
 
     template<typename FuncT>
     // bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, double& CV, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
-    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_smear_meta, const bool reuse_constants, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
+    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_smear_meta, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
     {
         // Required arrays so we don't have to recompute everything
         // Note that we do need a separate array for Sigma/the metaforce since the stout force recursion is obviously only applied to the fat-link part
@@ -396,13 +376,11 @@ namespace HMC_MetaD
         Gluon_copy = Gluon;
         // Generate random momenta and calculate energy before time evolution
         RandomMomentum(Momentum);
-        // Calculating the CV/smeared topological charge is not that cheap, so we can reuse it in some cases
+        // Calculating the CV/smeared topological charge is not that cheap, so we can reuse it in some cases (nah actually somewhat tedious due to accept-reject)
         static double CV_old;
-        if (not reuse_constants)
-        {
-            CV_old = MetaChargeWithConstants(Gluon, SmearedFields, Clover, Exp_consts, n_smear_meta, rho_stout);
-            // std::cout << "CV_old: " << CV_old << std::endl;
-        }
+        // CV_old = MetaChargeWithConstants(Gluon, SmearedFields, Clover, Exp_consts, n_smear_meta, rho_stout);
+        CV_old = MetaCharge(Gluon, SmearedFields, n_smear_meta, rho_stout);
+
         double energy_old {Hamiltonian(Gluon, Momentum) + Metapotential.ReturnPotential(CV_old)};
         // double energy_diff_nonMD {-Hamiltonian(Gluon, Momentum)};
 

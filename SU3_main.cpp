@@ -434,34 +434,34 @@ Matrix_SU3 RandomSU3(std::uniform_int_distribution<int>& distribution_choice, st
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, i<floatT> * s_phi, 0.0,
-                   i<floatT> * s_phi, c_phi, 0.0,
-                   0.0, 0.0, 1.0;
+            tmp << c_phi            , i<floatT> * s_phi, 0.0,
+                   i<floatT> * s_phi, c_phi            , 0.0,
+                   0.0              , 0.0              , 1.0;
         }
         break;
         case 2:
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, -s_phi, 0.0,
-                   s_phi, c_phi, 0.0,
-                   0.0, 0.0, 1.0;
+            tmp <<  c_phi, s_phi, 0.0,
+                   -s_phi, c_phi, 0.0,
+                    0.0  , 0.0  , 1.0;
         }
         break;
         case 3:
         {
-            std::complex<floatT> exp_I_phi {std::exp(i<floatT> * phi)};
-            tmp << exp_I_phi, 0.0, 0.0,
-                   0.0, conj(exp_I_phi), 0.0,
-                   0.0, 0.0, 1.0;
+            std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+            tmp << exp_i_phi, 0.0                 , 0.0,
+                   0.0      , std::conj(exp_i_phi), 0.0,
+                   0.0      , 0.0                 , 1.0;
         }
         break;
         case 4:
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, 0.0, i<floatT> * s_phi,
-                   0.0, 1.0, 0.0,
+            tmp << c_phi            , 0.0, i<floatT> * s_phi,
+                   0.0              , 1.0, 0.0,
                    i<floatT> * s_phi, 0.0, c_phi;
         }
         break;
@@ -469,8 +469,8 @@ Matrix_SU3 RandomSU3(std::uniform_int_distribution<int>& distribution_choice, st
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, 0.0, s_phi,
-                   0.0, 1.0, 0.0,
+            tmp <<  c_phi, 0.0, s_phi,
+                    0.0  , 1.0, 0.0,
                    -s_phi, 0.0, c_phi;
         }
         break;
@@ -478,8 +478,8 @@ Matrix_SU3 RandomSU3(std::uniform_int_distribution<int>& distribution_choice, st
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << 1.0, 0.0, 0.0,
-                   0.0, c_phi, i<floatT> * s_phi,
+            tmp << 1.0, 0.0              , 0.0,
+                   0.0, c_phi            , i<floatT> * s_phi,
                    0.0, i<floatT> * s_phi, c_phi;
         }
         break;
@@ -487,20 +487,18 @@ Matrix_SU3 RandomSU3(std::uniform_int_distribution<int>& distribution_choice, st
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << 1.0, 0.0, 0.0,
-                   0.0, c_phi, -s_phi,
-                   0.0, s_phi, c_phi;
+            tmp << 1.0, 0.0  ,  0.0,
+                   0.0,  c_phi, s_phi,
+                   0.0, -s_phi, c_phi;
         }
         break;
         case 8:
         {
-            floatT phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
-            std::complex<floatT> exp_phi_tilde {std::exp(i<floatT> * phi_tilde)};
-            tmp << exp_phi_tilde, 0.0, 0.0,
-                   0.0, exp_phi_tilde, 0.0,
-                   // 0.0, 0.0, (std::complex<floatT>(1.0, 0))/(exp_phi_tilde * exp_phi_tilde);
-                   // 0.0, 0.0, 1.0/(exp_phi_tilde * exp_phi_tilde);
-                   0.0, 0.0, 1.0/(exp_phi_tilde * exp_phi_tilde);
+            floatT               phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
+            std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi_tilde)};
+            tmp << exp_i_phi, 0.0      , 0.0,
+                   0.0      , exp_i_phi, 0.0,
+                   0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
         }
         break;
     }
@@ -518,34 +516,34 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, i<floatT> * s_phi, 0.0,
-                   i<floatT> * s_phi, c_phi, 0.0,
-                   0.0, 0.0, 1.0;
+            tmp << c_phi            , i<floatT> * s_phi, 0.0,
+                   i<floatT> * s_phi, c_phi            , 0.0,
+                   0.0              , 0.0              , 1.0;
         }
         break;
         case 2:
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, -s_phi, 0.0,
-                   s_phi, c_phi, 0.0,
-                   0.0, 0.0, 1.0;
+            tmp <<  c_phi, s_phi, 0.0,
+                   -s_phi, c_phi, 0.0,
+                    0.0  , 0.0  , 1.0;
         }
         break;
         case 3:
         {
-            std::complex<floatT> exp_I_phi {std::exp(i<floatT> * phi)};
-            tmp << exp_I_phi, 0.0, 0.0,
-                   0.0, conj(exp_I_phi), 0.0,
-                   0.0, 0.0, 1.0;
+            std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+            tmp << exp_i_phi, 0.0                 , 0.0,
+                   0.0      , std::conj(exp_i_phi), 0.0,
+                   0.0      , 0.0                 , 1.0;
         }
         break;
         case 4:
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, 0.0, i<floatT> * s_phi,
-                   0.0, 1.0, 0.0,
+            tmp << c_phi            , 0.0, i<floatT> * s_phi,
+                   0.0              , 1.0, 0.0,
                    i<floatT> * s_phi, 0.0, c_phi;
         }
         break;
@@ -553,8 +551,8 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << c_phi, 0.0, s_phi,
-                   0.0, 1.0, 0.0,
+            tmp <<  c_phi, 0.0, s_phi,
+                    0.0  , 1.0, 0.0,
                    -s_phi, 0.0, c_phi;
         }
         break;
@@ -562,8 +560,8 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << 1.0, 0.0, 0.0,
-                   0.0, c_phi, i<floatT> * s_phi,
+            tmp << 1.0, 0.0              , 0.0,
+                   0.0, c_phi            , i<floatT> * s_phi,
                    0.0, i<floatT> * s_phi, c_phi;
         }
         break;
@@ -571,18 +569,18 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
         {
             floatT s_phi {std::sin(phi)};
             floatT c_phi {std::cos(phi)};
-            tmp << 1.0, 0.0, 0.0,
-                   0.0, c_phi, -s_phi,
-                   0.0, s_phi, c_phi;
+            tmp << 1.0, 0.0  ,  0.0,
+                   0.0,  c_phi, s_phi,
+                   0.0, -s_phi, c_phi;
         }
         break;
         case 8:
         {
-            floatT phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
-            std::complex<floatT> exp_phi_tilde {std::exp(i<floatT> * phi_tilde)};
-            tmp << exp_phi_tilde, 0.0, 0.0,
-                   0.0, exp_phi_tilde, 0.0,
-                   0.0, 0.0, 1.0/(exp_phi_tilde * exp_phi_tilde);
+            floatT               phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
+            std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi_tilde)};
+            tmp << exp_i_phi, 0.0      , 0.0,
+                   0.0      , exp_i_phi, 0.0,
+                   0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
         }
         break;
     }
@@ -1840,7 +1838,7 @@ int main()
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
-        TopBiasPotential.LoadPotential("metapotential_22.txt");
+        TopBiasPotential.LoadPotential("metapotential_14.txt");
         TopBiasPotential.SymmetrizePotential();
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
 
@@ -1850,11 +1848,6 @@ int main()
         {
             Iterator::Checkerboard(Heatbath, 1);
             Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-        }
-        // // Run one time with reuse_constants = false, since we need to calculate them once at the beginning
-        if constexpr(metadynamics_enabled)
-        {
-            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, false, n_hmc, true, distribution_prob);
         }
         // for (int n_count = 0; n_count < n_run; ++n_count)
         // {
@@ -1929,7 +1922,7 @@ int main()
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)
         {
-            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
+            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, n_hmc, true, distribution_prob);
             // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, 1, 4, distribution_prob, distribution_uniform);
         }
         // auto end_update_meta = std::chrono::system_clock::now();
@@ -1937,13 +1930,21 @@ int main()
         // cout << "Time for meta update: " << update_time_meta.count() << endl;
         if (n_count % expectation_period == 0)
         {
-            // auto start_observable = std::chrono::system_clock::now();
-            Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
-            // auto end_observable = std::chrono::system_clock::now();
-            // std::chrono::duration<double> observable_time {end_observable - start_observable};
-            // cout << "Time for calculating observables: " << observable_time.count() << endl;
-            if constexpr(metadynamics_enabled)
+            if constexpr(not metadynamics_enabled)
             {
+                // auto start_observable = std::chrono::system_clock::now();
+                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
+                // auto end_observable = std::chrono::system_clock::now();
+                // std::chrono::duration<double> observable_time {end_observable - start_observable};
+                // cout << "Time for calculating observables: " << observable_time.count() << endl;
+            }
+            else
+            {
+                Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
+            }
+            if constexpr(metapotential_updated)
+            {
+                if (n_count % (10 * expectation_period) == 0)
                 TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
             }
         }

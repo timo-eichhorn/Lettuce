@@ -104,13 +104,13 @@ void StoutSmearingN(GaugeField& Gluon1, GaugeField& Gluon2, const int N, const f
 //     }
 // }
 
-void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const float smear_param = 0.12) noexcept
+void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const floatT smear_param = 0.12) noexcept
 {
     if (SmearedFields.ReturnNsmear() > 1)
     {
         for (int smear_count = 0; smear_count < SmearedFields.ReturnNsmear() - 1; ++smear_count)
         {
-            StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1]);
+            StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], smear_param);
         }
     }
     else
@@ -190,16 +190,16 @@ void CalculateLambda(const GaugeField& Gluon, const GaugeField& Sigma, const Gau
 void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Gluon_prev, GaugeField& Sigma, const GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const floatT smear_param) noexcept
 {
     // First multiply the incoming Sigma with V^{\dagger}
-    // #pragma omp parallel for
-    // for (int t = 0; t < Nt; ++t)
-    // for (int x = 0; x < Nx; ++x)
-    // for (int y = 0; y < Ny; ++y)
-    // for (int z = 0; z < Nz; ++z)
-    // for (int mu = 0; mu < 4; ++mu)
-    // {
-    //     link_coord current_link {t, x, y, z, mu};
-    //     Sigma(current_link) = Gluon_prev(current_link).adjoint() * Sigma(current_link);
-    // }
+    #pragma omp parallel for
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    for (int mu = 0; mu < 4; ++mu)
+    {
+        link_coord current_link {t, x, y, z, mu};
+        Sigma(current_link) = Gluon_prev(current_link).adjoint() * Sigma(current_link);
+    }
     // Precompute Lambda for whole lattice, since values get used multiple times
     // Exp_consts should already be known from stout smearing (if StoutSmearing4DWithConstants was used instead of the normal stout smearing function)
     static GaugeField Lambda;
@@ -244,15 +244,17 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Gluon_prev, 
             // Complete recursion relation
             // Sigma(current_link) = Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link)
             //                     - i<floatT> * smear_param * force_sum;
-            Sigma(current_link) = SU3::Projection::Algebra(Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link)
-                                                         - i<floatT> * smear_param * force_sum);
-            // With additional multiplication with U
-            // Sigma(current_link) = SU3::Projection::Algebra(Gluon(current_link) * Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * Gluon(current_link) * st_adj * Lambda(current_link)
-            //                                              - i<floatT> * smear_param * Gluon(current_link) * force_sum);
+            // With projector
+            // Sigma(current_link) = SU3::Projection::Algebra(Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link)
+            //                                              - i<floatT> * smear_param * force_sum);
+            // Multiply with U and the apply traceless hermitian projector
+            Sigma(current_link) = SU3::Projection::Algebra(Gluon(current_link) * Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * Gluon(current_link) * C_adj * Lambda(current_link)
+                                                         - i<floatT> * smear_param * Gluon(current_link) * force_sum);
             // Sigma(current_link) = C_adj * Lambda(current_link);
             // Sigma(current_link) = i<floatT> * C_adj * Lambda(current_link);
         }
     }
+    // std::cout << Sigma(1, 2, 0, 1, 3) << std::endl;
     // std::cout << "Sigma lies in algebra: " << SU3::Tests::Testsu3All(Sigma) << std::endl;
     // std::cout << "Sigma lies in group:   " << SU3::Tests::TestSU3All(Sigma) << std::endl;
 }
