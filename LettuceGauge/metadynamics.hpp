@@ -208,6 +208,11 @@ public:
         return bin_width_inverse * (bin_count[bin_index + 1] - bin_count[bin_index]);
     }
 
+    void Setweight(const double weight_in) noexcept
+    {
+        weight = weight_in;
+    }
+
     void SetCV_current(const double CV_in) noexcept
     {
         CV_current = CV_in;

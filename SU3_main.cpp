@@ -1838,9 +1838,11 @@ int main()
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
-        TopBiasPotential.LoadPotential("metapotential_14.txt");
+        TopBiasPotential.LoadPotential("metapotential_22.txt");
         TopBiasPotential.SymmetrizePotential();
+        // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
+        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
@@ -1944,7 +1946,7 @@ int main()
             }
             if constexpr(metapotential_updated)
             {
-                if (n_count % (10 * expectation_period) == 0)
+                if (n_count % (1 * expectation_period) == 0)
                 TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
             }
         }
