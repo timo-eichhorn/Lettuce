@@ -77,15 +77,42 @@ public:
 
         if (static_cast<unsigned int>(bin_index) < static_cast<unsigned int>(edge_number - 1))
         {
-            double interpolation_constant {(CV - (CV_min + bin_index * bin_width)) * bin_width_inverse};
-            bin_count[bin_index] += weight * (1.0 - interpolation_constant);
-            bin_count[bin_index + 1] += weight * interpolation_constant;
+            // double interpolation_constant {(CV - (CV_min + bin_index * bin_width)) * bin_width_inverse};
+            // bin_count[bin_index] += weight * (1.0 - interpolation_constant);
+            // bin_count[bin_index + 1] += weight * interpolation_constant;
+            // Gaussian histogram?
+            for (int bin_index = 0; bin_index < edge_number; ++bin_index)
+            {
+                double CV_current_bin {CV_min + bin_index * bin_width};
+                bin_count[bin_index] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2));
+            }
         }
         else
         {
             exceeded_count += 1;
         }
     }
+
+    // void UpdatePotentialWellTempered(const double CV) noexcept
+    // {
+    //     int bin_index {static_cast<int>(std::floor((CV - CV_min) * bin_width_inverse))};
+    //     // Effectively means that our potential is limited to the interval [CV_min, CV_max)
+
+    //     if (static_cast<unsigned int>(bin_index) < static_cast<unsigned int>(edge_number - 1))
+    //     {
+    //         // Gaussian histogram?
+    //         // In the well tempered variant, we have an additional exponential factor in front that depends on the value of the current bin
+    //         for (int bin_index = 0; bin_index < edge_number; ++bin_index)
+    //         {
+    //             double CV_current_bin {CV_min + bin_index * bin_width};
+    //             bin_count[bin_index] += std::exp(-bin_count[bin_index] * ) * weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2));
+    //         }
+    //     }
+    //     else
+    //     {
+    //         exceeded_count += 1;
+    //     }
+    // }
 
     //-----
     // Function that returns the histogram entry

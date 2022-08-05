@@ -1837,9 +1837,9 @@ int main()
     // if constexpr(metadynamics_enabled)
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.02, 1000.0};
-        TopBiasPotential.LoadPotential("metapotential_22.txt");
-        TopBiasPotential.SymmetrizePotential();
+        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        // TopBiasPotential.LoadPotential("metapotential_22.txt");
+        // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
