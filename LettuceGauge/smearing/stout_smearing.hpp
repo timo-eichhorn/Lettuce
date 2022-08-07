@@ -57,6 +57,36 @@ void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeare
     }
 }
 
+void StoutSmearing4DStable(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeared, const floatT smear_param = 0.12)
+{
+    Matrix_3x3 Sigma;
+    Matrix_3x3 A;
+    Matrix_3x3 B;
+    Matrix_3x3 C;
+
+    #pragma omp parallel for private(Sigma, A, B, C)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        for (int mu = 0; mu < 4; ++mu)
+        {
+            link_coord current_link {t, x, y, z, mu};
+            Sigma.noalias() = WilsonAction::Staple(Gluon_unsmeared, current_link);
+            A.noalias() = Sigma * Gluon_unsmeared(current_link).adjoint();
+            // TODO: Replace with projector function?
+            B.noalias() = A - A.adjoint();
+            C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
+            // Cayley-Hamilton exponential
+            // Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
+            // Eigen exponential (Scaling and squaring)
+            Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
+            SU3::Projection::GramSchmidt(Gluon_smeared(current_link));
+        }
+    }
+}
+
 // [[nodiscard]]
 // SmearedFieldTuple StoutSmearingN(GaugeField& Gluon1, GaugeField& Gluon2, const int n_smear, const floatT smear_param = 0.12)
 // {

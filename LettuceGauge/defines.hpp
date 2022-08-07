@@ -51,16 +51,16 @@ std::string LatticeSizeString;                              // Lattice size (str
 int n_run;                                                  // Number of runs
 double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-inline constexpr int n_smear {7};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
-inline constexpr int n_smear_skip {5};                      // Number of smearing steps to skip between measurements
+inline constexpr int n_smear {20};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+inline constexpr int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
 inline constexpr floatT rho_stout {0.12};                   // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
-inline constexpr int n_heatbath {0};                        // Number of heatbath sweeps per total update sweep
-inline constexpr int n_hmc {5};                             // Number of integration steps per HMC update
-inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
-inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not
-inline constexpr bool metapotential_updated {true};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
+inline constexpr int n_heatbath {1};                        // Number of heatbath sweeps per total update sweep
+inline constexpr int n_hmc {0};                             // Number of integration steps per HMC update
+inline constexpr int n_orelax {4};                          // Number of overrelaxation sweeps per total update sweep
+inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
+inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr int n_smear_meta {5};                      // Number of smearing steps for topological charge used in Metadynamics
 inline double metro_norm {1.0};                             // Norm for Metropolis update. CAUTION: Needs to be set to correct value inside Configuration() function
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!

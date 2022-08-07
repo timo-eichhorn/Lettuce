@@ -1746,38 +1746,41 @@ int main()
     wilsonlog.open(wilsonfilepath, std::fstream::out | std::fstream::app);
 
     // Instanton multiplication test
-    // std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
-    // InstantonStart(*Gluon, 2);
-    // for (int n_count = 0; n_count < 20; ++n_count)
-    // {
-    //     // MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    //     HeatbathSU3(*Gluon, 1, distribution_uniform);
-    // }
+    std::uniform_real_distribution<floatT> distribution_unitary(-0.01, 0.01);
+    InstantonStart(Gluon, 1);
+    Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
+    for (int n_count = 0; n_count < 20; ++n_count)
+    {
+        MetropolisUpdate(Gluon, 1, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+        // HeatbathSU3(Gluon, 1, distribution_uniform);
+    }
+    Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
+    std::exit(0);
 
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);
-    // // MultiplyInstanton(*Gluon, 1);
-    // MultiplyLocalInstanton(*Gluon);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 1, n_smear);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
+    // // MultiplyInstanton(Gluon, 1);
+    // MultiplyLocalInstanton(Gluon);
+    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
     // std::exit(0);
     // Instanton start test
     // for (int Q = 0; Q < 10; ++Q)
     // {
-    //     InstantonStart(*Gluon, Q);
-    //     Observables(*Gluon, *Gluonchain, wilsonlog, Q, n_smear);
-    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonic(*Gluon) << endl;
-    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonicUnimproved(*Gluon) << endl;
-    //     MultiplyInstanton(*Gluon, 1);
-    //     Observables(*Gluon, *Gluonchain, wilsonlog, Q, n_smear);
-    //     cout << "After multiplication the charge is: " << TopChargeGluonic(*Gluon) << endl;
-    //     cout << "After multiplication the charge is: " << TopChargeGluonicUnimproved(*Gluon) << endl;
-    //     // InstantonStart(*Gluon, -Q);
-    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonic(*Gluon) << endl;
-    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonicUnimproved(*Gluon) << endl;
+    //     InstantonStart(Gluon, Q);
+    //     Observables(Gluon, Gluonchain, wilsonlog, Q, n_smear);
+    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonic(Gluon) << endl;
+    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
+    //     MultiplyInstanton(Gluon, 1);
+    //     Observables(Gluon, Gluonchain, wilsonlog, Q, n_smear);
+    //     cout << "After multiplication the charge is: " << TopChargeGluonic(Gluon) << endl;
+    //     cout << "After multiplication the charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
+    //     // InstantonStart(Gluon, -Q);
+    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonic(Gluon) << endl;
+    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
     // }
 
     // Generate 1 instanton
-    // LocalInstantonStart(*Gluon);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);
+    // LocalInstantonStart(Gluon);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
     int        L_half {Nt/2 - 1};
     site_coord center {L_half, L_half, L_half, L_half};
     std::cout << "Generating instanton with center: " << center;
@@ -1789,25 +1792,25 @@ int main()
     }
     std::exit(0);
 
-    // InstantonStart(*Gluon, 1);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);
+    // InstantonStart(Gluon, 1);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
     // for (int n_count = 0; n_count < 20; ++n_count)
     // {
-    //     MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+    //     MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
     // }
-    // Observables(*Gluon, *Gluonchain, wilsonlog, -1, 0);
+    // Observables(Gluon, Gluonchain, wilsonlog, -1, 0);
     // for (int flow_count = 0; flow_count < 10; ++flow_count)
     // {
-    //     WilsonFlowForward(*Gluon, 0.06, 1);
-    //     Observables(*Gluon, *Gluonchain, wilsonlog, flow_count, 0);
+    //     WilsonFlowForward(Gluon, 0.06, 1);
+    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
     // }
-    // // MultiplyInstanton(*Gluon, 1);
-    // MultiplyLocalInstanton(*Gluon);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, -1, 0);
+    // // MultiplyInstanton(Gluon, 1);
+    // MultiplyLocalInstanton(Gluon);
+    // Observables(Gluon, Gluonchain, wilsonlog, -1, 0);
     // for (int flow_count = 0; flow_count < 10; ++flow_count)
     // {
-    //     WilsonFlowBackward(*Gluon, *Gluonsmeared1, -0.06, 1);
-    //     Observables(*Gluon, *Gluonchain, wilsonlog, flow_count, 0);
+    //     WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
+    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
     // }
     // std::exit(0);
 
@@ -1830,21 +1833,21 @@ int main()
 
     // std::exit(0);
 
-    // MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);
+    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
     // // Multiply with 1 instanton, resulting configuration should have charge (Q_1 + 1) * (1 + 1) = (1 + 1) * (1 + 1) = 4
-    // InstantonStart(*Gluon, 1);
-    // MultiplyInstanton(*Gluon, 1);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 1, n_smear);
+    // InstantonStart(Gluon, 1);
+    // MultiplyInstanton(Gluon, 1);
+    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
 
-    // MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 1, n_smear);
+    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
     // // Generate 4 instanton
-    // InstantonStart(*Gluon, 4);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 2, n_smear);
+    // InstantonStart(Gluon, 4);
+    // Observables(Gluon, Gluonchain, wilsonlog, 2, n_smear);
 
-    // MetropolisUpdate(*Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(*Gluon, *Gluonchain, wilsonlog, 2, n_smear);
+    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+    // Observables(Gluon, Gluonchain, wilsonlog, 2, n_smear);
 
     // Initialize update functors
     HeatbathKernel               Heatbath(Gluon, distribution_uniform);
@@ -1859,16 +1862,16 @@ int main()
         // TopBiasPotential.LoadPotential("metapotential_22.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.Setweight(0.005);
-        TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        // TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
+        // TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-        for (int i = 0; i < 5; ++i)
-        {
-            Iterator::Checkerboard(Heatbath, 1);
-            Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-        }
+        // for (int i = 0; i < 5; ++i)
+        // {
+        //     Iterator::Checkerboard(Heatbath, 1);
+        //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+        // }
         // for (int n_count = 0; n_count < n_run; ++n_count)
         // {
         //     HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
@@ -1923,7 +1926,7 @@ int main()
         if constexpr(n_hmc != 0)
         {
             // std::cout << "HMC accept/reject: " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::OMF_4, n_hmc, true, distribution_prob) << std::endl;
-            // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
+            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
         }
         // auto end_update_hmc {std::chrono::system_clock::now()};
         // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
