@@ -1746,10 +1746,10 @@ int main()
     wilsonlog.open(wilsonfilepath, std::fstream::out | std::fstream::app);
 
     // Instanton multiplication test
-    std::uniform_real_distribution<floatT> distribution_unitary(-0.01, 0.01);
+    std::uniform_real_distribution<floatT> distribution_unitary(-0.001, 0.001);
     InstantonStart(Gluon, 1);
     Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    for (int n_count = 0; n_count < 20; ++n_count)
+    for (int n_count = 0; n_count < 5; ++n_count)
     {
         MetropolisUpdate(Gluon, 1, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
         // HeatbathSU3(Gluon, 1, distribution_uniform);
