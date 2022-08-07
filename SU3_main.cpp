@@ -21,6 +21,7 @@
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
 #include "LettuceGauge/updates/hmc_metadynamics.hpp"
+#include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
@@ -1331,6 +1332,7 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     vector<double> Action(n_smear + 1);
+    vector<double> ActionUnnormalized(n_smear + 1);
     vector<double> WLoop2(n_smear + 1);
     vector<double> WLoop4(n_smear + 1);
     vector<double> WLoop8(n_smear + 1);
@@ -1457,6 +1459,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 
     //-----
+    std::transform(Action.begin(), Action.end(), ActionUnnormalized.begin(), [&Gluon](const auto& element){return 6.0 * beta * Gluon.Volume() * element;});
     std::transform(PLoop.begin(), PLoop.end(), PLoopRe.begin(), [](const auto& element){return std::real(element);});
     std::transform(PLoop.begin(), PLoop.end(), PLoopIm.begin(), [](const auto& element){return std::imag(element);});
 
@@ -1476,6 +1479,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
     datalog << Action.back() << "\n";
+    //-----
+    datalog << "Wilson_Action(unnormalized): ";
+    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(ActionUnnormalized), std::prev(std::cend(ActionUnnormalized)), std::ostream_iterator<double>(datalog, " "));
+    datalog << ActionUnnormalized.back() << "\n";
     //-----
     datalog << "Wilson_loop(L=2): ";
     // std::copy(WLoop2.cbegin(), std::prev(WLoop2.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1770,6 +1778,16 @@ int main()
     // Generate 1 instanton
     // LocalInstantonStart(*Gluon);
     // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);
+    int        L_half {Nt/2 - 1};
+    site_coord center {L_half, L_half, L_half, L_half};
+    std::cout << "Generating instanton with center: " << center;
+    for (int radius = 5; radius < 7; ++radius)
+    {
+        CreateBPSTInstanton(Gluon, center, radius);
+        // std::cout << "Action of instanton (radius " << radius << "): " << WilsonAction::Action(Gluon) << std::endl;
+        Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
+    }
+    std::exit(0);
 
     // InstantonStart(*Gluon, 1);
     // Observables(*Gluon, *Gluonchain, wilsonlog, 0, n_smear);

@@ -28,10 +28,10 @@ std::string program_version = "SU(3)_version_1.3";
 
 //-----
 
-inline constexpr int Nt {32};
-inline constexpr int Nx {32};
-inline constexpr int Ny {32};
-inline constexpr int Nz {32};
+inline constexpr int Nt {12};
+inline constexpr int Nx {12};
+inline constexpr int Ny {12};
+inline constexpr int Nz {12};
 
 template<typename T>
 inline constexpr std::complex<T> i(0, 1);
