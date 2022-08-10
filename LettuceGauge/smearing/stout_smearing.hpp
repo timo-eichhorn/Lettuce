@@ -48,9 +48,9 @@ void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeare
             B.noalias() = A - A.adjoint();
             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // Cayley-Hamilton exponential
-            // Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
+            Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
             // Eigen exponential (Scaling and squaring)
-            Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
+            // Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
             // Gluon_smeared[t][x][y][z][mu] = CayleyMap(i<floatT> * smear_param * C) * Gluon_unsmeared[t][x][y][z][mu];
             SU3::Projection::GramSchmidt(Gluon_smeared(current_link));
         }

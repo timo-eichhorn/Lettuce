@@ -6,10 +6,10 @@
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
-// ...
+#include <omp.h>
 //----------------------------------------
 // Standard C++ headers
-// ...
+#include <complex>
 //----------------------------------------
 // Standard C headers
 // ...
@@ -23,6 +23,25 @@
 Matrix_SU3 Plaquette(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     return Gluon(current_site, mu) * Gluon(Move<1>(current_site, mu), nu) * Gluon(Move<1>(current_site, nu), mu).adjoint() * Gluon(current_site, nu).adjoint();
+}
+
+[[nodiscard]]
+double PlaquetteSum(const GaugeField& Gluon) noexcept
+{
+    double Plaq_sum {0.0};
+    #pragma omp parallel for reduction(+:Plaq_sum)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    for (int nu = 1; nu < 4; ++nu)
+    {
+        for (int mu = 0; mu < nu; ++mu)
+        {
+            Plaq_sum += std::real(Plaquette(Gluon, {t, x, y, z}, mu, nu).trace());
+        }
+    }
+    return Plaq_sum;
 }
 
 // Top right quadrant, i.e., P_{mu, nu}

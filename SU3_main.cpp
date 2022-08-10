@@ -146,6 +146,7 @@ void Configuration()
     cout << "n_heatbath is " << n_heatbath << ".\n";
     cout << "n_hmc is " << n_hmc << ".\n";
     cout << "n_orelax is " << n_orelax << ".\n";
+    cout << "n_instanton_update is" << n_instanton_update << ".\n";
     cout << "metadynamics_enabled is " << metadynamics_enabled << ".\n";
     cout << "metapotential_updated is " << metapotential_updated << ".\n"; 
     //cout << "Overall, there are " <<  << " lattice sites.\n\n";
@@ -181,6 +182,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "n_heatbath = " << n_heatbath << "\n";
     datalog << "n_hmc = " << n_hmc << "\n";
     datalog << "n_orelax = " << n_orelax << "\n";
+    datalog << "n_instanton_update =" << n_instanton_update << "\n";
     datalog << "metadynamics_enabled = " << metadynamics_enabled << "\n";
     datalog << "metapotential_updated = " << metapotential_updated << "\n";
     datalog << "n_smear_meta = " << n_smear_meta << "\n";
@@ -254,10 +256,16 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     {
         hmc_norm = 1.0 / n_run;
     }
+    double instanton_norm {1.0};
+    if constexpr(n_instanton_update != 0)
+    {
+        instanton_norm = 1.0 / (n_run * n_instanton_update);
+    }
     log << "Metro target acceptance: " << metro_target_acceptance << "\n";
     log << "Metro acceptance: " << acceptance_count * metro_norm << "\n";
     log << "OR acceptance: " << acceptance_count_or * or_norm << "\n";
     log << "HMC acceptance: " << acceptance_count_hmc * hmc_norm << "\n";
+    log << "Instanton acceptance: " << acceptance_count_instanton * instanton_norm << "\n";
     log << "epsilon: " << epsilon << "\n";
     log << std::ctime(&end_time) << "\n";
     log << "Required time: " << elapsed_seconds.count() << "s\n";
@@ -1474,6 +1482,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     {
         datalog << "DeltaH: " << DeltaH << "\n";
     }
+    if constexpr(n_instanton_update != 0)
+    {
+        datalog << "DeltaHInstanton: " << DeltaHInstanton << "\n";
+    }
     //-----
     datalog << "Wilson_Action: ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1665,6 +1677,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     {
         datalog << "DeltaH: " << DeltaH << "\n";
     }
+    if constexpr(n_instanton_update != 0)
+    {
+        datalog << "DeltaHInstanton: " << DeltaHInstanton << "\n";
+    }
     //-----
     datalog << "Wilson_Action: ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1737,6 +1753,7 @@ int main()
     std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
     std::uniform_real_distribution<floatT> distribution_uniform(0.0, 1.0);
     std::uniform_int_distribution<int> distribution_choice(1, 8);
+    std::uniform_int_distribution<int> distribution_instanton(0, 1);
 
     CreateFiles();
     SetGluonToOne(Gluon);
@@ -1746,16 +1763,16 @@ int main()
     wilsonlog.open(wilsonfilepath, std::fstream::out | std::fstream::app);
 
     // Instanton multiplication test
-    std::uniform_real_distribution<floatT> distribution_unitary(-0.001, 0.001);
-    InstantonStart(Gluon, 1);
-    Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    for (int n_count = 0; n_count < 5; ++n_count)
-    {
-        MetropolisUpdate(Gluon, 1, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-        // HeatbathSU3(Gluon, 1, distribution_uniform);
-    }
-    Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
-    std::exit(0);
+    // std::uniform_real_distribution<floatT> distribution_unitary(-0.001, 0.001);
+    // InstantonStart(Gluon, 1);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
+    // for (int n_count = 0; n_count < 5; ++n_count)
+    // {
+    //     MetropolisUpdate(Gluon, 1, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+    //     // HeatbathSU3(Gluon, 1, distribution_uniform);
+    // }
+    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
+    // std::exit(0);
 
     // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
     // // MultiplyInstanton(Gluon, 1);
@@ -1781,16 +1798,18 @@ int main()
     // Generate 1 instanton
     // LocalInstantonStart(Gluon);
     // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    int        L_half {Nt/2 - 1};
-    site_coord center {L_half, L_half, L_half, L_half};
-    std::cout << "Generating instanton with center: " << center;
-    for (int radius = 5; radius < 7; ++radius)
-    {
-        CreateBPSTInstanton(Gluon, center, radius);
-        // std::cout << "Action of instanton (radius " << radius << "): " << WilsonAction::Action(Gluon) << std::endl;
-        Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
-    }
-    std::exit(0);
+    // int        L_half {Nt/2 - 1};
+    // site_coord center {L_half, L_half, L_half, L_half};
+    // std::cout << "Generating instanton with center: " << center;
+    // for (int radius = 3; radius < 18; ++radius)
+    // {
+    //     CreateBPSTInstanton(Gluon, Gluonsmeared1, true, center, radius);
+    //     // std::cout << "Action of instanton (radius " << radius << "): " << WilsonAction::Action(Gluon) << std::endl;
+    //     Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
+    //     CreateBPSTInstanton(Gluon, Gluonsmeared1, false, center, radius);
+    //     Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
+    // }
+    // std::exit(0);
 
     // InstantonStart(Gluon, 1);
     // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
@@ -1887,6 +1906,47 @@ int main()
         // auto CV_function = [](){MetaCharge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, 15);};
     // }
 
+    //-----
+    // BPST instanton test
+    // Thermalization
+    for (int i = 0; i < 5; ++i)
+    {
+        Iterator::Checkerboard(Heatbath, 1);
+        Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+    }
+    Observables(Gluon, Gluonchain, wilsonlog, -1, n_smear);
+    // Instanton update starts here
+    JacobianInstanton = 0.0;
+    for (int flow_count = 0; flow_count < 5; ++flow_count)
+    {
+        WilsonFlowForward(Gluon, 0.06, 1);
+        JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
+        //-----
+        // WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
+        // JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
+        std::cout << JacobianInstanton << std::endl;
+        Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
+    }
+    int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
+    int        L_half      {Nt/2 - 1};
+    site_coord center      {L_half, L_half, L_half, L_half};
+    int        radius      {5};
+    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, false, distribution_prob, true);
+    Observables(Gluon, Gluonchain, wilsonlog, 0, 0);
+    for (int flow_count = 0; flow_count < 5; ++flow_count)
+    {
+        // WilsonFlowForward(Gluon, 0.06, 1);
+        // JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
+        //-----
+        WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
+        JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
+        std::cout << JacobianInstanton << std::endl;
+        Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
+    }
+    JacobianInstanton *= -16.0/3.0;
+    datalog << "JacobianInstanton: " << JacobianInstanton << std::endl;
+    std::exit(0);
+
     // When using HMC, the thermalization is done without accept-reject step
     // if constexpr(n_hmc != 0)
     // {
@@ -1941,6 +2001,22 @@ int main()
         // auto end_update_or = std::chrono::system_clock::now();
         // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
         // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+        //-----
+        if constexpr(n_instanton_update != 0)
+        {
+            int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
+            int        L_half      {Nt/2 - 1};
+            site_coord center      {L_half, L_half, L_half, L_half};
+            int        radius      {5};
+            if (n_count == 0)
+            {
+                BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, true);
+            }
+            else
+            {
+                BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, false);
+            }
+        }
         //-----
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)

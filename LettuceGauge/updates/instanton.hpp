@@ -21,18 +21,27 @@
 #include <cmath>
 
 // This sets the lattice equal to a BPST instanton
-void CreateBPSTInstanton(GaugeField& Gluon, const site_coord& center, const int r) noexcept
+void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool positive_Q, const site_coord& center, const int r) noexcept
 {
     Matrix_SU3 sig1, sig2, sig3;
     sig1 << 0.0, 1.0, 0.0,
             1.0, 0.0, 0.0,
-            0.0, 0.0, 0.0;
+            0.0, 0.0, 1.0;
     sig2 << 0.0      , -i<floatT>, 0.0,
             i<floatT>,  0.0      , 0.0,
-            0.0      ,  0.0      , 0.0;
+            0.0      ,  0.0      , 1.0;
     sig3 << 1.0,  0.0, 0.0,
             0.0, -1.0, 0.0,
-            0.0,  0.0, 0.0;
+            0.0,  0.0, 1.0;
+    floatT sign;
+    if (positive_Q)
+    {
+        sign = -1.0;
+    }
+    else
+    {
+        sign = 1.0;
+    }
     // TODO: Overload +/- operators on site_coord to calculate distances?
     // To avoid gauge singularities on the lattice, we actually do not place the instanton around center, but rather shift all coordinates by 0.5 into the positive direction
     // This way, the gauge singularity at the center of the instanton never actually coincides with a lattice point
@@ -66,78 +75,93 @@ void CreateBPSTInstanton(GaugeField& Gluon, const site_coord& center, const int 
             case 0:
             {
                 // a = 1, mu = 0, nu = 1 => +1
-                tmp += sig1 * (current_site[1] - center[1]);
+                tmp += sign * sig1 * (current_site[1] - center[1]);
                 // a = 2, mu = 0, nu = 2 => +1
-                tmp += sig2 * (current_site[2] - center[2]);
+                tmp += sign * sig2 * (current_site[2] - center[2]);
                 // a = 3, mu = 0, nu = 3 => +1
-                tmp += sig3 * (current_site[3] - center[3]);
+                tmp += sign * sig3 * (current_site[3] - center[3]);
             }
             break;
             case 1:
             {
                 // a = 1, mu = 1, nu = 0 => -1
-                tmp -= sig1 * (current_site[0] - center[0]);
+                tmp -= sign * sig1 * (current_site[0] - center[0]);
                 // a = 2, mu = 1, nu = 3 => -1
-                tmp -= sig2 * (current_site[3] - center[3]);
+                tmp -=        sig2 * (current_site[3] - center[3]);
                 // a = 3, mu = 1, nu = 2 => +1
-                tmp += sig3 * (current_site[2] - center[2]);
+                tmp +=        sig3 * (current_site[2] - center[2]);
             }
             break;
             case 2:
             {
                 // a = 2, mu = 2, nu = 0 => -1
-                tmp -= sig2 * (current_site[0] - center[0]);
+                tmp -= sign * sig2 * (current_site[0] - center[0]);
                 // a = 1, mu = 2, nu = 3 => +1
-                tmp += sig1 * (current_site[3] - center[3]);
+                tmp +=        sig1 * (current_site[3] - center[3]);
                 // a = 3, mu = 2, nu = 1 => -1
-                tmp -= sig3 * (current_site[1] - center[1]);
+                tmp -=        sig3 * (current_site[1] - center[1]);
             }
             break;
             case 3:
             {
                 // a = 3, mu = 3, nu = 0 => -1
-                tmp -= sig3 * (current_site[0] - center[0]);
+                tmp -= sign * sig3 * (current_site[0] - center[0]);
                 // a = 1, mu = 3, nu = 2 => -1
-                tmp -= sig1 * (current_site[2] - center[2]);
+                tmp -=        sig1 * (current_site[2] - center[2]);
                 // a = 2, mu = 3, nu = 1 => +1
-                tmp += sig2 * (current_site[1] - center[1]);
+                tmp +=        sig2 * (current_site[1] - center[1]);
             }
             break;
         }
         Gluon(current_site, mu) = std::cos(lambda) * Matrix_SU3::Identity() + i<floatT> * std::sin(lambda) / denom * tmp;
         SU3::Projection::GramSchmidt(Gluon(current_site, mu));
     }
+    // std::cout << SU3::Tests::TestSU3All(Gluon) << std::endl;
+    //-----
+    // For now only smear unfiromly
+    // For even smearing steps the final field is stored in the first argument, so for now we'll hardcode an even amount of smearing steps here (my talk is tomorrow after all)
+    StoutSmearingN(Gluon, Gluon1, 150);
     //-----
     // Smearing with spatial dependence (don't smear close to the instanton center, smear more further outwards)
-    Matrix_3x3 Sigma;
-    Matrix_3x3 A;
-    Matrix_3x3 B;
-    Matrix_3x3 C;
-    for(int smear_count = 0; smear_count < 10; ++smear_count)
-    {
-        #pragma omp parallel for private(Sigma, A, B, C)
-        for (int t = 0; t < Nt; ++t)
-        for (int x = 0; x < Nx; ++x)
-        for (int y = 0; y < Ny; ++y)
-        for (int z = 0; z < Nz; ++z)
-        for (int mu = 0; mu < 4; ++mu)
-        {
-            link_coord current_link {t, x, y, z, mu};
-            double     distance     {std::sqrt(std::pow(current_link.t - (center.t + 0.5), 2) + std::pow(current_link.x - (center.x + 0.5), 2) + std::pow(current_link.y - (center.y + 0.5), 2) + std::pow(current_link.z - (center.z + 0.5), 2))};
-            if (distance > Nt / 4)
-            {
-                double rho_prime {rho_stout * (1.0 + std::sin(4.0 * pi<floatT> / static_cast<floatT>(Nt) * (distance - 3.0/8.0 * Nt)))};
-                rho_prime = std::min(rho_stout, rho_prime);
-                Sigma.noalias() = WilsonAction::Staple(Gluon, current_link);
-                A.noalias() = Sigma * Gluon(current_link).adjoint();
-                B.noalias() = A - A.adjoint();
-                C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_SU3::Identity();
-                // Gluon(current_link) = SU3::exp(-i<floatT> * rho_prime * C) * Gluon(current_link);
-                Gluon(current_link) = (rho_prime * C).exp() * Gluon(current_link);
-                SU3::Projection::GramSchmidt(Gluon(current_link));
-            }
-        }
-    }
+    // Matrix_3x3 Sigma;
+    // Matrix_3x3 A;
+    // Matrix_3x3 B;
+    // Matrix_3x3 C;
+    // for(int smear_count = 0; smear_count < 10; ++smear_count)
+    // {
+    //     #pragma omp parallel for private(Sigma, A, B, C)
+    //     for (int t = 0; t < Nt; ++t)
+    //     for (int x = 0; x < Nx; ++x)
+    //     for (int y = 0; y < Ny; ++y)
+    //     for (int z = 0; z < Nz; ++z)
+    //     for (int mu = 0; mu < 4; ++mu)
+    //     {
+    //         link_coord current_link {t, x, y, z, mu};
+    //         // TODO: This (hopefully) works as long as we place the instanton around the center of the lattice, but it is probably wrong otherwise since it doesn't respect the periodic boundaries
+    //         double     distance     {std::sqrt(std::pow(current_link.t - (center.t + 0.5), 2) + std::pow(current_link.x - (center.x + 0.5), 2) + std::pow(current_link.y - (center.y + 0.5), 2) + std::pow(current_link.z - (center.z + 0.5), 2))};
+    //         if (distance >= Nt / 4 and distance <= Nt / 2)
+    //         {
+    //             double rho_prime {0.5 * rho_stout * (1.0 + std::sin(4.0 * pi<floatT> / static_cast<floatT>(Nt) * (distance - 3.0/8.0 * Nt)))};
+    //             Sigma.noalias() = WilsonAction::Staple(Gluon, current_link);
+    //             A.noalias() = Sigma * Gluon(current_link).adjoint();
+    //             B.noalias() = A - A.adjoint();
+    //             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_SU3::Identity();
+    //             // Gluon(current_link) = SU3::exp(-i<floatT> * rho_prime * C) * Gluon(current_link);
+    //             Gluon(current_link) = (rho_prime * C).exp() * Gluon(current_link);
+    //             SU3::Projection::GramSchmidt(Gluon(current_link));
+    //         }
+    //         if (distance > Nt / 2)
+    //         {
+    //             Sigma.noalias() = WilsonAction::Staple(Gluon, current_link);
+    //             A.noalias() = Sigma * Gluon(current_link).adjoint();
+    //             B.noalias() = A - A.adjoint();
+    //             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_SU3::Identity();
+    //             // Gluon(current_link) = SU3::exp(-i<floatT> * rho_prime * C) * Gluon(current_link);
+    //             Gluon(current_link) = (rho_stout * C).exp() * Gluon(current_link);
+    //             SU3::Projection::GramSchmidt(Gluon(current_link));
+    //         }
+    //     }
+    // }
     // std::cout << Gluon(3, 3, 3, 3, 1) << std::endl;
     // std::cout << Gluon(3, 3, 3, 3, 1) * Gluon(3, 3, 3, 3, 1).adjoint() << std::endl;
     // std::cout << Gluon(3, 3, 3, 3, 1).determinant() << "\n" << std::endl;
@@ -155,6 +179,57 @@ void MultiplyConfigurations(GaugeField& Gluon1, const GaugeField& Gluon2) noexce
     {
         link_coord current_link {t, x, y, z, mu};
         Gluon1(current_link) = Gluon1(current_link) * Gluon2(current_link);
+    }
+}
+
+bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q, const site_coord& center, const int r, uint_fast64_t& acceptance_count_instanton, const bool metropolis_test, std::uniform_real_distribution<floatT>& distribution_prob, const bool create_instantons = false) noexcept
+{
+    static GaugeField PositiveInstanton;
+    static GaugeField NegativeInstanton;
+    static GaugeField Gluonsmeared_temp;
+    if (create_instantons)
+    {
+        CreateBPSTInstanton(PositiveInstanton, Gluonsmeared_temp, true, center, r);
+        CreateBPSTInstanton(NegativeInstanton, Gluonsmeared_temp, false, center, r);
+    }
+    // Actual update
+    Gluon_copy = Gluon;
+    if (Q == 1)
+    {
+        MultiplyConfigurations(Gluon_copy, PositiveInstanton);
+    }
+    if (Q == -1)
+    {
+        MultiplyConfigurations(Gluon_copy, NegativeInstanton);
+    }
+    double energy_old {WilsonAction::Action(Gluon)};
+    double energy_new {WilsonAction::Action(Gluon_copy)};
+    double p {std::exp(-energy_new + energy_old)};
+    #if defined(_OPENMP)
+    double q {distribution_prob(prng_vector[omp_get_thread_num()])};
+    #else
+    double q {distribution_prob(generator_rand)};
+    #endif
+    // TODO: Probably shouldnt use a global variable for DeltaHInstanton?
+    DeltaHInstanton = energy_new - energy_old;
+    if (metropolis_test)
+    {
+        if (q <= p)
+        {
+            Gluon = Gluon_copy;
+            acceptance_count_instanton += 1;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        Gluon = Gluon_copy;
+        // datalog << "DeltaH: " << DeltaH << std::endl;
+        return true;
     }
 }
 

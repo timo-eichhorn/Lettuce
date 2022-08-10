@@ -278,7 +278,7 @@ namespace HMC
     // TODO: Add tau parameter (trajectory time) and pass to integrator functions
 
     template<typename FuncT>
-    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
+    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, const bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
     {
         // Copy old field so we can restore it in case the update gets rejected
         Gluon_copy = Gluon;

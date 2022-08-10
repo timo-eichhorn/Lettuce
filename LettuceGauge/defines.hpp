@@ -28,10 +28,10 @@ std::string program_version = "SU(3)_version_1.3";
 
 //-----
 
-inline constexpr int Nt {12};
-inline constexpr int Nx {12};
-inline constexpr int Ny {12};
-inline constexpr int Nz {12};
+inline constexpr int Nt {22};
+inline constexpr int Nx {22};
+inline constexpr int Ny {22};
+inline constexpr int Nz {22};
 
 template<typename T>
 inline constexpr std::complex<T> i(0, 1);
@@ -51,14 +51,15 @@ std::string LatticeSizeString;                              // Lattice size (str
 int n_run;                                                  // Number of runs
 double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-inline constexpr int n_smear {20};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
-inline constexpr int n_smear_skip {200};                      // Number of smearing steps to skip between measurements
+inline constexpr int n_smear {7};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+inline constexpr int n_smear_skip {5};                      // Number of smearing steps to skip between measurements
 inline constexpr floatT rho_stout {0.12};                   // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {1};                        // Number of heatbath sweeps per total update sweep
 inline constexpr int n_hmc {0};                             // Number of integration steps per HMC update
 inline constexpr int n_orelax {4};                          // Number of overrelaxation sweeps per total update sweep
+inline constexpr int n_instanton_update {1};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
 inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr int n_smear_meta {5};                      // Number of smearing steps for topological charge used in Metadynamics
@@ -69,6 +70,8 @@ inline double metro_target_acceptance {0.5};                // Target acceptance
 inline constexpr double full_norm {1.0 / (Nt * Nx * Ny * Nz)};
 inline constexpr double spatial_norm {1.0 / (Nx * Ny * Nz)};
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
+double DeltaHInstanton;                                     // Energy change of instanton update proposal (see above)
+double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
 int append;                                                 // Directory name appendix
 std::string appendString;                                   // Directory name appendix (string)
 std::string directoryname_pre;                              // Directory name (prefix)
@@ -94,6 +97,7 @@ std::vector<std::normal_distribution<floatT>> ndist_vector; // Vector of normal 
 uint_fast64_t acceptance_count     {0};                     // Metropolis acceptance rate for new configurations
 uint_fast64_t acceptance_count_or  {0};                     // Overrelaxation acceptance rate
 uint_fast64_t acceptance_count_hmc {0};                     // HMC acceptance rate
+uint_fast64_t acceptance_count_instanton {0};
 
 //-----
 

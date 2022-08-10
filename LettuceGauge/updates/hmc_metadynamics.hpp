@@ -360,7 +360,7 @@ namespace HMC_MetaD
 
     template<typename FuncT>
     // bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, double& CV, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
-    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_smear_meta, const int n_step, bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
+    bool HMCGauge(GaugeField& Gluon, GaugeField& Gluon_copy, GaugeField& Momentum, MetaBiasPotential& Metapotential, uint_fast64_t& acceptance_count_hmc, FuncT&& Integrator, const int n_smear_meta, const int n_step, const bool metropolis_step, std::uniform_real_distribution<floatT>& distribution_prob) noexcept
     {
         // Required arrays so we don't have to recompute everything
         // Note that we do need a separate array for Sigma/the metaforce since the stout force recursion is obviously only applied to the fat-link part
