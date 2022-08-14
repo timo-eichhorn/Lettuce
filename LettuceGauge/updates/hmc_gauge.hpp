@@ -330,6 +330,78 @@ namespace HMC
             return true;
         }
     }
+
+    //-----
+    // WIP: HMC functor implementation
+
+    struct HMCKernel
+    {
+        private:
+            GaugeField& Gluon;
+            GaugeField& Gluon_copy;
+            GaugeField& Momentum;
+            std::uniform_real_distribution<floatT>& distribution_prob;
+            // int n_step;
+            // bool metropolis_step;
+        public:
+            explicit HMCKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+            Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), distribution_prob(distribution_prob_in)
+            {}
+
+
+            bool operator()(const int n_step, const bool metropolis_step) const noexcept
+            {
+                // Copy old field so we can restore it in case the update gets rejected
+                Gluon_copy = Gluon;
+                // Generate random momenta and calculate energy before time evolution
+                RandomMomentum(Momentum);
+                double energy_old {Hamiltonian(Gluon, Momentum)};
+                // Perform integration with chosen integrator
+                Integrator(Gluon, Momentum, n_step);
+                //-----
+                // Reversibility test
+                // ReverseMomenta(Momentum);
+                // UpdateMomenta(Gluon, Momentum, 0.5 * epsilon);
+                // for (int step_count = 0; step_count < n_step - 1; ++step_count)
+                // {
+                //     UpdateFields(Gluon, Momentum, epsilon);
+                //     UpdateMomenta(Gluon, Momentum, epsilon);
+                // }
+                // UpdateFields(Gluon, Momentum, epsilon);
+                // UpdateMomenta(Gluon, Momentum, 0.5 * epsilon);
+                //-----
+                // Calculate energy after time evolution
+                double energy_new {Hamiltonian(Gluon, Momentum)};
+                // Metropolis accept-reject step
+                double p {std::exp(-energy_new + energy_old)};
+                #if defined(_OPENMP)
+                double q {distribution_prob(prng_vector[omp_get_thread_num()])};
+                #else
+                double q {distribution_prob(generator_rand)};
+                #endif
+                // TODO: Probably shouldnt use a global variable for DeltaH?
+                DeltaH = energy_new - energy_old;
+                if (metropolis_step)
+                {
+                    // datalog << "DeltaH: " << DeltaH << std::endl;
+                    if (q <= p)
+                    {
+                        acceptance_count_hmc += 1;
+                        return true;
+                    }
+                    else
+                    {
+                        Gluon = Gluon_copy;
+                        return false;
+                    }
+                }
+                else
+                {
+                    datalog << "DeltaH: " << DeltaH << std::endl;
+                    return true;
+                }
+            }
+    };
 }
 
 #endif // LETTUCE_HMC_GAUGE_HPP
