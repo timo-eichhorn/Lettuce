@@ -1872,6 +1872,7 @@ int main()
     HeatbathKernel               Heatbath(Gluon, distribution_uniform);
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
+    HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
 
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)
@@ -1909,43 +1910,43 @@ int main()
     //-----
     // BPST instanton test
     // Thermalization
-    for (int i = 0; i < 5; ++i)
-    {
-        Iterator::Checkerboard(Heatbath, 1);
-        Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-    }
-    Observables(Gluon, Gluonchain, wilsonlog, -1, n_smear);
-    // Instanton update starts here
-    JacobianInstanton = 0.0;
-    for (int flow_count = 0; flow_count < 5; ++flow_count)
-    {
-        WilsonFlowForward(Gluon, 0.06, 1);
-        JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
-        //-----
-        // WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
-        // JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
-        std::cout << JacobianInstanton << std::endl;
-        Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    }
-    int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
-    int        L_half      {Nt/2 - 1};
-    site_coord center      {L_half, L_half, L_half, L_half};
-    int        radius      {5};
-    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, false, distribution_prob, true);
-    Observables(Gluon, Gluonchain, wilsonlog, 0, 0);
-    for (int flow_count = 0; flow_count < 5; ++flow_count)
-    {
-        // WilsonFlowForward(Gluon, 0.06, 1);
-        // JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
-        //-----
-        WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
-        JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
-        std::cout << JacobianInstanton << std::endl;
-        Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    }
-    JacobianInstanton *= -16.0/3.0;
-    datalog << "JacobianInstanton: " << JacobianInstanton << std::endl;
-    std::exit(0);
+    // for (int i = 0; i < 5; ++i)
+    // {
+    //     Iterator::Checkerboard(Heatbath, 1);
+    //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+    // }
+    // Observables(Gluon, Gluonchain, wilsonlog, -1, n_smear);
+    // // Instanton update starts here
+    // JacobianInstanton = 0.0;
+    // for (int flow_count = 0; flow_count < 5; ++flow_count)
+    // {
+    //     WilsonFlowForward(Gluon, 0.06, 1);
+    //     JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
+    //     //-----
+    //     // WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
+    //     // JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
+    //     std::cout << JacobianInstanton << std::endl;
+    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
+    // }
+    // int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
+    // int        L_half      {Nt/2 - 1};
+    // site_coord center      {L_half, L_half, L_half, L_half};
+    // int        radius      {5};
+    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, false, distribution_prob, true);
+    // Observables(Gluon, Gluonchain, wilsonlog, 0, 0);
+    // for (int flow_count = 0; flow_count < 5; ++flow_count)
+    // {
+    //     // WilsonFlowForward(Gluon, 0.06, 1);
+    //     // JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
+    //     //-----
+    //     WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
+    //     JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
+    //     std::cout << JacobianInstanton << std::endl;
+    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
+    // }
+    // JacobianInstanton *= -16.0/3.0;
+    // datalog << "JacobianInstanton: " << JacobianInstanton << std::endl;
+    // std::exit(0);
 
     // When using HMC, the thermalization is done without accept-reject step
     // if constexpr(n_hmc != 0)

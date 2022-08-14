@@ -334,18 +334,20 @@ namespace HMC
     //-----
     // WIP: HMC functor implementation
 
+    template<typename FuncT>
     struct HMCKernel
     {
         private:
             GaugeField& Gluon;
             GaugeField& Gluon_copy;
             GaugeField& Momentum;
+            FuncT&      Integrator;
             std::uniform_real_distribution<floatT>& distribution_prob;
             // int n_step;
             // bool metropolis_step;
         public:
-            explicit HMCKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-            Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), distribution_prob(distribution_prob_in)
+            explicit HMCKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, FuncT& Integrator_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+            Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), distribution_prob(distribution_prob_in)
             {}
 
 

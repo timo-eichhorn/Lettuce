@@ -28,10 +28,10 @@ std::string program_version = "SU(3)_version_1.3";
 
 //-----
 
-inline constexpr int Nt {22};
-inline constexpr int Nx {22};
-inline constexpr int Ny {22};
-inline constexpr int Nz {22};
+inline constexpr int Nt {12};
+inline constexpr int Nx {12};
+inline constexpr int Ny {12};
+inline constexpr int Nz {12};
 
 template<typename T>
 inline constexpr std::complex<T> i(0, 1);
@@ -56,10 +56,10 @@ inline constexpr int n_smear_skip {5};                      // Number of smearin
 inline constexpr floatT rho_stout {0.12};                   // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
-inline constexpr int n_heatbath {1};                        // Number of heatbath sweeps per total update sweep
-inline constexpr int n_hmc {0};                             // Number of integration steps per HMC update
-inline constexpr int n_orelax {4};                          // Number of overrelaxation sweeps per total update sweep
-inline constexpr int n_instanton_update {1};                // Number of instanton updates per total update sweep
+inline constexpr int n_heatbath {0};                        // Number of heatbath sweeps per total update sweep
+inline constexpr int n_hmc {5};                             // Number of integration steps per HMC update
+inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
+inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
 inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr int n_smear_meta {5};                      // Number of smearing steps for topological charge used in Metadynamics
