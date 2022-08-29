@@ -15,6 +15,7 @@
 
 //----------------------------------------
 // Provides SU(2) subgroup class and functions to extract SU(2) matrices from SU(3) matrices/embed SU(2) matrices in SU(3) matrices
+// Note that this is class is also used for representing the sum of SU(2) matrices, which is still proportional to a SU(2) element, but generally not a SU(2) element itself
 // Used during Heatbath and Overrelaxation update
 
 template<typename floatT>
@@ -98,9 +99,16 @@ class SU2_comp
             return {std::conj(e11), -e12};
         }
 
-        floatT det_sq() const noexcept
+        // The determinant of a SU(2) matrix is 1, but since this class is also used to represent matrices propotional to SU(2) elements this function doesn't always return 1
+        floatT det() const noexcept
         {
             return std::real(e11) * std::real(e11) + std::imag(e11) * std::imag(e11) + std::real(e12) * std::real(e12) + std::imag(e12) * std::imag(e12);
+        }
+
+        // The determinant of a SU(2) matrix is 1, but since this class is also used to represent matrices propotional to SU(2) elements this function doesn't always return 1
+        floatT det_sqrt() const noexcept
+        {
+            return std::sqrt(det());
         }
 };
 

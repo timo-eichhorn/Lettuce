@@ -293,6 +293,7 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Gluon_prev, 
 }
 
 // TODO: Implement smearing as functor
+// TODO: Make the action a template parameter
 // template<typename GaugeActionT>
 // struct StoutSmearingKernel
 // {
@@ -303,9 +304,23 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Gluon_prev, 
 //         smear_param(smear_param_in)
 //         {}
 
-//         void operator()(const )
+//         void operator()(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeared, const link_coord& current_link) const noexcept
 //         {
-//             Matrix_3x3 st {WilsonAction::Staple()}
+//             Matrix_3x3 st {WilsonAction::Staple(Gluon_unsmeared, current_link)};
+//             Matrix_3x3 A {st * Gluon_unsmeared(current_link).adjoint()};
+//             Matrix_3x3 B {A - A.adjoint()};
+//             Matrix_3x3 C {static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity()};
+//             // Cayley-Hamilton exponential
+//             Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
+//             // Eigen exponential (Scaling and squaring)
+//             // Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
+//             // Gluon_smeared[t][x][y][z][mu] = CayleyMap(i<floatT> * smear_param * C) * Gluon_unsmeared[t][x][y][z][mu];
+//             SU3::Projection::GramSchmidt(Gluon_smeared(current_link));
+//         }
+
+//         void SetSmearParam(const floatT smear_param_in) noexcept
+//         {
+//             smear_param = smear_param_in;
 //         }
 // };
 

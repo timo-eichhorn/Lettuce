@@ -17,6 +17,7 @@
 #include "LettuceGauge/observables/polyakov_loop.hpp"
 #include "LettuceGauge/observables/topological_charge.hpp"
 #include "LettuceGauge/observables/wilson_loop.hpp"
+#include "LettuceGauge/smearing/cooling.hpp"
 #include "LettuceGauge/smearing/stout_smearing.hpp"
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
@@ -887,7 +888,7 @@ void MetropolisUpdate(GaugeField& Gluon, const int n_sweep, uint_fast64_t& accep
 template<typename floatT>
 SU2_comp<floatT> OverrelaxationSU2Old(const SU2_comp<floatT>& A)
 {
-    floatT a_norm {static_cast<floatT>(1.0) / std::sqrt(A.det_sq())};
+    floatT a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
     SU2_comp V {a_norm * A};
     return (V * V).adjoint();
 }
@@ -949,7 +950,7 @@ template<typename floatT>
 SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, std::uniform_real_distribution<floatT>& distribution_uniform, const int max_iteration = 10)
 {
     // Determinant of staple as norm to project staple back to SU(2)
-    floatT a_norm {static_cast<floatT>(1.0) / std::sqrt(A.det_sq())};
+    floatT a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
     SU2_comp<floatT> V {a_norm * A};
     SU2_comp<floatT> mat_su2;
     floatT r1, r2, r3, x1, x2, x3, lambda_sq, r0;
@@ -1350,6 +1351,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // vector<double> TopologicalCharge(n_smear + 1);
     vector<double> TopologicalChargeSymm(n_smear + 1);
     vector<double> TopologicalChargeUnimproved(n_smear + 1);
+    CoolingKernel Cooling(Gluonsmeared1);
 
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
@@ -1404,7 +1406,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     {
         // Apply smearing
         // auto start_smearing = std::chrono::system_clock::now();
-        StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        // StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        Gluonsmeared1 = Gluon;
+        Iterator::Checkerboard(Cooling);
         // auto end_smearing = std::chrono::system_clock::now();
         // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
@@ -1428,7 +1432,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
-            StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            // StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            Iterator::Checkerboard(Cooling, n_smear_skip);
             // TODO: FIX THIS, INCORRECT IF n_smear_skip is even!
             // if (n_smear_skip % 2 == 0)
             // {
@@ -1439,21 +1444,22 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             //     // placeholder
             // }
             // Calculate observables
-            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared2);
-            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
-            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
-            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
-            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared2);
+            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
+            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared1);
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
-            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared2);
-            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
+            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared1);
+            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
         }
         // Odd
         else
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
-            StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            // StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            Iterator::Checkerboard(Cooling, n_smear_skip);
             // Calculate observables
             Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
             WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
@@ -1996,8 +2002,13 @@ int main()
         // auto start_update_or = std::chrono::system_clock::now();
         if constexpr(n_orelax != 0)
         {
+            // double action_before {WilsonAction::Action(Gluon)};
             // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
             Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
+            // double action_after {WilsonAction::Action(Gluon)};
+            // std::cout << "Action (before): " << action_before << std::endl;
+            // std::cout << "Action (after): " << action_after << std::endl;
+            // std::cout << action_after - action_before << std::endl;
         }
         // auto end_update_or = std::chrono::system_clock::now();
         // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};

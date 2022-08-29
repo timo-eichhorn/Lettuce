@@ -31,7 +31,7 @@ struct HeatbathKernel
         SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, std::uniform_real_distribution<floatT>& distribution_uniform, const int max_iteration) const noexcept
         {
             // Determinant of staple as norm to project staple back to SU(2)
-            floatT a_norm {static_cast<floatT>(1.0) / std::sqrt(A.det_sq())};
+            floatT a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
             SU2_comp<floatT> V {a_norm * A};
             SU2_comp<floatT> mat_su2;
             floatT r1, r2, r3, x1, x2, x3, lambda_sq, r0;
