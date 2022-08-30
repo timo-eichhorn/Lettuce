@@ -19,6 +19,7 @@
 #include "LettuceGauge/observables/wilson_loop.hpp"
 #include "LettuceGauge/smearing/cooling.hpp"
 #include "LettuceGauge/smearing/stout_smearing.hpp"
+#include "LettuceGauge/smearing/wilson_flow.hpp"
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
 #include "LettuceGauge/updates/hmc_metadynamics.hpp"
@@ -652,8 +653,8 @@ void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow
     // Parallel version
     for (int flow_count = 0; flow_count < n_flow; ++flow_count)
     {
-        for (int eo = 0; eo < 2; ++eo)
         for (int mu = 0; mu < 4; ++mu)
+        for (int eo = 0; eo < 2; ++eo)
         {
             #pragma omp parallel for private(st, A, B, C)
             for (int t = 0; t < Nt; ++t)
@@ -715,8 +716,8 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
     // Parallel version
     for (int flow_count = 0; flow_count < n_flow; ++flow_count)
     {
-        for (int eo = 1; eo >= 0; --eo)
         for (int mu = 3; mu >= 0; --mu)
+        for (int eo = 1; eo >= 0; --eo)
         {
             #pragma omp parallel for private(st, A, B, C, old_link)
             for (int t = Nt - 1; t >= 0; --t)
@@ -791,8 +792,8 @@ void MetropolisUpdate(GaugeField& Gluon, const int n_sweep, uint_fast64_t& accep
     // std::chrono::duration<double> multihit_time {0.0};
     // std::chrono::duration<double> accept_reject_time {0.0};
     for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
-    for (int eo = 0; eo < 2; ++eo)
     for (int mu = 0; mu < 4; ++mu)
+    for (int eo = 0; eo < 2; ++eo)
     {
         // #pragma omp parallel for reduction(+:acceptance_count) shared(prng_vector) private(st, old_link, new_link, s, sprime) firstprivate(eo, mu)
         #pragma omp parallel for reduction(+:acceptance_count) shared(prng_vector)
@@ -1351,7 +1352,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // vector<double> TopologicalCharge(n_smear + 1);
     vector<double> TopologicalChargeSymm(n_smear + 1);
     vector<double> TopologicalChargeUnimproved(n_smear + 1);
-    CoolingKernel Cooling(Gluonsmeared1);
+
+    // CoolingKernel Cooling(Gluonsmeared1);
+    // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
 
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
@@ -1406,9 +1409,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     {
         // Apply smearing
         // auto start_smearing = std::chrono::system_clock::now();
-        // StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
-        Gluonsmeared1 = Gluon;
-        Iterator::Checkerboard(Cooling);
+        StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        // Gluonsmeared1 = Gluon;
+        // Iterator::Checkerboard(Cooling, 1);
+        // WilsonFlowForward(Gluonsmeared1, 0.12, 1);
         // auto end_smearing = std::chrono::system_clock::now();
         // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
@@ -1432,8 +1436,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
-            // StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
-            Iterator::Checkerboard(Cooling, n_smear_skip);
+            StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            // Iterator::Checkerboard(Cooling, n_smear_skip);
+            // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // TODO: FIX THIS, INCORRECT IF n_smear_skip is even!
             // if (n_smear_skip % 2 == 0)
             // {
@@ -1458,8 +1463,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
-            // StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
-            Iterator::Checkerboard(Cooling, n_smear_skip);
+            StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            // Iterator::Checkerboard(Cooling, n_smear_skip);
+            // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // Calculate observables
             Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
             WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
