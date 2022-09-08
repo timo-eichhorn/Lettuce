@@ -261,6 +261,177 @@ namespace SU3::Generators
     }
 } // namespace SU3::Generators
 
+namespace SU3
+{
+    // Generates a random SU(3) matrix
+    [[nodiscard]]
+    Matrix_SU3 RandomMat(std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
+    {
+        Matrix_SU3 tmp;
+        int choice {distribution_choice(generator_rand)};
+        floatT phi {distribution_unitary(generator_rand)};
+
+        switch(choice)
+        {
+            case 1:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << c_phi            , i<floatT> * s_phi, 0.0,
+                       i<floatT> * s_phi, c_phi            , 0.0,
+                       0.0              , 0.0              , 1.0;
+            }
+            break;
+            case 2:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp <<  c_phi, s_phi, 0.0,
+                       -s_phi, c_phi, 0.0,
+                        0.0  , 0.0  , 1.0;
+            }
+            break;
+            case 3:
+            {
+                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+                tmp << exp_i_phi, 0.0                 , 0.0,
+                       0.0      , std::conj(exp_i_phi), 0.0,
+                       0.0      , 0.0                 , 1.0;
+            }
+            break;
+            case 4:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << c_phi            , 0.0, i<floatT> * s_phi,
+                       0.0              , 1.0, 0.0,
+                       i<floatT> * s_phi, 0.0, c_phi;
+            }
+            break;
+            case 5:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp <<  c_phi, 0.0, s_phi,
+                        0.0  , 1.0, 0.0,
+                       -s_phi, 0.0, c_phi;
+            }
+            break;
+            case 6:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << 1.0, 0.0              , 0.0,
+                       0.0, c_phi            , i<floatT> * s_phi,
+                       0.0, i<floatT> * s_phi, c_phi;
+            }
+            break;
+            case 7:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << 1.0, 0.0  ,  0.0,
+                       0.0,  c_phi, s_phi,
+                       0.0, -s_phi, c_phi;
+            }
+            break;
+            case 8:
+            {
+                floatT               phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
+                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi_tilde)};
+                tmp << exp_i_phi, 0.0      , 0.0,
+                       0.0      , exp_i_phi, 0.0,
+                       0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
+            }
+            break;
+        }
+        return tmp;
+    }
+
+    // Generates a random SU(3) matrix
+    [[nodiscard]]
+    Matrix_SU3 RandomMatParallel(const int choice, const floatT phi)
+    {
+        Matrix_SU3 tmp;
+
+        switch(choice)
+        {
+            case 1:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << c_phi            , i<floatT> * s_phi, 0.0,
+                       i<floatT> * s_phi, c_phi            , 0.0,
+                       0.0              , 0.0              , 1.0;
+            }
+            break;
+            case 2:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp <<  c_phi, s_phi, 0.0,
+                       -s_phi, c_phi, 0.0,
+                        0.0  , 0.0  , 1.0;
+            }
+            break;
+            case 3:
+            {
+                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
+                tmp << exp_i_phi, 0.0                 , 0.0,
+                       0.0      , std::conj(exp_i_phi), 0.0,
+                       0.0      , 0.0                 , 1.0;
+            }
+            break;
+            case 4:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << c_phi            , 0.0, i<floatT> * s_phi,
+                       0.0              , 1.0, 0.0,
+                       i<floatT> * s_phi, 0.0, c_phi;
+            }
+            break;
+            case 5:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp <<  c_phi, 0.0, s_phi,
+                        0.0  , 1.0, 0.0,
+                       -s_phi, 0.0, c_phi;
+            }
+            break;
+            case 6:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << 1.0, 0.0              , 0.0,
+                       0.0, c_phi            , i<floatT> * s_phi,
+                       0.0, i<floatT> * s_phi, c_phi;
+            }
+            break;
+            case 7:
+            {
+                floatT s_phi {std::sin(phi)};
+                floatT c_phi {std::cos(phi)};
+                tmp << 1.0, 0.0  ,  0.0,
+                       0.0,  c_phi, s_phi,
+                       0.0, -s_phi, c_phi;
+            }
+            break;
+            case 8:
+            {
+                floatT               phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
+                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi_tilde)};
+                tmp << exp_i_phi, 0.0      , 0.0,
+                       0.0      , exp_i_phi, 0.0,
+                       0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
+            }
+            break;
+        }
+        return tmp;
+    }
+} // namespace SU3
+
 namespace SU3::Projection
 {
     // Projects a single link back on SU(3) via Gram-Schmidt

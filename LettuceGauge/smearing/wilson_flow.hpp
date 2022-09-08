@@ -180,6 +180,6 @@ struct WilsonFlowKernel
 //         {
 //             return epsilon;
 //         }
-// }
+// };
 
 #endif // LETTUCE_WILSON_FLOW_HPP
