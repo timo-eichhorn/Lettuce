@@ -22,6 +22,8 @@
 // ...
 
 //----------------------------------------
+// TODO: This file is currently never included and also has the same name as a directory
+//       We should rename this file or maybe even delete it and move the components somewhere else
 
 template<typename T>
 inline constexpr std::complex<T> i(0, 1);
@@ -98,5 +100,7 @@ enum class Order {ForwardsSeq, BackwardsSeq, ForwardsCheckerPar, BackwardsChecke
 // Enum to determine integration scheme used in Wilson flow
 
 enum class WilsonFlowScheme {APE, Stout, StoutNew, EulerImplicit, EulerImplicitNew, MidpointImplicit, RK4};
+// TODO: Like this, or maybe even simpler? Could reduce to {Cooling, Smearing, GradientFlow}
+enum class SmoothinScheme {Cooling, APE, Stout, GFEulerExplicit, GFEulerImplicit, GFRK4};
 
 #endif // LETTUCE_DRESSING_HPP

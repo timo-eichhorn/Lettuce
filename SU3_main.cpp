@@ -107,6 +107,8 @@ GaugeField                   Gluonchain;
 //-----
 // Function to get user input with error handling
 // TODO: Constrain target to writeable range or something like that
+// TODO: Should probably make clear that this version works for the terminal only
+//       Rename this to ValidatedInTerminal and write alternative version for reading from files?
 
 template<typename T>
 void ValidatedIn(const std::string& message, T& target)
@@ -124,6 +126,8 @@ void ValidatedIn(const std::string& message, T& target)
 
 //-----
 // Receives simulation parameters from user input
+// TODO: We should probably wrap all parameters in a struct and also write a single print function we can reuse for both printing
+//       to the terminal and writing to files.
 
 void Configuration()
 {
@@ -140,17 +144,17 @@ void Configuration()
         metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
     }
     cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
-    cout << "beta is " << beta << ".\n";
-    cout << "n_run is " << n_run << " and expectation_period is " << expectation_period << ".\n";
-    cout << "n_metro is " << n_metro << ".\n";
-    cout << "multi_hit is " << multi_hit << ".\n";
-    cout << "metro_target_acceptance is " << metro_target_acceptance << ".\n";
-    cout << "n_heatbath is " << n_heatbath << ".\n";
-    cout << "n_hmc is " << n_hmc << ".\n";
-    cout << "n_orelax is " << n_orelax << ".\n";
-    cout << "n_instanton_update is" << n_instanton_update << ".\n";
-    cout << "metadynamics_enabled is " << metadynamics_enabled << ".\n";
-    cout << "metapotential_updated is " << metapotential_updated << ".\n"; 
+    cout << "beta is "                        << beta << ".\n";
+    cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
+    cout << "n_metro is "                     << n_metro << ".\n";
+    cout << "multi_hit is "                   << multi_hit << ".\n";
+    cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
+    cout << "n_heatbath is "                  << n_heatbath << ".\n";
+    cout << "n_hmc is "                       << n_hmc << ".\n";
+    cout << "n_orelax is "                    << n_orelax << ".\n";
+    cout << "n_instanton_update is"           << n_instanton_update << ".\n";
+    cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
+    cout << "metapotential_updated is "       << metapotential_updated << ".\n"; 
     //cout << "Overall, there are " <<  << " lattice sites.\n\n";
 }
 
@@ -167,28 +171,28 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     #endif
     datalog << starttimestring << "\n";
     datalog << "START_PARAMS\n";
-    datalog << "Gauge field precision = " << typeid(floatT).name() << "\n";
-    datalog << "Nt = " << Nt << "\n";
-    datalog << "Nx = " << Nx << "\n";
-    datalog << "Ny = " << Ny << "\n";
-    datalog << "Nz = " << Nz << "\n";
-    datalog << "beta = " << beta << "\n";
-    datalog << "n_run = " << n_run << "\n";
-    datalog << "expectation_period = " << expectation_period << "\n";
-    datalog << "n_smear = " << n_smear << "\n";
-    datalog << "n_smear_skip = " << n_smear_skip << "\n";
-    datalog << "rho_stout = " << rho_stout << "\n";
-    datalog << "n_metro = " << n_metro << "\n";
-    datalog << "multi_hit = " << multi_hit << "\n";
+    datalog << "Gauge field precision = "   << typeid(floatT).name()   << "\n";
+    datalog << "Nt = "                      << Nt                      << "\n";
+    datalog << "Nx = "                      << Nx                      << "\n";
+    datalog << "Ny = "                      << Ny                      << "\n";
+    datalog << "Nz = "                      << Nz                      << "\n";
+    datalog << "beta = "                    << beta                    << "\n";
+    datalog << "n_run = "                   << n_run                   << "\n";
+    datalog << "expectation_period = "      << expectation_period      << "\n";
+    datalog << "n_smear = "                 << n_smear                 << "\n";
+    datalog << "n_smear_skip = "            << n_smear_skip            << "\n";
+    datalog << "rho_stout = "               << rho_stout               << "\n";
+    datalog << "n_metro = "                 << n_metro                 << "\n";
+    datalog << "multi_hit = "               << multi_hit               << "\n";
     datalog << "metro_target_acceptance = " << metro_target_acceptance << "\n";
-    datalog << "n_heatbath = " << n_heatbath << "\n";
-    datalog << "n_hmc = " << n_hmc << "\n";
-    datalog << "n_orelax = " << n_orelax << "\n";
-    datalog << "n_instanton_update =" << n_instanton_update << "\n";
-    datalog << "metadynamics_enabled = " << metadynamics_enabled << "\n";
-    datalog << "metapotential_updated = " << metapotential_updated << "\n";
-    datalog << "n_smear_meta = " << n_smear_meta << "\n";
-    datalog << "END_PARAMS\n" << endl;
+    datalog << "n_heatbath = "              << n_heatbath              << "\n";
+    datalog << "n_hmc = "                   << n_hmc                   << "\n";
+    datalog << "n_orelax = "                << n_orelax                << "\n";
+    datalog << "n_instanton_update ="       << n_instanton_update      << "\n";
+    datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
+    datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
+    datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
+    datalog << "END_PARAMS\n"               << endl;
     datalog.close();
     datalog.clear();
 }
@@ -199,9 +203,9 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
 void CreateFiles()
 {
     LatticeSizeString = to_string(Nx) + "x" + to_string(Ny) + "x" + to_string(Nz) + "x" + to_string(Nt);
-    betaString = to_string(beta);
+    betaString        = to_string(beta);
     directoryname_pre = "SU(3)_N=" + LatticeSizeString + "_beta=" + betaString;
-    directoryname = directoryname_pre;
+    directoryname     = directoryname_pre;
     append = 1;
     while (std::filesystem::exists(directoryname) == true)
     {
@@ -211,14 +215,14 @@ void CreateFiles()
     }
     std::filesystem::create_directory(directoryname);
     cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
-    logfilepath = directoryname + "/log.txt";
-    parameterfilepath = directoryname + "/parameters.txt";
-    wilsonfilepath = directoryname + "/wilson.txt";
+    logfilepath           = directoryname + "/log.txt";
+    parameterfilepath     = directoryname + "/parameters.txt";
+    wilsonfilepath        = directoryname + "/wilson.txt";
     metapotentialfilepath = directoryname + "/metapotential.txt";
-    cout << "Filepath (log):\t\t" << logfilepath << "\n";
-    cout << "Filepath (parameters):\t" << parameterfilepath << "\n";
-    cout << "Filepath (wilson):\t" << wilsonfilepath << "\n";
-    cout << "Filepath (metadyn):\t" << metapotentialfilepath << "\n";
+    cout << "Filepath (log):\t\t"      << logfilepath           << "\n";
+    cout << "Filepath (parameters):\t" << parameterfilepath     << "\n";
+    cout << "Filepath (wilson):\t"     << wilsonfilepath        << "\n";
+    cout << "Filepath (metadyn):\t"    << metapotentialfilepath << "\n";
     #ifdef DEBUG_MODE_TERMINAL
     cout << "DEBUG_MODE_TERMINAL\n\n";
     #endif
@@ -226,7 +230,7 @@ void CreateFiles()
     //-----
     // Writes parameters to files
 
-    std::time_t start_time {std::chrono::system_clock::to_time_t(start)};
+    std::time_t start_time        {std::chrono::system_clock::to_time_t(start)};
     std::string start_time_string {std::ctime(&start_time)};
 
     // logfile
@@ -248,84 +252,30 @@ void CreateFiles()
 template<typename floatT>
 void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
 {
-    double or_norm {1.0};
+    double or_norm        {1.0};
     if constexpr(n_orelax != 0)
     {
-        or_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_run * n_orelax);
+        or_norm        = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_run * n_orelax);
     }
-    double hmc_norm {1.0};
+    double hmc_norm       {1.0};
     if constexpr(n_hmc != 0)
     {
-        hmc_norm = 1.0 / n_run;
+        hmc_norm       = 1.0 / n_run;
     }
     double instanton_norm {1.0};
     if constexpr(n_instanton_update != 0)
     {
         instanton_norm = 1.0 / (n_run * n_instanton_update);
     }
-    log << "Metro target acceptance: " << metro_target_acceptance << "\n";
-    log << "Metro acceptance: " << acceptance_count * metro_norm << "\n";
-    log << "OR acceptance: " << acceptance_count_or * or_norm << "\n";
-    log << "HMC acceptance: " << acceptance_count_hmc * hmc_norm << "\n";
-    log << "Instanton acceptance: " << acceptance_count_instanton * instanton_norm << "\n";
-    log << "epsilon: " << epsilon << "\n";
-    log << std::ctime(&end_time) << "\n";
-    log << "Required time: " << elapsed_seconds.count() << "s\n";
+    log << "Metro target acceptance: " << metro_target_acceptance                     << "\n";
+    log << "Metro acceptance: "        << acceptance_count * metro_norm               << "\n";
+    log << "OR acceptance: "           << acceptance_count_or * or_norm               << "\n";
+    log << "HMC acceptance: "          << acceptance_count_hmc * hmc_norm             << "\n";
+    log << "Instanton acceptance: "    << acceptance_count_instanton * instanton_norm << "\n";
+    log << "epsilon: "                 << epsilon                                     << "\n";
+    log << std::ctime(&end_time)                                                      << "\n";
+    log << "Required time: "           << elapsed_seconds.count()                     << "s\n";
 }
-
-//-----
-// Initialize multiple instances of PRNGs in vector for parallel usage
-
-// void InitializePRNGs(vector<pcg64>& prng_vector)
-// {
-//     prng_vector.clear();
-//     cout << "Beginning" << endl;
-//     cout << "max threads:" << omp_get_max_threads() << endl;
-//     array<array<int, 10>, 4> prng_test;
-//     // array<int, 100> prng_test;
-//     std::uniform_int_distribution<int> distribution_choice(1, 8);
-//     for (int i = 0; i < omp_get_max_threads(); ++i)
-//     {
-//         // prng_vector.emplace_back(generator_rand);
-//         pcg_extras::seed_seq_from<std::random_device> seed_source_temp;
-//         #ifdef FIXED_SEED
-//         pcg64 generator_rand_temp(i);
-//         #else
-//         pcg64 generator_rand_temp(seed_source_temp);
-//         #endif
-//         prng_vector.emplace_back(generator_rand_temp);
-//     }
-
-//     #pragma omp parallel for
-//     for (int i = 0; i < 4; ++i)
-//     {
-//         pcg64& current_prng = prng_vector[omp_get_thread_num()];
-//         for (int j = 0; j < 10; ++j)
-//         {
-//             // cout << "i: " << i << " j: " << j << endl;
-//             prng_test[i][j] = distribution_choice(current_prng);
-//         }
-//     }
-//     for (int i = 0; i < 4; ++i)
-//     {
-//         for (int j = 0; j < 10; ++j)
-//         {
-//             cout << "i:" << i << " j:" << j << " " << prng_test[i][j] << endl;
-//         }
-//     }
-//     // cout << prng_vector.size() << endl;
-//     // #pragma omp parallel for
-//     // for (int i = 0; i < 100; ++i)
-//     // {
-//     //     pcg64& current_prng = prng_vector[omp_get_thread_num()];
-//     //     prng_test[i] = distribution_choice(current_prng);
-//     // }
-
-//     // for (int i = 0; i < 100; ++i)
-//     // {
-//     //     cout << prng_test[i] << endl;
-//     // }
-// }
 
 [[nodiscard]]
 vector<pcg64> CreatePRNGs(const int thread_num = 0)
@@ -372,7 +322,7 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
 // Create vector of normal_distribution generators with mean 0 and standard deviation 1 for HMC
 
 [[nodiscard]]
-vector<std::normal_distribution<floatT>> CreateNormal(const int thread_num = 0)
+vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thread_num = 0)
 {
     vector<std::normal_distribution<floatT>> temp_vec;
     #if defined(_OPENMP)
@@ -599,16 +549,6 @@ Matrix_SU3 RandomSU3Parallel(const int choice, const floatT phi)
 }
 
 //-----
-// Returns unnormalized Lüscher-Weisz gauge action
-// TODO: Implement
-
-// [[nodiscard]]
-// double LWGaugeAction(const GaugeField& Gluon)
-// {
-
-// }
-
-//-----
 // Cayley map to transform Lie algebra elements to the associated Lie group
 // Can be used as an alernative to the exponential map in the HMC
 
@@ -617,30 +557,6 @@ Matrix_SU3 CayleyMap(Matrix_3x3 Mat)
 {
     return (Matrix_SU3::Identity() - Mat).inverse() * (Matrix_SU3::Identity() + Mat);
 }
-
-//-----
-// Wilson flow using some integrator
-// TODO: For now with fixed step-size, later implement adaptive step size?
-
-// void WilsonFlow(const Gl_Lattice& Gluon, Gl_Lattice& Gluon_flowed, const double epsilon)
-// {
-//     Gluon_flowed = Gluon;
-//     std::unique_pointer<Gl_Lattice> temp1 = std::make_unique<Gl_Lattice>();
-//     for (int t_current = 0; t_current < t; t_current += epsilon)
-//     {
-//         for (int mu = 0; mu < 4; ++mu)
-//         for (int t = 0; t < Nt; ++t)
-//         for (int x = 0; x < Nx; ++x)
-//         for (int y = 0; y < Ny; ++y)
-//         for (int z = 0; z < Nz; ++z)
-//         {
-//             temp1[t][x][y][z] = epsilon * ;
-//         }
-//         // TODO: Implement me
-//         // TODO: Save the sum of Z_1 and Z_0 to use twice
-//         Gluon_flowed = (3.0/4.0 * Z_2 - 8.0/9.0 * Z_1 + 17.0/36.0 * Z_0).exp() * (8.0/9.0 * Z_1 - 17.0/36.0 * Z_0).exp() * (1.0/4.0 * Z_0).exp() * Gluon_flowed;
-//     }
-// }
 
 void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow)
 {
@@ -1341,48 +1257,48 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
-    vector<double> Action(n_smear + 1);
-    vector<double> ActionUnnormalized(n_smear + 1);
-    vector<double> WLoop2(n_smear + 1);
-    vector<double> WLoop4(n_smear + 1);
-    vector<double> WLoop8(n_smear + 1);
-    vector<double> PLoopRe(n_smear + 1);
-    vector<double> PLoopIm(n_smear + 1);
+    vector<double>               Action(n_smear + 1);
+    vector<double>               ActionUnnormalized(n_smear + 1);
+    vector<double>               WLoop2(n_smear + 1);
+    vector<double>               WLoop4(n_smear + 1);
+    vector<double>               WLoop8(n_smear + 1);
+    vector<double>               PLoopRe(n_smear + 1);
+    vector<double>               PLoopIm(n_smear + 1);
     vector<std::complex<double>> PLoop(n_smear + 1);
     // vector<double> TopologicalCharge(n_smear + 1);
-    vector<double> TopologicalChargeSymm(n_smear + 1);
-    vector<double> TopologicalChargeUnimproved(n_smear + 1);
+    vector<double>               TopologicalChargeSymm(n_smear + 1);
+    vector<double>               TopologicalChargeUnimproved(n_smear + 1);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
 
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
-    Action[0] = WilsonAction::ActionNormalized(Gluon);
+    Action[0]                      = WilsonAction::ActionNormalized(Gluon);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
 
     // auto start_wilson = std::chrono::system_clock::now();
-    WLoop2[0] = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
+    WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
     // auto end_wilson = std::chrono::system_clock::now();
     // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 2: " << wilson_time.count() << endl;
 
     // start_wilson = std::chrono::system_clock::now();
-    WLoop4[0] = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
+    WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
     // end_wilson = std::chrono::system_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 4: " << wilson_time.count() << endl;
 
     // start_wilson = std::chrono::system_clock::now();
-    WLoop8[0] = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
+    WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
     // end_wilson = std::chrono::system_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 8: " << wilson_time.count() << endl;
 
     // auto start_polyakov = std::chrono::system_clock::now();
-    PLoop[0] = PolyakovLoop(Gluon);
+    PLoop[0]                       = PolyakovLoop(Gluon);
     // auto end_polyakov = std::chrono::system_clock::now();
     // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
     // cout << "Time for calculating Polyakov: " << polyakov_time.count() << endl;
@@ -1393,7 +1309,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // cout << "Time for calculating topcharge: " << topcharge_time.count() << endl;
     // auto start_topcharge_symm = std::chrono::system_clock::now();
-    TopologicalChargeSymm[0] = TopChargeGluonicSymm(Gluon);
+    TopologicalChargeSymm[0]       = TopChargeGluonicSymm(Gluon);
     // auto end_topcharge_symm = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
     // cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
@@ -1417,13 +1333,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
         // Calculate observables
-        Action[1] = WilsonAction::ActionNormalized(Gluonsmeared1);
-        WLoop2[1] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-        WLoop4[1] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-        WLoop8[1] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-        PLoop[1]  = PolyakovLoop(Gluonsmeared1);
+        Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+        WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+        WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+        WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+        PLoop[1]                       = PolyakovLoop(Gluonsmeared1);
         // TopologicalCharge[1] = TopChargeGluonic(Gluonsmeared1);
-        TopologicalChargeSymm[1] = TopChargeGluonicSymm(Gluonsmeared1);
+        TopologicalChargeSymm[1]       = TopChargeGluonicSymm(Gluonsmeared1);
         TopologicalChargeUnimproved[1] = TopChargeGluonicUnimproved(Gluonsmeared1);
     }
 
@@ -1449,13 +1365,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             //     // placeholder
             // }
             // Calculate observables
-            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
-            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared1);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
-            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared1);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
         }
         // Odd
@@ -1467,13 +1383,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // Calculate observables
-            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
-            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared1);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared1);
-            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared1);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
         }
     }
@@ -1548,44 +1464,44 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
-    vector<double> Action(n_smear + 1);
-    vector<double> WLoop2(n_smear + 1);
-    vector<double> WLoop4(n_smear + 1);
-    vector<double> WLoop8(n_smear + 1);
-    vector<double> PLoopRe(n_smear + 1);
-    vector<double> PLoopIm(n_smear + 1);
+    vector<double>               Action(n_smear + 1);
+    vector<double>               WLoop2(n_smear + 1);
+    vector<double>               WLoop4(n_smear + 1);
+    vector<double>               WLoop8(n_smear + 1);
+    vector<double>               PLoopRe(n_smear + 1);
+    vector<double>               PLoopIm(n_smear + 1);
     vector<std::complex<double>> PLoop(n_smear + 1);
-    // vector<double> TopologicalCharge(n_smear + 1);
-    vector<double> TopologicalChargeSymm(n_smear + 1);
-    vector<double> TopologicalChargeUnimproved(n_smear + 1);
+    // vector<double>               TopologicalCharge(n_smear + 1);
+    vector<double>               TopologicalChargeSymm(n_smear + 1);
+    vector<double>               TopologicalChargeUnimproved(n_smear + 1);
 
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
-    Action[0] = WilsonAction::ActionNormalized(Gluon);
+    Action[0]                      = WilsonAction::ActionNormalized(Gluon);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
 
     // auto start_wilson = std::chrono::system_clock::now();
-    WLoop2[0] = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
+    WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
     // auto end_wilson = std::chrono::system_clock::now();
     // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 2: " << wilson_time.count() << endl;
 
     // start_wilson = std::chrono::system_clock::now();
-    WLoop4[0] = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
+    WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
     // end_wilson = std::chrono::system_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 4: " << wilson_time.count() << endl;
 
     // start_wilson = std::chrono::system_clock::now();
-    WLoop8[0] = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
+    WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
     // end_wilson = std::chrono::system_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // cout << "Time for calculating wilson 8: " << wilson_time.count() << endl;
 
     // auto start_polyakov = std::chrono::system_clock::now();
-    PLoop[0] = PolyakovLoop(Gluon);
+    PLoop[0]                       = PolyakovLoop(Gluon);
     // auto end_polyakov = std::chrono::system_clock::now();
     // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
     // cout << "Time for calculating Polyakov: " << polyakov_time.count() << endl;
@@ -1596,7 +1512,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // cout << "Time for calculating topcharge: " << topcharge_time.count() << endl;
     // auto start_topcharge_symm = std::chrono::system_clock::now();
-    TopologicalChargeSymm[0] = TopChargeGluonicSymm(Gluon);
+    TopologicalChargeSymm[0]       = TopChargeGluonicSymm(Gluon);
     // auto end_topcharge_symm = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
     // cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << endl;
@@ -1617,13 +1533,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
         // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
         // Calculate observables
-        Action[1] = WilsonAction::ActionNormalized(Gluonsmeared1);
-        WLoop2[1] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-        WLoop4[1] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-        WLoop8[1] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-        PLoop[1]  = PolyakovLoop(Gluonsmeared1);
-        // TopologicalCharge[1] = TopChargeGluonic(Gluonsmeared1);
-        TopologicalChargeSymm[1] = TopChargeGluonicSymm(Gluonsmeared1);
+        Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+        WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+        WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+        WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+        PLoop[1]                       = PolyakovLoop(Gluonsmeared1);
+        // TopologicalCharge[1]           = TopChargeGluonic(Gluonsmeared1);
+        TopologicalChargeSymm[1]       = TopChargeGluonicSymm(Gluonsmeared1);
         TopologicalChargeUnimproved[1] = TopChargeGluonicUnimproved(Gluonsmeared1);
     }
 
@@ -1647,13 +1563,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
             //     // placeholder
             // }
             // Calculate observables
-            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared2);
-            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
-            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
-            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
-            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared2);
-            // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
-            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared2);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared2);
+            // TopologicalCharge[smear_count]           = TopChargeGluonic(Gluonsmeared2);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared2);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
         }
         // Odd
@@ -1663,13 +1579,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
             // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
             StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
             // Calculate observables
-            Action[smear_count] = WilsonAction::ActionNormalized(Gluonsmeared1);
-            WLoop2[smear_count] = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-            WLoop4[smear_count] = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-            WLoop8[smear_count] = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-            PLoop[smear_count]  = PolyakovLoop(Gluonsmeared1);
-            // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared1);
-            TopologicalChargeSymm[smear_count] = TopChargeGluonicSymm(Gluonsmeared1);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
+            // TopologicalCharge[smear_count]           = TopChargeGluonic(Gluonsmeared1);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
         }
     }
@@ -1753,7 +1669,7 @@ int main()
     prng_vector = CreatePRNGs();
     if constexpr(n_hmc != 0)
     {
-        ndist_vector = CreateNormal();
+        ndist_vector = CreateNormalDistributions();
     }
 
     // acceptance_count = 0;

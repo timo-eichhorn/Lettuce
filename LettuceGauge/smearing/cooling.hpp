@@ -18,13 +18,19 @@
 // Standard C headers
 #include <cmath>
 
-// TODO: Currently this seems to lead to some weird results. The action seems to monotonically decrease, but the topological charge (and other observables)
-//       show some significant deviations when compared to stout smearing. Additionally, while we would generally expect cooling to decrease the action faster
-//       than smearing, this only seems to be the case initially; after some amount of smoothing smearing seems to be more efficient, while cooling seemingly
-//       slows down.
-// The operations below don't really make much sense... Iterating over the three subgroups is superfluous, since only the last iteration is actually relevant,
-// since in the current form the new link doesn't depend on the old one in any way. Might need to multiply with the old link?
+//+---------------------------------------------------------------------------------+
+//| This file provides a functor implementing a pseudo-heatbath based cooling       |
+//| algorithm for SU(3) gauge theory.                                               |
+//| For more details regarding the pseudo-heatbath update and the decomposition into|
+//| SU(2) subgroups check the heatbath and overrelaxation files.                    |
+//| While cooling is not as theoretically sound as the gradient flow, it leads to   |
+//| equivalent results in practice at a faster pace (one cooling sweep reduces the  |
+//| action more than a gradient flow step or a smearing step.                       |
+//| For more details on the relative performances of smoothing methods see the      |
+//| comparisons in arXiv:1401.2441, arXiv:1509.04259, and arXiv:1708.00696.         |
+//+---------------------------------------------------------------------------------+
 
+// template<typename floatT>
 struct CoolingKernel
 {
     private:
@@ -42,8 +48,9 @@ struct CoolingKernel
         Gluon(Gluon_in)
         {}
 
+        // TODO: Should this be rewritten to be applicable to a general GaugeField?
+        //       Would not work with the current implementation, since the reference can't be rebound
         void operator()(const link_coord& current_link) const noexcept
-        // void operator()(GaugeField& Gluon, const link_coord& current_link) const noexcept
         {
             Matrix_3x3 W;
             SU2_comp<floatT> subblock;
@@ -62,7 +69,6 @@ struct CoolingKernel
             subblock = Extract12<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed12(CoolingSU2(subblock)) * Gluon(current_link);
             //-----
-            // Project link to SU(3)
             SU3::Projection::GramSchmidt(Gluon(current_link));
         }
 };

@@ -118,7 +118,7 @@ void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool posit
     }
     // std::cout << SU3::Tests::TestSU3All(Gluon) << std::endl;
     //-----
-    // For now only smear unfiromly
+    // For now only smear uniformly
     // For even smearing steps the final field is stored in the first argument, so for now we'll hardcode an even amount of smearing steps here (my talk is tomorrow after all)
     StoutSmearingN(Gluon, Gluon1, 150);
     //-----
@@ -202,16 +202,16 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
     {
         MultiplyConfigurations(Gluon_copy, NegativeInstanton);
     }
-    double energy_old {WilsonAction::Action(Gluon)};
-    double energy_new {WilsonAction::Action(Gluon_copy)};
-    double p {std::exp(-energy_new + energy_old)};
+    double S_old {WilsonAction::Action(Gluon)};
+    double S_new {WilsonAction::Action(Gluon_copy)};
+    double p     {std::exp(-S_new + S_old)};
     #if defined(_OPENMP)
-    double q {distribution_prob(prng_vector[omp_get_thread_num()])};
+    double q     {distribution_prob(prng_vector[omp_get_thread_num()])};
     #else
-    double q {distribution_prob(generator_rand)};
+    double q     {distribution_prob(generator_rand)};
     #endif
-    // TODO: Probably shouldnt use a global variable for DeltaHInstanton?
-    DeltaHInstanton = energy_new - energy_old;
+    // TODO: Probably shouldnt use a global variable for DeltaSInstanton?
+    DeltaSInstanton = S_new - S_old;
     if (metropolis_test)
     {
         if (q <= p)
@@ -228,7 +228,7 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
     else
     {
         Gluon = Gluon_copy;
-        // datalog << "DeltaH: " << DeltaH << std::endl;
+        // datalog << "DeltaS: " << DeltaS << std::endl;
         return true;
     }
 }

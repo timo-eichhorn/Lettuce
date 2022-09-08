@@ -27,6 +27,6 @@ namespace reductions
         // Perform final reduction over partial sums to get total sum
         // ...
     }
-}
+} // namespace reductions
 
 #endif // LETTUCE_REDUCTIONS_HPP

@@ -404,6 +404,6 @@ namespace HMC
                 }
             }
     };
-}
+} // namespace HMC
 
 #endif // LETTUCE_HMC_GAUGE_HPP

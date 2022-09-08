@@ -308,7 +308,7 @@ namespace WilsonAction
     // {
     //     return -beta/static_cast<floatT>(3.0) * std::real((Udiff * st.adjoint()).trace());
     // }
-}
+} // namespace WilsonAction
 
 // namespace GaugeAction
 // {

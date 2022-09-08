@@ -102,6 +102,6 @@ namespace Iterator
             }
         }
     }
-}
+} // namespace Iterator
 
 #endif // LETTUCE_ITERATORS_HPP

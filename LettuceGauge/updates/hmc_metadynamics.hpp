@@ -439,6 +439,6 @@ namespace HMC_MetaD
             return true;
         }
     }
-}
+} // namespace HMC_MetaD
 
 #endif // LETTUCE_HMC_METAD_HPP

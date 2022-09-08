@@ -70,7 +70,7 @@ inline double metro_target_acceptance {0.5};                // Target acceptance
 inline constexpr double full_norm {1.0 / (Nt * Nx * Ny * Nz)};
 inline constexpr double spatial_norm {1.0 / (Nx * Ny * Nz)};
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
-double DeltaHInstanton;                                     // Energy change of instanton update proposal (see above)
+double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
 int append;                                                 // Directory name appendix
 std::string appendString;                                   // Directory name appendix (string)

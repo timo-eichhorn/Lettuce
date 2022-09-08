@@ -142,6 +142,6 @@ namespace GaugeAction
     using SymanzikTreeLevel = Rectangular<2, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0>;
     using Iwasaki           = Rectangular<2, 1.0 + 8.0 * 0.331   , -0.331>;
     using DBW2              = Rectangular<2, 1.0 + 8.0 * 1.4088  , -1.4088>;
-}
+} // namespace GaugeAction
 
 #endif // LETTUCE_RECTANGULAR_GAUGE_ACTION_HPP

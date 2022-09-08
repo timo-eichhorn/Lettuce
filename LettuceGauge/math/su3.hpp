@@ -259,7 +259,7 @@ namespace SU3::Generators
                 return Matrix_3x3::Identity();
         }
     }
-}
+} // namespace SU3::Generators
 
 namespace SU3::Projection
 {
@@ -355,7 +355,7 @@ namespace SU3::Projection
     {
         return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
-}
+} // namespace SU3::Projection
 
 namespace SU3::Tests
 {
@@ -502,6 +502,6 @@ namespace SU3::Tests
         }
         return InAlgebra;
     }
-}
+} // namespace SU3::Tests
 
 #endif // LETTUCE_SU3_HPP
