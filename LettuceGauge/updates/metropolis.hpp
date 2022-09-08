@@ -13,90 +13,101 @@
 // Standard C headers
 // ...
 
-[[nodiscard]]
-Matrix3x3 Staple(const GaugeField& U, const link_coord& coord)
+//+---------------------------------------------------------------------------------+
+//| This file provides a functor implementing a (multi-hit) Metropolis update for   |
+//| SU(3) gauge theory, which works by multiplying the old link with a random matrix|
+//| obtained by taking a step with random size in a random direction in the algebra |
+//| and exponentiating the result. The range of the stepsize depends on the distri- |
+//| bution 'distribution_unitary'. Generally, acceptance rates at or below 0.5 seem |
+//| to be most efficient.                                                           |
+//+---------------------------------------------------------------------------------+
+
+// template<typename floatT>
+struct MetropolisKernel
 {
-    // int t = coord.t;
-    // int x = coord.x;
-    // int y = coord.y;
-    // int z = coord.z;
-    // TODO: Do in one line using structured bindings?
-    // TODO: Does it make sense to declare as const?
-    const auto [t, x, y, z, mu] = coord;   // This creates a copy
-    // const auto& [t, x, y, z, mu] = coord;  // This creates references to the individual integers in coord
-    switch(coord.mu)
-    {
-        case 0:
+    private:
+        // TODO: Add action as parameter, so we can update with respect to different actions
+        GaugeField&                             Gluon;
+        int                                     n_hit;
+        // TODO: These distributions should be thread-safe, so we can probably get away with only having one instance of each distribution?
+        std::uniform_real_distribution<floatT>& distribution_prob;
+        std::uniform_real_distribution<floatT>& distribution_unitary;
+        std::uniform_int_distribution<int>&     distribution_choice;
+        // TODO: Should we track the acceptance rates in the functors? Might be annoying to deal with when changing parameters/creating new instances of functors...
+        //       Also unclear how to combine with parallelization
+    public:
+        explicit MetropolisKernel(GaugeField& Gluon_in, const int n_hit_in, std::uniform_real_distribution<floatT>& distribution_prob_in, std::uniform_real_distribution<floatT>& distribution_unitary_in, std::uniform_int_distribution<int>& distribution_choice_in) noexcept :
+        Gluon(Gluon_in), n_hit(n_hit_in), distribution_prob(distribution_prob_in), distribution_unitary(distribution_unitary_in), distribution_choice(distribution_choice_in)
+        {}
+
+        int operator()(const link_coord& current_link) const noexcept
         {
-            int tp = (t + 1)%Nt;
-            int xp = (x + 1)%Nx;
-            int xm = (x - 1 + Nx)%Nx;
-            int yp = (y + 1)%Ny;
-            int ym = (y - 1 + Ny)%Ny;
-            int zp = (z + 1)%Nz;
-            int zm = (z - 1 + Nz)%Nz;
-            return U[t][x][y][z][1] * U[t][xp][y][z][0] * U[tp][x][y][z][1].adjoint() + U[t][xm][y][z][1].adjoint() * U[t][xm][y][z][0] * U[tp][xm][y][z][1]
-                 + U[t][x][y][z][2] * U[t][x][yp][z][0] * U[tp][x][y][z][2].adjoint() + U[t][x][ym][z][2].adjoint() * U[t][x][ym][z][0] * U[tp][x][ym][z][2]
-                 + U[t][x][y][z][3] * U[t][x][y][zp][0] * U[tp][x][y][z][3].adjoint() + U[t][x][y][zm][3].adjoint() * U[t][x][y][zm][0] * U[tp][x][y][zm][3];
-        }
-        break;
+            Matrix_3x3 st       {WilsonAction::Staple(Gluon, current_link)};
+            Matrix_SU3 old_link {Gluon(current_link)};
+            double     S_old    {WilsonAction::Local(old_link, st)};
 
-        case 1:
+            // Perform multiple hits on the same link
+            for (int n_hit = 0; n_hit < multi_hit; ++n_hit)
+            {
+                int        accept_count {0};
+                #if defined(_OPENMP)
+                int        choice       {distribution_choice(prng_vector[omp_get_thread_num()])};
+                floatT     phi          {distribution_unitary(prng_vector[omp_get_thread_num()])};
+                Matrix_SU3 new_link     {old_link * RandomSU3Parallel(choice, phi)};
+                #else
+                // auto start_multihit = std::chrono::high_resolution_clock::now();
+                int        choice       {distribution_choice(generator_rand)};
+                floatT     phi          {distribution_unitary(generator_rand)};
+                Matrix_SU3 new_link     {old_link * RandomSU3Parallel(choice, phi)};
+                // auto end_multihit = std::chrono::high_resolution_clock::now();
+                // multihit_time += end_multihit - start_multihit;
+                #endif
+
+                // auto start_accept_reject = std::chrono::high_resolution_clock::now();
+                double     S_new        {WilsonAction::Local(new_link, st)};
+                double     p            {std::exp(-S_new + S_old)};
+                // TODO: Does this help in any way? Also try out for Orelax
+                // double p {std::exp(SLocalDiff(old_link - new_link, st))};
+                #if defined(_OPENMP)
+                double      q           {distribution_prob(prng_vector[omp_get_thread_num()])};
+                #else
+                double      q           {distribution_prob(generator_rand)};
+                #endif
+
+                // Ugly hack to avoid branches in parallel region
+                // CAUTION: We would want to check if q <= p, since for beta = 0 everything should be accepted
+                // Unfortunately signbit(0) returns false... Is there way to fix this?
+                // bool accept {std::signbit(q - p)};
+                // Gluon[t][x][y][z][mu] = accept * new_link + (!accept) * old_link;
+                // old_link = accept * new_link + (!accept) * old_link;
+                // s = accept * sprime + (!accept) * s;
+                // accept_count += accept;
+                if (q <= p)
+                {
+                    Gluon(current_link) = new_link;
+                    old_link = new_link;
+                    S_old = S_new;
+                    accept_count += 1;
+                }
+                // auto end_accept_reject = std::chrono::high_resolution_clock::now();
+                // accept_reject_time += end_accept_reject - start_accept_reject;
+            }
+            SU3::Projection::GramSchmidt(Gluon(current_link));
+            // TODO: Since we currently count how many of the individual hits are accepted, accept_count can generally exceed 1 and thus can't be a bool
+            //       This is inconsistent compared to the other update functors. Is this okay, or should we rather only track if at least one out of the
+            //       n_hit hits is accepted?
+            return accept_count;
+        }
+
+        void SetNHit(const int n_hit_in) noexcept
         {
-            int tp = (t + 1)%Nt;
-            int tm = (t - 1 + Nt)%Nt;
-            int xp = (x + 1)%Nx;
-            int yp = (y + 1)%Ny;
-            int ym = (y - 1 + Ny)%Ny;
-            int zp = (z + 1)%Nz;
-            int zm = (z - 1 + Nz)%Nz;
-            return U[t][x][y][z][0] * U[tp][x][y][z][1] * U[t][xp][y][z][0].adjoint() + U[tm][x][y][z][0].adjoint() * U[tm][x][y][z][1] * U[tm][xp][y][z][0]
-                 + U[t][x][y][z][2] * U[t][x][yp][z][1] * U[t][xp][y][z][2].adjoint() + U[t][x][ym][z][2].adjoint() * U[t][x][ym][z][1] * U[t][xp][ym][z][2]
-                 + U[t][x][y][z][3] * U[t][x][y][zp][1] * U[t][xp][y][z][3].adjoint() + U[t][x][y][zm][3].adjoint() * U[t][x][y][zm][1] * U[t][xp][y][zm][3];
+            n_hit = n_hit_in;
         }
-        break;
 
-        case 2:
+        int GetNHit() const noexcept
         {
-            int tp = (t + 1)%Nt;
-            int tm = (t - 1 + Nt)%Nt;
-            int xp = (x + 1)%Nx;
-            int xm = (x - 1 + Nx)%Nx;
-            int yp = (y + 1)%Ny;
-            int zp = (z + 1)%Nz;
-            int zm = (z - 1 + Nz)%Nz;
-            return U[t][x][y][z][0] * U[tp][x][y][z][2] * U[t][x][yp][z][0].adjoint() + U[tm][x][y][z][0].adjoint() * U[tm][x][y][z][2] * U[tm][x][yp][z][0]
-                 + U[t][x][y][z][1] * U[t][xp][y][z][2] * U[t][x][yp][z][1].adjoint() + U[t][xm][y][z][1].adjoint() * U[t][xm][y][z][2] * U[t][xm][yp][z][1]
-                 + U[t][x][y][z][3] * U[t][x][y][zp][2] * U[t][x][yp][z][3].adjoint() + U[t][x][y][zm][3].adjoint() * U[t][x][y][zm][2] * U[t][x][yp][zm][3];
+            return n_hit;
         }
-        break;
-
-        case 3:
-        {
-            int tp = (t + 1)%Nt;
-            int tm = (t - 1 + Nt)%Nt;
-            int xp = (x + 1)%Nx;
-            int xm = (x - 1 + Nx)%Nx;
-            int yp = (y + 1)%Ny;
-            int ym = (y - 1 + Ny)%Ny;
-            int zp = (z + 1)%Nz;
-            return U[t][x][y][z][0] * U[tp][x][y][z][3] * U[t][x][y][zp][0].adjoint() + U[tm][x][y][z][0].adjoint() * U[tm][x][y][z][3] * U[tm][x][y][zp][0]
-                 + U[t][x][y][z][1] * U[t][xp][y][z][3] * U[t][x][y][zp][1].adjoint() + U[t][xm][y][z][1].adjoint() * U[t][xm][y][z][3] * U[t][xm][y][zp][1]
-                 + U[t][x][y][z][2] * U[t][x][yp][z][3] * U[t][x][y][zp][2].adjoint() + U[t][x][ym][z][2].adjoint() * U[t][x][ym][z][3] * U[t][x][ym][zp][2];
-        }
-        break;
-    }
-}
-
-void MetropolisSingle(GaugeField& U, const link_coord& coord)
-{
-    // Calculate staple
-    // placeholder;
-}
-
-void MetropolisSweep()
-{
-    // placeholder;
 }
 
 #endif // LETTUCE_METROPOLIS_HPP

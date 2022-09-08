@@ -1412,7 +1412,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
     if constexpr(n_instanton_update != 0)
     {
-        datalog << "DeltaHInstanton: " << DeltaHInstanton << "\n";
+        datalog << "DeltaSInstanton: " << DeltaSInstanton << "\n";
     }
     //-----
     datalog << "Wilson_Action: ";
@@ -1607,7 +1607,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     }
     if constexpr(n_instanton_update != 0)
     {
-        datalog << "DeltaHInstanton: " << DeltaHInstanton << "\n";
+        datalog << "DeltaSInstanton: " << DeltaSInstanton << "\n";
     }
     //-----
     datalog << "Wilson_Action: ";
