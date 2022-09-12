@@ -1194,6 +1194,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     vector<double>               Action(n_smear + 1);
+    vector<double>               ActionUnnormalized(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
     vector<double>               WLoop4(n_smear + 1);
     vector<double>               WLoop8(n_smear + 1);
@@ -1320,6 +1321,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     }
 
     //-----
+    std::transform(Action.begin(), Action.end(), ActionUnnormalized.begin(), [&Gluon](const auto& element){return 6.0 * beta * Gluon.Volume() * element;});
     std::transform(PLoop.begin(), PLoop.end(), PLoopRe.begin(), [](const auto& element){return std::real(element);});
     std::transform(PLoop.begin(), PLoop.end(), PLoopIm.begin(), [](const auto& element){return std::imag(element);});
 
@@ -1343,6 +1345,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
     datalog << Action.back() << "\n";
+    //-----
+    datalog << "Wilson_Action(unnormalized): ";
+    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(ActionUnnormalized), std::prev(std::cend(ActionUnnormalized)), std::ostream_iterator<double>(datalog, " "));
+    datalog << ActionUnnormalized.back() << "\n";
     //-----
     datalog << "Wilson_loop(L=2): ";
     // std::copy(WLoop2.cbegin(), std::prev(WLoop2.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1544,11 +1551,14 @@ int main()
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-        // for (int i = 0; i < 5; ++i)
-        // {
-        //     Iterator::Checkerboard(Heatbath, 1);
-        //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-        // }
+        if constexpr(metadynamics_enabled)
+        {
+            for (int i = 0; i < 5; ++i)
+            {
+                Iterator::Checkerboard(Heatbath, 1);
+                Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+            }
+        }
         // for (int n_count = 0; n_count < n_run; ++n_count)
         // {
         //     HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
@@ -1606,16 +1616,16 @@ int main()
     // std::exit(0);
 
     // When using HMC, the thermalization is done without accept-reject step
-    // if constexpr(n_hmc != 0)
-    // {
-    //     datalog << "[HMC start thermalization]\n";
-    //     for (int n_count = 0; n_count < 20; ++n_count)
-    //     {
-    //         // std::cout << "HMC accept/reject (therm): " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::Leapfrog, 100, false, distribution_prob) << std::endl;
-    //         HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-    //     }
-    //     datalog << "[HMC end thermalization]\n" << std::endl;
-    // }
+    if constexpr(n_hmc != 0 and !metadynamics_enabled)
+    {
+        datalog << "[HMC start thermalization]\n";
+        for (int n_count = 0; n_count < 20; ++n_count)
+        {
+            // std::cout << "HMC accept/reject (therm): " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::Leapfrog, 100, false, distribution_prob) << std::endl;
+            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
+        }
+        datalog << "[HMC end thermalization]\n" << std::endl;
+    }
 
     for (int n_count = 0; n_count < n_run; ++n_count)
     {
@@ -1647,7 +1657,7 @@ int main()
         // cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << endl;
         //-----
         // auto start_update_hmc {std::chrono::system_clock::now()};
-        if constexpr(n_hmc != 0)
+        if constexpr(n_hmc != 0 and !metadynamics_enabled)
         {
             // std::cout << "HMC accept/reject: " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::OMF_4, n_hmc, true, distribution_prob) << std::endl;
             HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);

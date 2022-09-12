@@ -335,6 +335,8 @@ public:
     // Function that loads the histogram parameters and the histogram itself from a file
     // TODO: There still seems to be a bug that causes the exceeded count line to be read into the last bin entry?
     // TODO: Work with string_view instead of strings?
+    // TODO: This seem to be quite slow: https://stackoverflow.com/questions/2602013/read-whole-ascii-file-into-c-stdstring#comment5920160_2602060
+    //       Better use stringstreams?
 
     void LoadPotential(const std::string& filename)
     {

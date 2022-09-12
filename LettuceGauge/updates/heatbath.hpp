@@ -23,8 +23,9 @@
 //| gauge theory, based on a Cabibbo-Marinari decomposition into SU(2) subgroups.   |
 //| The original heatbath update is described in PhysRevD.21.2308, and the          |
 //| decomposition into SU(2) subgroups was proposed in PhysLettB.119.387.           |
-//| There are multiple papers proposing some improvements to the sampling procedure |
-//| compared to the original Creutz paper, which are used here (TODO: Add refs.)    |
+//| There are two papers proposing an improvement to the sampling procedure compared|
+//| to the original Creutz paper which are used here, namely PhysLettB.143.459 and  |
+//| PhysLettB.156.393.                                                              |
 //+---------------------------------------------------------------------------------+
 
 template<typename floatT>
@@ -44,10 +45,9 @@ struct HeatbathKernel
         SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, std::uniform_real_distribution<floatT>& distribution_uniform, const int max_iteration) const noexcept
         {
             // Determinant of staple as norm to project staple back to SU(2)
-            floatT a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
-            SU2_comp<floatT> V {a_norm * A};
-            SU2_comp<floatT> mat_su2;
-            floatT r1, r2, r3, x1, x2, x3, lambda_sq, r0;
+            floatT           a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
+            SU2_comp<floatT> V      {a_norm * A};
+            floatT           r1, r2, r3, x1, x2, x3, lambda_sq, r0;
             int iteration_count {0};
             do
             {
@@ -58,7 +58,7 @@ struct HeatbathKernel
                 x2 = std::cos(static_cast<floatT>(2.0) * pi<floatT> * r2);
                 r3 = static_cast<floatT>(1.0) - distribution_uniform(prng_vector[omp_get_thread_num()]);
                 x3 = std::log(r3);
-                // Factor 0.25 to the get correct total prefactor
+                // Factor 0.25 to get the correct total prefactor
                 // For SU(2), the prefactor is 0.5 / beta
                 // For SU(3), the prefactor is 0.75 / beta
                 // floatT lambda_sq {static_cast<floatT>(-0.25 * prefactor * a_norm) * (x1 + x2 * x2 * x3)};
@@ -126,5 +126,35 @@ struct HeatbathKernel
             SU3::Projection::GramSchmidt(Gluon(current_link));
         }
 };
+
+// template<typename floatT>
+// struct HeatbathPietarinenKernel
+// {
+//     private:
+//         GaugeField& Gluon;
+//         std::uniform_real_distribution<floatT>& distribution_uniform;
+//     public:
+//         explicit HeatbathPietarinenKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_uniform_in) noexcept :
+//         Gluon(Gluon_in), distribution_uniform(distribution_uniform_in)
+//         {}
+
+//         void operator()(const link_coord& current_link) const noexcept
+//         {
+//             int iteration_count {0};
+//             do
+//             {
+//                 floatT alpha1 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha2 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha3 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha4 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha5 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha6 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha7 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 floatT alpha8 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//             }
+//             while (r0 * r0 + lambda_sq >= static_cast<floatT>(1.0));
+
+//         }
+// };
 
 #endif // LETTUCE_HEATBATH_HPP

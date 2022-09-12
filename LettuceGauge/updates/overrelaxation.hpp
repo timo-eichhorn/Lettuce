@@ -28,7 +28,7 @@
 //| Cabibbo-Marinari decomposition into SU(2) subgroups is also provided.           |
 //+---------------------------------------------------------------------------------+
 
-// template<typename floatT>
+template<typename floatT>
 struct OverrelaxationDirectKernel
 {
     private:
