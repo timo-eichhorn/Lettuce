@@ -151,6 +151,12 @@ struct HeatbathKernel
 //                 floatT alpha6 {distribution_uniform(prng_vector[omp_get_thread_num()])};
 //                 floatT alpha7 {distribution_uniform(prng_vector[omp_get_thread_num()])};
 //                 floatT alpha8 {distribution_uniform(prng_vector[omp_get_thread_num()])};
+//                 //...
+//                 if (iteration_count > max_iteration)
+//                 {
+//                     return {1.0, 0.0};
+//                 }
+//                 ++iteration_count;
 //             }
 //             while (r0 * r0 + lambda_sq >= static_cast<floatT>(1.0));
 

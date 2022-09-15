@@ -12,6 +12,7 @@
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
 #include "LettuceGauge/metadynamics.hpp"
+#include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
 #include "LettuceGauge/observables/polyakov_loop.hpp"
@@ -997,6 +998,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // vector<double> TopologicalCharge(n_smear + 1);
     vector<double>               TopologicalChargeSymm(n_smear + 1);
     vector<double>               TopologicalChargeUnimproved(n_smear + 1);
+    auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -1047,6 +1049,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // auto end_topcharge_plaq = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
     // cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << endl;
+    ActionStruct.Calculate(0, std::cref(Gluon));
 
     //-----
     // Begin smearing
@@ -1070,6 +1073,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // TopologicalCharge[1] = TopChargeGluonic(Gluonsmeared1);
         TopologicalChargeSymm[1]       = TopChargeGluonicSymm(Gluonsmeared1);
         TopologicalChargeUnimproved[1] = TopChargeGluonicUnimproved(Gluonsmeared1);
+        ActionStruct.Calculate(1, std::cref(Gluonsmeared1));
     }
 
     //-----
@@ -1094,14 +1098,15 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             //     // placeholder
             // }
             // Calculate observables
-            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
-            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared2);
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
-            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
-            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared2);
+            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
+            ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared2));
         }
         // Odd
         else
@@ -1120,6 +1125,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared1);
             TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
+            ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared1));
         }
     }
 
@@ -1185,6 +1191,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     datalog << "TopChargeClov: ";
     std::copy(std::cbegin(TopologicalChargeSymm), std::prev(std::cend(TopologicalChargeSymm)), std::ostream_iterator<double>(datalog, " "));
     datalog << TopologicalChargeSymm.back() << "\n"; //<< endl;
+
+    ActionStruct.SaveToFile(datalog);
 
     datalog << "TopChargePlaq: ";
     std::copy(std::cbegin(TopologicalChargeUnimproved), std::prev(std::cend(TopologicalChargeUnimproved)), std::ostream_iterator<double>(datalog, " "));
