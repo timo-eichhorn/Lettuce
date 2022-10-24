@@ -154,7 +154,7 @@ void Configuration()
     cout << "n_heatbath is "                  << n_heatbath << ".\n";
     cout << "n_hmc is "                       << n_hmc << ".\n";
     cout << "n_orelax is "                    << n_orelax << ".\n";
-    cout << "n_instanton_update is"           << n_instanton_update << ".\n";
+    cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     cout << "metapotential_updated is "       << metapotential_updated << ".\n"; 
     //cout << "Overall, there are " <<  << " lattice sites.\n\n";
@@ -190,7 +190,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "n_heatbath = "              << n_heatbath              << "\n";
     datalog << "n_hmc = "                   << n_hmc                   << "\n";
     datalog << "n_orelax = "                << n_orelax                << "\n";
-    datalog << "n_instanton_update ="       << n_instanton_update      << "\n";
+    datalog << "n_instanton_update = "      << n_instanton_update      << "\n";
     datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
     datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
     datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
@@ -731,6 +731,8 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     // TODO: Is that true? Better check to be sure
     // auto start_copy = std::chrono::system_clock::now();
     Gluon1 = Gluon;
+    HeatbathKernel               Heatbath1(Gluon1, distribution_uniform);
+    OverrelaxationSubgroupKernel OverrelaxationSubgroup1(Gluon1);
     // auto end_copy = std::chrono::system_clock::now();
     // std::chrono::duration<double> copy_time = end_copy - start_copy;
     // std::cout << "Time for copy: " << copy_time.count() << std::endl;
@@ -739,10 +741,11 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     //       Instead of recomputing the CV, only compute the new CV and remember the old CV from last step
     // double CV_old {CV_function(Gluon1, Gluon2, rho_stout, 15)};
     // Perform update sweeps
-    HeatbathSU3(Gluon1, n_sweep_heatbath, distribution_uniform);
-    OverrelaxationSubgroupOld(Gluon1, n_sweep_orelax);
-    // Iterator::Checkerboard(, n_sweep_heatbath);
-    // Iterator::Checkerboard(OverrelaxationSubgroup, n_sweep_heatbath);
+    // HeatbathSU3(Gluon1, n_sweep_heatbath, distribution_uniform);
+    // OverrelaxationSubgroupOld(Gluon1, n_sweep_orelax);
+    // Update_function(Gluon1, distribution_uniform, n_sweep_heatbath, n_sweep_orelax);
+    Iterator::Checkerboard(Heatbath1, n_sweep_heatbath);
+    Iterator::Checkerboard(OverrelaxationSubgroup1, n_sweep_heatbath);
     // Get new value of collective variable
     double CV_new {CV_function(Gluon1, Gluon2, Gluon3, n_smear_meta, rho_stout)};
     //-----
@@ -998,7 +1001,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // vector<double> TopologicalCharge(n_smear + 1);
     vector<double>               TopologicalChargeSymm(n_smear + 1);
     vector<double>               TopologicalChargeUnimproved(n_smear + 1);
-    auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
+    // auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -1049,7 +1052,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // auto end_topcharge_plaq = std::chrono::system_clock::now();
     // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
     // cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << endl;
-    ActionStruct.Calculate(0, std::cref(Gluon));
+    // ActionStruct.Calculate(0, std::cref(Gluon));
 
     //-----
     // Begin smearing
@@ -1073,7 +1076,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // TopologicalCharge[1] = TopChargeGluonic(Gluonsmeared1);
         TopologicalChargeSymm[1]       = TopChargeGluonicSymm(Gluonsmeared1);
         TopologicalChargeUnimproved[1] = TopChargeGluonicUnimproved(Gluonsmeared1);
-        ActionStruct.Calculate(1, std::cref(Gluonsmeared1));
+        // ActionStruct.Calculate(1, std::cref(Gluonsmeared1));
     }
 
     //-----
@@ -1106,7 +1109,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
             TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared2);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
-            ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared2));
+            // ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared2));
         }
         // Odd
         else
@@ -1125,7 +1128,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared1);
             TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
-            ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared1));
+            // ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared1));
         }
     }
 
@@ -1192,7 +1195,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     std::copy(std::cbegin(TopologicalChargeSymm), std::prev(std::cend(TopologicalChargeSymm)), std::ostream_iterator<double>(datalog, " "));
     datalog << TopologicalChargeSymm.back() << "\n"; //<< endl;
 
-    ActionStruct.SaveToFile(datalog);
+    // ActionStruct.SaveToFile(datalog);
 
     datalog << "TopChargePlaq: ";
     std::copy(std::cbegin(TopologicalChargeUnimproved), std::prev(std::cend(TopologicalChargeUnimproved)), std::ostream_iterator<double>(datalog, " "));
@@ -1550,11 +1553,11 @@ int main()
     // if constexpr(metadynamics_enabled)
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        MetaBiasPotential TopBiasPotential{-8, 8, 8000, 0.02, 1000.0};
         // TopBiasPotential.LoadPotential("metapotential_22.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.Setweight(0.005);
-        // TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
+        TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         // TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
@@ -1580,6 +1583,11 @@ int main()
         //     CV = MetaCharge(Gluon, Gluonsmeared1, Gluonsmeared2, n_smear_meta, rho_stout);
         // }
         // auto CV_function = [](){MetaCharge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, 15);};
+        // auto Update_function = []()
+        // {
+        //     Iterator::Checkerboard(Heatbath);
+        //     Iterator::Checkerboard();
+        // }
     // }
 
     //-----
@@ -1639,7 +1647,7 @@ int main()
     {
         // InstantonStart(*Gluon, 2);
         // auto start_update_metro {std::chrono::system_clock::now()};
-        if constexpr(n_metro != 0 && multi_hit != 0)
+        if constexpr(n_metro != 0 and multi_hit != 0 and !metadynamics_enabled)
         {
             std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
             MetropolisKernel Metropolis(Gluon, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
@@ -1655,7 +1663,7 @@ int main()
         // cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << endl;
         //-----
         // auto start_update_heatbath {std::chrono::system_clock::now()};
-        if constexpr(n_heatbath != 0)
+        if constexpr(n_heatbath != 0 and !metadynamics_enabled)
         {
             // HeatbathSU3(Gluon, n_heatbath, distribution_uniform);
             Iterator::Checkerboard(Heatbath, n_heatbath);
@@ -1675,7 +1683,7 @@ int main()
         // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
         //-----
         // auto start_update_or = std::chrono::system_clock::now();
-        if constexpr(n_orelax != 0)
+        if constexpr(n_orelax != 0 and !metadynamics_enabled)
         {
             // double action_before {WilsonAction::Action(Gluon)};
             // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
@@ -1689,12 +1697,13 @@ int main()
         // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
         // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
         //-----
-        if constexpr(n_instanton_update != 0)
+        if constexpr(n_instanton_update != 0 and !metadynamics_enabled)
         {
             int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
             int        L_half      {Nt/2 - 1};
             site_coord center      {L_half, L_half, L_half, L_half};
             int        radius      {5};
+            // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
             if (n_count == 0)
             {
                 BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, true);
@@ -1709,14 +1718,14 @@ int main()
         if constexpr(metadynamics_enabled)
         {
             HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, n_hmc, true, distribution_prob);
-            // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, 1, 4, distribution_prob, distribution_uniform);
+            // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, n_heatbath, n_orelax, distribution_prob, distribution_uniform);
         }
         // auto end_update_meta = std::chrono::system_clock::now();
         // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
         // cout << "Time for meta update: " << update_time_meta.count() << endl;
         if (n_count % expectation_period == 0)
         {
-            if constexpr(not metadynamics_enabled)
+            if constexpr(!metadynamics_enabled)
             {
                 // auto start_observable = std::chrono::system_clock::now();
                 Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);

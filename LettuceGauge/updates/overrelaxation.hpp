@@ -96,22 +96,22 @@ struct OverrelaxationSubgroupKernel
             Matrix_3x3       st_adj {(WilsonAction::Staple(Gluon, current_link)).adjoint()};
             //-----
             // Update (0, 1) subgroup
-            // std::cout << "Action before: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract01<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed01(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (0, 2) subgroup
-            // std::cout << "Action before: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract02<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed02(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (1, 2) subgroup
-            // std::cout << "Action before: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract12<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed12(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << SLocal(Gluon[t][x][y][z][mu], st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             SU3::Projection::GramSchmidt(Gluon(current_link));
         }

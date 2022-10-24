@@ -212,6 +212,18 @@ class GaugeField4D
                     return 0;
             }
         }
+        friend std::ostream& operator<<(std::ostream& stream, const GaugeField4D& field)
+        {
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            for (int mu = 0; mu < Nmu; ++mu)
+            {
+                stream << field.gaugefield[field.LinearCoordinate(t, x, y, z, mu)] << ", ";
+            }
+            return stream;
+        }
     private:
         // -----
         // TODO: Do we need modulo here? Also, it is probably preferable to make the layout/coordinate function a (template) parameter of the class

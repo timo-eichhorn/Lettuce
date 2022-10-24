@@ -67,6 +67,7 @@ struct SingleObservable
 // handles the type of FuncT automatically. Of course, we could also directly construct SingleObservable using decltyp(function) as second template parameter.
 
 template<typename observableT, typename FuncT>
+[[nodiscard]]
 auto CreateObservable(FuncT& ObservableFunction, const int n_smear_in, const std::string& observable_name) noexcept
 {
     return SingleObservable<observableT, FuncT>{ObservableFunction, n_smear_in, observable_name};
