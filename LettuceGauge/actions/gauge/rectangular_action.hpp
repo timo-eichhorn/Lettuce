@@ -85,30 +85,127 @@ namespace GaugeAction
             }
 
             // TODO: Actually write this
+            [[nodiscard]]
+            Matrix_3x3 StaplePlaq(const GaugeField& Gluon, const link_coord& current_link) const noexcept
+            {
+                Matrix_3x3 st;
+                auto [t, x, y, z, mu] = current_link;
+
+                switch(mu)
+                {
+                    case 0:
+                    {
+                        int tp {(t + 1)%Nt};
+                        int xp {(x + 1)%Nx};
+                        int xm {(x - 1 + Nx)%Nx};
+                        int yp {(y + 1)%Ny};
+                        int ym {(y - 1 + Ny)%Ny};
+                        int zp {(z + 1)%Nz};
+                        int zm {(z - 1 + Nz)%Nz};
+                        st.noalias() = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 0}) * Gluon({tp, x, y, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1})
+                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 0}) * Gluon({tp, x, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2})
+                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 0}) * Gluon({tp, x, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3});
+                    }
+                    break;
+
+                    case 1:
+                    {
+                        int tp {(t + 1)%Nt};
+                        int tm {(t - 1 + Nt)%Nt};
+                        int xp {(x + 1)%Nx};
+                        int yp {(y + 1)%Ny};
+                        int ym {(y - 1 + Ny)%Ny};
+                        int zp {(z + 1)%Nz};
+                        int zm {(z - 1 + Nz)%Nz};
+                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}) * Gluon({tm, xp, y, z, 0})
+                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 1}) * Gluon({t, xp, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2})
+                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 1}) * Gluon({t, xp, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3});
+                    }
+                    break;
+
+                    case 2:
+                    {
+                        int tp {(t + 1)%Nt};
+                        int tm {(t - 1 + Nt)%Nt};
+                        int xp {(x + 1)%Nx};
+                        int xm {(x - 1 + Nx)%Nx};
+                        int yp {(y + 1)%Ny};
+                        int zp {(z + 1)%Nz};
+                        int zm {(z - 1 + Nz)%Nz};
+                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}) * Gluon({tm, x, yp, z, 0})
+                                     + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}) * Gluon({t, xm, yp, z, 1})
+                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 2}) * Gluon({t, x, yp, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3});
+                    }
+                    break;
+
+                    case 3:
+                    {
+                        int tp {(t + 1)%Nt};
+                        int tm {(t - 1 + Nt)%Nt};
+                        int xp {(x + 1)%Nx};
+                        int xm {(x - 1 + Nx)%Nx};
+                        int yp {(y + 1)%Ny};
+                        int ym {(y - 1 + Ny)%Ny};
+                        int zp {(z + 1)%Nz};
+                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 3}) * Gluon({tm, x, y, zp, 0})
+                                     + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 3}) * Gluon({t, xm, y, zp, 1})
+                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 3}) * Gluon({t, x, ym, zp, 2});
+                    }
+                    break;
+                }
+                return st;
+            }
+
             // [[nodiscard]]
-            // Matrix_3x3 StaplePlaq(const GaugeField& Gluon, const link_coord& link) const noexcept
+            // Matrix_3x3 StapleRect(const GaugeField& U, const site_coord& current_site, const int mu) const noexcept
             // {
-            //     //...
+            //     Matrix_3x3 st;
+            //     for (int nu_offset = 1; nu_offset < 4; ++nu_offset)
+            //     {
+            //         int nu {(mu + nu_offset) % 4};
+            //         // First term, orthogonal to link
+            //         // Right half
+            //         site_coord site_nup      {Move< 1>(current_site, nu)};
+            //         site_coord site_nupp     {Move< 1>(site_nup    , nu)};
+            //         site_coord site_mup_nup  {Move< 1>(site_nup    , mu)};
+            //         site_coord site_mup      {Move< 1>(current_site, mu)};
+            //         // Left half
+            //         site_coord site_nud      {Move<-1>(current_site, nu)};
+            //         site_coord site_nudd     {Move<-1>(site_nud    , nu)};
+            //         site_coord site_mup_nudd {Move< 1>(site_nudd   , mu)};
+            //         st.noalias() += U(current_site, nu)           * U(site_nup , nu)           * U(site_nupp, mu) * U(site_mup_nup , nu).adjoint() * U(site_mup    , nu).adjoint()
+            //                       + U(site_nud    , nu).adjoint() * U(site_nudd, nu).adjoint() * U(site_nudd, mu) * U(site_mup_nudd, nu)           * U(site_mup_nud, nu);
+            //         // Second term, same direction as link
+            //         st.noalias() +=
+            //         // Third term, same direction as link
+            //         st.noalias() +=
+            //         // st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+            //         //               + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
+            //     }
             // }
 
             // [[nodiscard]]
-            // Matrix_3x3 StapleRect(const GaugeField& Gluon, const link_coord& link) const noexcept
+            // Matrix_3x3 StapleRect(const GaugeField& U, const link_coord& current_link) const noexcept
             // {
-            //     //...
+            //     auto [t, x, y, z, mu] = current_link;
+            //     return StapleRect(U, {t, x, y, z}, mu);
+            //     // Matrix_3x3 st;
+            //     // site_coord current_site {current_link.t, current_link.x, current_link.y, current_link.z};
+            //     // int        mu           {current_link.mu};
             // }
 
-            // [[nodiscard]]
-            // Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept
-            // {
-            //     if constexpr(stencil_radius == 1)
-            //     {
-            //         return StaplePlaq(Gluon, link);
-            //     }
-            //     else
-            //     {
-            //         return StaplePlaq(Gluon, link) + StapleRect(Gluon, link);
-            //     }
-            // }
+            [[nodiscard]]
+            Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept
+            {
+                if constexpr(stencil_radius == 1)
+                {
+                    return StaplePlaq(Gluon, link);
+                }
+                else
+                {
+                    return StaplePlaq(Gluon, link) + StapleRect(Gluon, link);
+                }
+            }
 
     };
 
