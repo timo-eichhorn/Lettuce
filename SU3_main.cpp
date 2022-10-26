@@ -27,6 +27,7 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
+#include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
@@ -800,6 +801,7 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     vector<double>               Action(n_smear + 1);
+    vector<double>               ActionImproved(n_smear + 1);
     vector<double>               ActionUnnormalized(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
     vector<double>               WLoop4(n_smear + 1);
@@ -811,6 +813,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double>               TopologicalChargeSymm(n_smear + 1);
     vector<double>               TopologicalChargeUnimproved(n_smear + 1);
     // auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
+    GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -818,6 +821,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
     Action[0]                      = WilsonAction::ActionNormalized(Gluon);
+    ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
@@ -878,6 +882,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
         // Calculate observables
         Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+        ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -911,6 +916,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // }
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
+            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
@@ -930,6 +936,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -966,6 +973,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
     datalog << Action.back() << "\n";
+    //-----
+    datalog << "Improved_Action: ";
+    // std::copy(ActionImproved.cbegin(), std::prev(ActionImproved.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(ActionImproved), std::prev(std::cend(ActionImproved)), std::ostream_iterator<double>(datalog, " "));
+    datalog << ActionImproved.back() << "\n";
     //-----
     datalog << "Wilson_Action(unnormalized): ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1014,6 +1026,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     vector<double>               Action(n_smear + 1);
+    vector<double>               ActionImproved(n_smear + 1);
     vector<double>               ActionUnnormalized(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
     vector<double>               WLoop4(n_smear + 1);
@@ -1025,9 +1038,12 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     vector<double>               TopologicalChargeSymm(n_smear + 1);
     vector<double>               TopologicalChargeUnimproved(n_smear + 1);
 
+    GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
     Action[0]                      = WilsonAction::ActionNormalized(Gluon);
+    ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
@@ -1084,6 +1100,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
         // cout << "Time for calculating smearing: " << smearing_time.count() << endl;
         // Calculate observables
         Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+        ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -1114,6 +1131,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
             // }
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
+            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
@@ -1130,6 +1148,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
             StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -1165,6 +1184,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
     datalog << Action.back() << "\n";
+    //-----
+    datalog << "Improved_Action: ";
+    // std::copy(ActionImproved.cbegin(), std::prev(ActionImproved.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(ActionImproved), std::prev(std::cend(ActionImproved)), std::ostream_iterator<double>(datalog, " "));
+    datalog << ActionImproved.back() << "\n";
     //-----
     datalog << "Wilson_Action(unnormalized): ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
