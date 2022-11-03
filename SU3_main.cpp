@@ -1380,7 +1380,22 @@ int main()
     HeatbathKernel               Heatbath(Gluon, distribution_uniform);
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
-    HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
+    // HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
+    GaugeAction::Rectangular<1>  WilsonAct(beta, 1.0, 0.0);
+    GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    HMC::OMF_4                   OMF_4_Integrator;
+    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, LüscherWeiszAction, distribution_prob);
+
+    std::cout << "Action before: " << LüscherWeiszAction.Action(Gluon) << std::endl;
+    Matrix_3x3 st_plaq {LüscherWeiszAction.StaplePlaq(Gluon, {1,2,3,4,0})};
+    Matrix_3x3 st_rect {LüscherWeiszAction.StapleRect(Gluon, {1,2,3,4,0})};
+    auto before = LüscherWeiszAction.Local(Gluon({1,2,3,4,0}), st_plaq, st_rect);
+    Gluon({1,2,3,4,0}) = SU3::RandomMatParallel(2, 0.3);
+    std::cout << "before: " << before << std::endl;
+    std::cout << "Action local difference: " << LüscherWeiszAction.Local(Gluon({1,2,3,4,0}), st_plaq, st_rect) - before << std::endl;
+    // std::cout << WilsonAction::Local(Gluon({1,2,3,4,0}), st) - before << std::endl;
+    std::cout << "Action after: " << LüscherWeiszAction.Action(Gluon) << std::endl;
+    std::exit(0);
 
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)
@@ -1471,7 +1486,8 @@ int main()
         for (int n_count = 0; n_count < 20; ++n_count)
         {
             // std::cout << "HMC accept/reject (therm): " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::Leapfrog, 100, false, distribution_prob) << std::endl;
-            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
+            // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
+            HMC(10, false);
         }
         datalog << "[HMC end thermalization]\n" << std::endl;
     }
@@ -1509,7 +1525,8 @@ int main()
         if constexpr(n_hmc != 0 and !metadynamics_enabled)
         {
             // std::cout << "HMC accept/reject: " << HMC::HMCGauge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, HMC::OMF_4, n_hmc, true, distribution_prob) << std::endl;
-            HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
+            // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, n_hmc, true, distribution_prob);
+            HMC(n_hmc, true);
         }
         // auto end_update_hmc {std::chrono::system_clock::now()};
         // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};

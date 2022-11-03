@@ -87,7 +87,7 @@ namespace GaugeAction
                 }
                 else
                 {
-                    return beta * (c_plaq * (6.0 * Gluon.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 - 1.0/3.0 * sum_rect));
+                    return beta * (c_plaq * (6.0 * Gluon.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 * Gluon.Volume() - 1.0/3.0 * sum_rect));
                 }
             }
 
@@ -217,6 +217,9 @@ namespace GaugeAction
                 return StapleRect(U, {t, x, y, z}, mu);
             }
 
+            // TODO: In it's current form, this function is useless. While the trace is linear, we still need to separate the plaquette staple and the rectangular staple, since
+            //       they generally contribute with different coefficients c_plaq and c_rect. Maybe write a function which takes a link, and already performs the appropriately
+            //       weighted multiplication with the staples? Need to check if that is compatible with the pure gauge updates.
             [[nodiscard]]
             Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept
             {
@@ -226,10 +229,17 @@ namespace GaugeAction
                 }
                 else
                 {
-                    return StaplePlaq(Gluon, link) + StapleRect(Gluon, link);
+                    return c_plaq * StaplePlaq(Gluon, link) + c_rect * StapleRect(Gluon, link);
                 }
             }
 
+            [[nodiscard]]
+            double Local(const Matrix_SU3& U, const Matrix_3x3& st_plaq, const Matrix_3x3& st_rect) noexcept
+            {
+                // return beta/3.0 * std::real((Matrix_SU3::Identity() - U * st.adjoint()).trace());
+                // return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * (c_plaq + c_rect) * std::real((U * st.adjoint()).trace()));
+                return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * (c_plaq * std::real((U * st_plaq.adjoint()).trace()) + c_rect * std::real((U * st_rect.adjoint()).trace())));
+            }
     };
 
     // Template specialization for Wilson gauge action?
