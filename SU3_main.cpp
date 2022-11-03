@@ -803,6 +803,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double>               Action(n_smear + 1);
     vector<double>               ActionImproved(n_smear + 1);
     vector<double>               ActionUnnormalized(n_smear + 1);
+    vector<double>               Plaquette(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
     vector<double>               WLoop4(n_smear + 1);
     vector<double>               WLoop8(n_smear + 1);
@@ -822,6 +823,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // auto start_action = std::chrono::system_clock::now();
     Action[0]                      = WilsonAction::ActionNormalized(Gluon);
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
+    Plaquette[0]                   = PlaquetteSum(Gluon);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
@@ -883,6 +885,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // Calculate observables
         Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
         ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
+        Plaquette[1]                   = PlaquetteSum(Gluonsmeared1);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -917,6 +920,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
+            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
@@ -937,6 +941,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
+            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -949,6 +954,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 
     //-----
+    std::transform(Plaquette.begin(), Plaquette.end(), Plaquette.begin(), [&Gluon](const auto& element){return element / Gluon.Volume();});
     std::transform(Action.begin(), Action.end(), ActionUnnormalized.begin(), [&Gluon](const auto& element){return 6.0 * beta * Gluon.Volume() * element;});
     std::transform(PLoop.begin(), PLoop.end(), PLoopRe.begin(), [](const auto& element){return std::real(element);});
     std::transform(PLoop.begin(), PLoop.end(), PLoopIm.begin(), [](const auto& element){return std::imag(element);});
@@ -978,6 +984,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // std::copy(ActionImproved.cbegin(), std::prev(ActionImproved.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(ActionImproved), std::prev(std::cend(ActionImproved)), std::ostream_iterator<double>(datalog, " "));
     datalog << ActionImproved.back() << "\n";
+    //-----
+    datalog << "Plaquette: ";
+    // std::copy(Plaquette.cbegin(), std::prev(Plaquette.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(Plaquette), std::prev(std::cend(Plaquette)), std::ostream_iterator<double>(datalog, " "));
+    datalog << Plaquette.back() << "\n";
     //-----
     datalog << "Wilson_Action(unnormalized): ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1381,21 +1392,13 @@ int main()
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
     // HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
-    GaugeAction::Rectangular<1>  WilsonAct(beta, 1.0, 0.0);
-    GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    // GaugeAction::Rectangular<1>  WilsonAct(beta, 1.0, 0.0);
+    // GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
     HMC::OMF_4                   OMF_4_Integrator;
-    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, LüscherWeiszAction, distribution_prob);
-
-    std::cout << "Action before: " << LüscherWeiszAction.Action(Gluon) << std::endl;
-    Matrix_3x3 st_plaq {LüscherWeiszAction.StaplePlaq(Gluon, {1,2,3,4,0})};
-    Matrix_3x3 st_rect {LüscherWeiszAction.StapleRect(Gluon, {1,2,3,4,0})};
-    auto before = LüscherWeiszAction.Local(Gluon({1,2,3,4,0}), st_plaq, st_rect);
-    Gluon({1,2,3,4,0}) = SU3::RandomMatParallel(2, 0.3);
-    std::cout << "before: " << before << std::endl;
-    std::cout << "Action local difference: " << LüscherWeiszAction.Local(Gluon({1,2,3,4,0}), st_plaq, st_rect) - before << std::endl;
-    // std::cout << WilsonAction::Local(Gluon({1,2,3,4,0}), st) - before << std::endl;
-    std::cout << "Action after: " << LüscherWeiszAction.Action(Gluon) << std::endl;
-    std::exit(0);
+    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::LüscherWeiszAction, distribution_prob);
+    // TODO: This is still somewhat "buggy". Since we define the action in the namespace GaugeAction where beta = 0.0, this does not give the expected results.
+    //       Need to set beta somehow, or define after configuration
+    std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
 
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)

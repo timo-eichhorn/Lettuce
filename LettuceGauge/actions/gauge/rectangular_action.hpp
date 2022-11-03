@@ -195,8 +195,8 @@ namespace GaugeAction
                     site_coord site_mupp     {Move< 1>(site_mup    , mu)};
                     // Left half
                     site_coord site_mupp_nud {Move< 1>(site_mup_nud, mu)};
-                    st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint() * U(site_mup, mu).adjoint()
-                                  + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, mu) * U(site_mupp_nud, nu)           * U(site_mup, mu).adjoint();
+                    st.noalias() += (U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint()
+                                   + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, mu) * U(site_mupp_nud, nu)) * U(site_mup, mu).adjoint();
                     //-----
                     // Third term, same direction as link (staple originating from site_mud)
                     // Right half
@@ -204,8 +204,8 @@ namespace GaugeAction
                     site_coord site_mud_nup  {Move< 1>(site_mud    , nu)};
                     // Left half
                     site_coord site_mud_nud  {Move<-1>(site_mud    , nu)};
-                    st.noalias() += U(site_mud, mu).adjoint() * U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
-                                  + U(site_mud, mu).adjoint() * U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(site_nud, mu) * U(site_mup_nud, nu);
+                    st.noalias() += U(site_mud, mu).adjoint() * (U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+                                                               + U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(site_nud, mu) * U(site_mup_nud, nu));
                 }
                 return st;
             }
@@ -217,28 +217,23 @@ namespace GaugeAction
                 return StapleRect(U, {t, x, y, z}, mu);
             }
 
-            // TODO: In it's current form, this function is useless. While the trace is linear, we still need to separate the plaquette staple and the rectangular staple, since
-            //       they generally contribute with different coefficients c_plaq and c_rect. Maybe write a function which takes a link, and already performs the appropriately
-            //       weighted multiplication with the staples? Need to check if that is compatible with the pure gauge updates.
             [[nodiscard]]
-            Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept
+            Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& current_link) const noexcept
             {
                 if constexpr(stencil_radius == 1)
                 {
-                    return StaplePlaq(Gluon, link);
+                    return StaplePlaq(Gluon, current_link);
                 }
                 else
                 {
-                    return c_plaq * StaplePlaq(Gluon, link) + c_rect * StapleRect(Gluon, link);
+                    return c_plaq * StaplePlaq(Gluon, current_link) + c_rect * StapleRect(Gluon, current_link);
                 }
             }
 
             [[nodiscard]]
-            double Local(const Matrix_SU3& U, const Matrix_3x3& st_plaq, const Matrix_3x3& st_rect) noexcept
+            double Local(const Matrix_SU3& U, const Matrix_3x3& st) noexcept
             {
-                // return beta/3.0 * std::real((Matrix_SU3::Identity() - U * st.adjoint()).trace());
-                // return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * (c_plaq + c_rect) * std::real((U * st.adjoint()).trace()));
-                return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * (c_plaq * std::real((U * st_plaq.adjoint()).trace()) + c_rect * std::real((U * st_rect.adjoint()).trace())));
+                return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * std::real((U * st.adjoint()).trace()));
             }
     };
 
@@ -272,6 +267,10 @@ namespace GaugeAction
     // using SymanzikTreeLevel = Rectangular<2, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0>;
     // using Iwasaki           = Rectangular<2, 1.0 + 8.0 * 0.331   , -0.331>;
     // using DBW2              = Rectangular<2, 1.0 + 8.0 * 1.4088  , -1.4088>;
+    Rectangular<1>  WilsonAction      (beta, 1.0                 ,  0.0);
+    Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    Rectangular<2>  IwasakiAction     (beta, 1.0 + 8.0 * 0.331   , -0.331);
+    Rectangular<2>  DBW2Action        (beta, 1.0 + 8.0 * 1.4088  , -1.4088);
 } // namespace GaugeAction
 
 #endif // LETTUCE_RECTANGULAR_GAUGE_ACTION_HPP
