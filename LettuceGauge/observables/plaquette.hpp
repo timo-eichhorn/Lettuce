@@ -63,6 +63,8 @@ Matrix_SU3 PlaquetteII(const GaugeField& Gluon, const site_coord& current_site, 
 [[nodiscard]]
 Matrix_SU3 PlaquetteIII(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
 {
+    // TODO: We could reorder the expression below and replace one Move<-1> by a Move<1>
+    //       Also, we could replace the last Move<-1> with a Move<1> from a different site
     site_coord site_mud     {Move<-1>(current_site, mu)};
     site_coord site_mud_nud {Move<-1>(site_mud    , nu)};
     return Gluon(site_mud, mu).adjoint() * Gluon(site_mud_nud, nu).adjoint() * Gluon(site_mud_nud, mu) * Gluon(Move<-1>(current_site, nu), nu);

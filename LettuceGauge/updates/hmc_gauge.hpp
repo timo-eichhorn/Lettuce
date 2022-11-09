@@ -196,12 +196,8 @@ namespace GaugeUpdates
             ActionT&     Action;
             std::uniform_real_distribution<floatT>& distribution_prob;
 
-            friend struct HMC::Leapfrog;
-            friend struct HMC::OMF_2_slow;
-            friend struct HMC::OMF_2;
-            friend struct HMC::OMF_4_slow;
-            friend struct HMC::OMF_4;
-
+            // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
+            friend IntegratorT;
 
             void RandomMomentum() const noexcept
             {

@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
+#include "plaquette.hpp"
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
@@ -17,7 +18,20 @@
 //-----
 // Calculates clover term
 
-void CalculateClover(const GaugeField& Gluon, FullTensor& Clov)
+[[nodiscard]]
+Matrix_3x3 CalculateCloverComponent(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+{
+    if (mu == nu)
+    {
+        return Matrix_3x3::Zero();
+    }
+    else
+    {
+        return PlaquetteI(Gluon, current_site, mu, nu) + PlaquetteII(Gluon, current_site, mu, nu) + PlaquetteIII(Gluon, current_site, mu, nu) + PlaquetteIV(Gluon, current_site, mu, nu);
+    }
+}
+
+void CalculateClover(const GaugeField& Gluon, FullTensor& Clov) noexcept
 {
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)

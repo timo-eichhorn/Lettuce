@@ -1394,11 +1394,12 @@ int main()
     // HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
     // GaugeAction::Rectangular<1>  WilsonAct(beta, 1.0, 0.0);
     // GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    GaugeAction::LüscherWeiszAction.SetBeta(beta);
+    std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
     HMC::OMF_4                   OMF_4_Integrator;
     GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::LüscherWeiszAction, distribution_prob);
     // TODO: This is still somewhat "buggy". Since we define the action in the namespace GaugeAction where beta = 0.0, this does not give the expected results.
     //       Need to set beta somehow, or define after configuration
-    std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
 
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)
