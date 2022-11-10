@@ -4,7 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 #include "clover.hpp"
-#include "Plaquette.hpp"
+#include "plaquette.hpp"
 //----------------------------------------
 // Standard library headers
 #include <omp.h>

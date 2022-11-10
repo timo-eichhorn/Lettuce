@@ -123,4 +123,103 @@ auto CreateObservable(FuncT& ObservableFunction, const int n_smear_in, const std
 //         }
 // };
 
+// TODO: CreateObservable doesn't work if the function is overloaded (like the topological charge)
+// void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear)
+// {
+//     // Action
+//     // ActionImproved
+//     // ActionUnnormalized
+//     // WLoop2
+//     // WLoop4
+//     // WLoop8
+//     // PLoopRe
+//     // PLoopIm
+//     // PLoop
+//     // TopologicalChargeSymm
+//     // TopologicalChargeUnimproved
+//     auto Obs_WilsonAction   {CreateObservable<double>(WilsonAction::ActionNormalized, n_smear, "Wilson_Action")};
+//     auto Obs_ImprovedAction {CreateObservable<double>(WilsonAction::ActionNormalized, n_smear, "Improved_Action")};
+//     auto Obs_Plaquette      {CreateObservable<double>(PlaquetteSum, n_smear, "Plaquette")};
+//     auto Obs_WLoop2         {CreateObservable<double>(WilsonLoop<0, 2, true>, n_smear, "Wilson_loop(L=2)")};
+//     auto Obs_WLoop4         {CreateObservable<double>(WilsonLoop<2, 4, true>, n_smear, "Wilson_loop(L=4)")};
+//     auto Obs_WLoop8         {CreateObservable<double>(WilsonLoop<4, 8, true>, n_smear, "Wilson_loop(L=8)")};
+//     auto Obs_Ploop          {CreateObservable<std::complex<double>>(PolyakovLoop, n_smear, "Polyakov_loop")};
+//     auto Obs_ClovCharge     {CreateObservable<double>(TopChargeGluonicSymm, n_smear, "TopChargeClov")};
+//     auto Obs_PlaqCharge     {CreateObservable<double>(TopChargeGluonicUnimproved, n_smear, "TopChargePlaq")};
+
+//     // Unsmeared
+//     Obs_WilsonAction.Calculate(0, Gluon);
+//     Obs_ImprovedAction.Calculate(0, Gluon);
+//     Obs_Plaquette.Calculate(0, Gluon);
+//     Obs_WLoop2.Calculate(0, Gluon, Gluonchain);
+//     Obs_WLoop4.Calculate(0, Gluon, Gluonchain);
+//     Obs_WLoop8.Calculate(0, Gluon, Gluonchain);
+//     Obs_Ploop.Calculate(0, Gluon);
+//     Obs_ClovCharge.Calculate(0, Gluon);
+//     Obs_PlaqCharge.Calculate(0, Gluon);
+
+//     // Begin smearing
+//     if (n_smear > 0)
+//     {
+//         StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+//         Obs_WilsonAction.Calculate(1, Gluonsmeared1);
+//         Obs_ImprovedAction.Calculate(1, Gluonsmeared1);
+//         Obs_Plaquette.Calculate(1, Gluonsmeared1);
+//         Obs_WLoop2.Calculate(1, Gluonsmeared1, Gluonchain);
+//         Obs_WLoop4.Calculate(1, Gluonsmeared1, Gluonchain);
+//         Obs_WLoop8.Calculate(1, Gluonsmeared1, Gluonchain);
+//         Obs_Ploop.Calculate(1, Gluonsmeared1);
+//         Obs_ClovCharge.Calculate(1, Gluonsmeared1);
+//         Obs_PlaqCharge.Calculate(1, Gluonsmeared1);
+//     }
+
+//     // Further smearing steps
+//     for (int smear_count = 2; smear_count <= n_smear; ++smear_count)
+//     {
+//         // Even
+//         if (smear_count % 2 == 0)
+//         {
+//             StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+//             Obs_WilsonAction.Calculate(smear_count, Gluonsmeared2);
+//             Obs_ImprovedAction.Calculate(smear_count, Gluonsmeared2);
+//             Obs_Plaquette.Calculate(smear_count, Gluonsmeared2);
+//             Obs_WLoop2.Calculate(smear_count, Gluonsmeared2, Gluonchain);
+//             Obs_WLoop4.Calculate(smear_count, Gluonsmeared2, Gluonchain);
+//             Obs_WLoop8.Calculate(smear_count, Gluonsmeared2, Gluonchain);
+//             Obs_Ploop.Calculate(smear_count, Gluonsmeared2);
+//             Obs_ClovCharge.Calculate(smear_count, Gluonsmeared2);
+//             Obs_PlaqCharge.Calculate(smear_count, Gluonsmeared2);
+//         }
+//         // Odd
+//         else
+//         {
+//             StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+//             Obs_WilsonAction.Calculate(smear_count, Gluonsmeared1);
+//             Obs_ImprovedAction.Calculate(smear_count, Gluonsmeared1);
+//             Obs_Plaquette.Calculate(smear_count, Gluonsmeared1);
+//             Obs_WLoop2.Calculate(smear_count, Gluonsmeared1, Gluonchain);
+//             Obs_WLoop4.Calculate(smear_count, Gluonsmeared1, Gluonchain);
+//             Obs_WLoop8.Calculate(smear_count, Gluonsmeared1, Gluonchain);
+//             Obs_Ploop.Calculate(smear_count, Gluonsmeared1);
+//             Obs_ClovCharge.Calculate(smear_count, Gluonsmeared1);
+//             Obs_PlaqCharge.Calculate(smear_count, Gluonsmeared1);
+//         }
+//     }
+
+//     // Save to files
+//     // TODO: Rename to SaveToStream?
+//     Obs_WilsonAction.SaveToFile(wilsonlog);
+//     Obs_ImprovedAction.SaveToFile(wilsonlog);
+//     Obs_Plaquette.SaveToFile(wilsonlog);
+//     // Wilson_Action(unnormalized)
+//     Obs_WLoop2.SaveToFile(wilsonlog);
+//     Obs_WLoop4.SaveToFile(wilsonlog);
+//     Obs_WLoop8.SaveToFile(wilsonlog);
+//     // Obs_Ploop.SaveToFile(wilsonlog);
+//     // Polyakov_loop(Re)
+//     // Polyakov_loop(Im)
+//     Obs_ClovCharge.SaveToFile(wilsonlog);
+//     Obs_PlaqCharge.SaveToFile(wilsonlog);
+// }
+
 #endif // LETTUCE_OBSERVABLES_HPP
