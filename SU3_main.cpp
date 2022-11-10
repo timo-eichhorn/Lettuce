@@ -15,6 +15,7 @@
 #include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
+#include "LettuceGauge/observables/field_strength_tensor.hpp"
 #include "LettuceGauge/observables/polyakov_loop.hpp"
 #include "LettuceGauge/observables/topological_charge.hpp"
 #include "LettuceGauge/observables/wilson_loop.hpp"
@@ -804,6 +805,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double>               ActionImproved(n_smear + 1);
     vector<double>               ActionUnnormalized(n_smear + 1);
     vector<double>               Plaquette(n_smear + 1);
+    FullTensor                   F;
+    vector<double>               EPlaqutte(n_smear + 1);
+    vector<double>               EClover(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
     vector<double>               WLoop4(n_smear + 1);
     vector<double>               WLoop8(n_smear + 1);
@@ -824,6 +828,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     Action[0]                      = WilsonAction::ActionNormalized(Gluon);
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
+    EPlaqutte[0]                   = EnergyDensity::Plaquette(Gluon);
+    FieldStrengthTensor::Clover(Gluon, F);
+    EClover[0]                     = EnergyDensity::Clover(F);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
@@ -886,6 +893,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         Action[1]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
         ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         Plaquette[1]                   = PlaquetteSum(Gluonsmeared1);
+        EPlaqutte[1]                   = EnergyDensity::Plaquette(Gluonsmeared1);
+        FieldStrengthTensor::Clover(Gluonsmeared1, F);
+        EClover[1]                     = EnergyDensity::Clover(F);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -921,6 +931,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
             Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
+            EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared2);
+            FieldStrengthTensor::Clover(Gluonsmeared2, F);
+            EClover[smear_count]                     = EnergyDensity::Clover(F);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
@@ -941,7 +954,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Calculate observables
             Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
-            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
+            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
+            EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared1);
+            FieldStrengthTensor::Clover(Gluonsmeared1, F);
+            EClover[smear_count]                     = EnergyDensity::Clover(F);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -989,6 +1005,16 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // std::copy(Plaquette.cbegin(), std::prev(Plaquette.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(Plaquette), std::prev(std::cend(Plaquette)), std::ostream_iterator<double>(datalog, " "));
     datalog << Plaquette.back() << "\n";
+    //-----
+    datalog << "E_plaq: ";
+    // std::copy(EPlaqutte.cbegin(), std::prev(EPlaqutte.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(EPlaqutte), std::prev(std::cend(EPlaqutte)), std::ostream_iterator<double>(datalog, " "));
+    datalog << EPlaqutte.back() << "\n";
+    //-----
+    datalog << "E_clov: ";
+    // std::copy(EClover.cbegin(), std::prev(EClover.cend()), std::ostream_iterator<double>(datalog, " "));
+    std::copy(std::cbegin(EClover), std::prev(std::cend(EClover)), std::ostream_iterator<double>(datalog, " "));
+    datalog << EClover.back() << "\n";
     //-----
     datalog << "Wilson_Action(unnormalized): ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
@@ -1394,10 +1420,11 @@ int main()
     // HMC::HMCKernel               HMC_(Gluon, Gluonsmeared1, Gluonsmeared2, HMC::OMF_4, distribution_prob);
     // GaugeAction::Rectangular<1>  WilsonAct(beta, 1.0, 0.0);
     // GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    GaugeAction::WilsonAction.SetBeta(beta);
     GaugeAction::LüscherWeiszAction.SetBeta(beta);
     std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
     HMC::OMF_4                   OMF_4_Integrator;
-    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::LüscherWeiszAction, distribution_prob);
+    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, distribution_prob);
     // TODO: This is still somewhat "buggy". Since we define the action in the namespace GaugeAction where beta = 0.0, this does not give the expected results.
     //       Need to set beta somehow, or define after configuration
 
