@@ -79,7 +79,7 @@ GaugeField                   Gluonsmeared2;
 // TODO: Move to large if constexpr environment together with entire metadynamics code
 GaugeField                   Gluonsmeared3;
 GaugeField                   Gluonchain;
-// FullTensor                   Clover_array;
+FullTensor                   F_tensor;
 // std::unique_ptr<Full_tensor> F_tensor      {std::make_unique<Full_tensor>()};
 // std::unique_ptr<Full_tensor> Q_tensor      {std::make_unique<Full_tensor>()};
 
@@ -805,7 +805,6 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double>               ActionImproved(n_smear + 1);
     vector<double>               ActionUnnormalized(n_smear + 1);
     vector<double>               Plaquette(n_smear + 1);
-    FullTensor                   F;
     vector<double>               EPlaqutte(n_smear + 1);
     vector<double>               EClover(n_smear + 1);
     vector<double>               WLoop2(n_smear + 1);
@@ -818,7 +817,17 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     vector<double>               TopologicalChargeSymm(n_smear + 1);
     vector<double>               TopologicalChargeUnimproved(n_smear + 1);
     // auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
+    // GaugeAction::Rectangular<1> WAct(beta, 1.0, 0.0);
     GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+
+    // TODO: We can construct the Action in the argument list, so we do not have to declare it in a previous line
+    //       HOWEVER this requires the constructor to take the Action as a forwarding reference. This way, the rvalue reference extends the lifetime of
+    //       the temporary Action functor to be the same as the Flow functor.
+    // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
+    //       forwarding references in the constructor. Also, check if more references should be made const members
+    Integrators::WilsonFlow::RK3 Flow_Integrator;
+    // GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
+    GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -829,8 +838,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
     EPlaqutte[0]                   = EnergyDensity::Plaquette(Gluon);
-    FieldStrengthTensor::Clover(Gluon, F);
-    EClover[0]                     = EnergyDensity::Clover(F);
+    FieldStrengthTensor::Clover(Gluon, F_tensor);
+    EClover[0]                     = EnergyDensity::Clover(F_tensor);
     // auto end_action = std::chrono::system_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // cout << "Time for calculating action: " << action_time.count() << endl;
@@ -883,6 +892,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // Apply smearing
         // auto start_smearing = std::chrono::system_clock::now();
         StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        // Flow(1);
         // Gluonsmeared1 = Gluon;
         // Iterator::Checkerboard(Cooling, 1);
         // WilsonFlowForward(Gluonsmeared1, 0.12, 1);
@@ -894,8 +904,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         Plaquette[1]                   = PlaquetteSum(Gluonsmeared1);
         EPlaqutte[1]                   = EnergyDensity::Plaquette(Gluonsmeared1);
-        FieldStrengthTensor::Clover(Gluonsmeared1, F);
-        EClover[1]                     = EnergyDensity::Clover(F);
+        FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
+        EClover[1]                     = EnergyDensity::Clover(F_tensor);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -916,6 +926,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
             StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            // Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // TODO: FIX THIS, INCORRECT IF n_smear_skip is even!
@@ -932,8 +943,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
             Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
             EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared2);
-            FieldStrengthTensor::Clover(Gluonsmeared2, F);
-            EClover[smear_count]                     = EnergyDensity::Clover(F);
+            FieldStrengthTensor::Clover(Gluonsmeared2, F_tensor);
+            EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
@@ -949,6 +960,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
             StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            // Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // Calculate observables
@@ -956,8 +968,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
             Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
             EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared1);
-            FieldStrengthTensor::Clover(Gluonsmeared1, F);
-            EClover[smear_count]                     = EnergyDensity::Clover(F);
+            FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
+            EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
             WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -1422,7 +1434,9 @@ int main()
     // GaugeAction::Rectangular<2>  LüscherWeiszAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
     GaugeAction::WilsonAction.SetBeta(beta);
     GaugeAction::LüscherWeiszAction.SetBeta(beta);
-    std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
+    GaugeAction::IwasakiAction.SetBeta(beta);
+    GaugeAction::DBW2Action.SetBeta(beta);
+    // std::cout << GaugeAction::LüscherWeiszAction.GetBeta() << std::endl;
     HMC::OMF_4                   OMF_4_Integrator;
     GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, distribution_prob);
     // TODO: This is still somewhat "buggy". Since we define the action in the namespace GaugeAction where beta = 0.0, this does not give the expected results.

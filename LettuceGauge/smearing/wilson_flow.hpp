@@ -67,152 +67,223 @@ struct WilsonFlowKernel
         }
 };
 
-// namespace Integrators::WilsonFlow
-// {
-//     // TODO: Implement
-//     struct Euler
-//     {
-//         template<typename WilsonFlow_Functor>
-//         void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
-//         {
-//             //
-//         }
-//     };
+namespace Integrators::WilsonFlow
+{
+    // TODO: Implement
+    struct Euler
+    {
+        template<typename WilsonFlow_Functor>
+        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        {
+            // W_0             = V_t
+            // V_{t + epsilon} = exp(Z_0)  * W_0
+            // Z_i = epsilon * Z(W_i)
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+            }
+        }
+    };
 
-//     struct RK2
-//     {
-//         template<typename WilsonFlow_Functor>
-//         void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
-//         {
-//             //...
-//             // W_0             = V_t
-//             // W_1             = exp(1/4 * Z_0)      * W_0
-//             // V_{t + epsilon} = exp(2 * Z_1 - Z_0)  * W_0
-//             // Z_i = epsilon * Z(W_i)
-//         }
-//     };
+    // TODO: This seems to be incorrect
+    // struct Midpoint
+    // {
+    //     template<typename WilsonFlow_Functor>
+    //     void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+    //     {
+    //         // W_0             = V_t
+    //         // W_1             = exp(1/2 * Z_0)      * W_0
+    //         // V_{t + epsilon} = exp(Z_1)            * W_0
+    //         // Z_i = epsilon * Z(W_i)
+    //         for (int step_count = 0; step_count < n_step; ++step_count)
+    //         {
+    //             // WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 2.0 * WilsonFlow.epsilon);
+    //             // WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
 
-//     struct RK3
-//     {
-//         template<typename WilsonFlow_Functor>
-//         void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
-//         {
-//             // W_0             = V_t
-//             // W_1             = exp(1/4 * Z_0)                           * W_0
-//             // W_2             = exp(8/9 * Z_1 - 17/36 * Z_0)             * W_1
-//             // V_{t + epsilon} = exp(3/4 * Z_2 - 8/9 * Z_1 + 17/36 * Z_0) * W_2
-//             // Z_i = epsilon * Z(W_i)
-//             WilsonFlow.CalculateZ(WilsonFlow.Gluon, WilsonFlow.Gluon_temp, 0.25);
-//             WilsonFlow.UpdateFields();
+    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, 0.0, 1.0 * WilsonFlow.epsilon);
+    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+    //         }
+    //     }
+    // };
 
-//             WilsonFlow.CalculateZ(WilsonFlow.Gluon, WilsonFlow.Gluon_temp, 0.25);
-//             WilsonFlow.UpdateFields();
+    // TODO: This seems to lead to worse results (compared to RK3) than the simple Euler integrator
+    // struct RK2
+    // {
+    //     template<typename WilsonFlow_Functor>
+    //     void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+    //     {
+    //         // TODO: Is this correct? I think I got this from the adaptive step-size paper?
+    //         // W_0             = V_t
+    //         // W_1             = exp(1/4 * Z_0)      * W_0
+    //         // V_{t + epsilon} = exp(2 * Z_1 - Z_0)  * W_0
+    //         // Z_i = epsilon * Z(W_i)
+    //         for (int step_count = 0; step_count < n_step; ++step_count)
+    //         {
+    //             // WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 2.0 * WilsonFlow.epsilon);
+    //             // WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
 
-//             WilsonFlow.CalculateZ(WilsonFlow.Gluon, WilsonFlow.Gluon_temp, 0.25);
-//             WilsonFlow.UpdateFields();
-//         }
-//     };
+    //             WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0, -0.5 * WilsonFlow.epsilon);
+    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+    //         }
+    //     }
+    // };
 
-//     struct RK3_adaptive
-//     {
-//         template<typename WilsonFlow_Functor>
-//         void operator()(WilsonFlow_Functor& WilsonFlow) noexcept
-//         {
-//             //
-//         }
-//     };
-// }
+    struct RK3
+    {
+        template<typename WilsonFlow_Functor>
+        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        {
+            // W_0             = V_t
+            // W_1             = exp(1/4 * Z_0)                           * W_0
+            // W_2             = exp(8/9 * Z_1 - 17/36 * Z_0)             * W_1
+            // V_{t + epsilon} = exp(3/4 * Z_2 - 8/9 * Z_1 + 17/36 * Z_0) * W_2
+            // Z_i = epsilon * Z(W_i)
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.25);
+
+                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -17.0/36.0, 8.0/9.0 * WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+
+                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 3.0/4.0 * WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+            }
+        }
+    };
+
+    // struct RK3_adaptive
+    // {
+    //     template<typename WilsonFlow_Functor>
+    //     void operator()(WilsonFlow_Functor& WilsonFlow) noexcept
+    //     {
+    //         //
+    //     }
+    // };
+}
 
 // TODO: This is still work in progress
 // template<typename floatT>
-// template<typename IntegratorT, ActionT>
-// struct GlobalWilsonFlowKernel
-// {
-//     private:
-//         // TODO: Possible parameter ExpFunction?
-//         GaugeField&  Gluon;
-//         GaugeField&  Gluon_flowed;
-//         GaugeField&  Force;
-//         IntegratorT& Integrator;
-//         ActionT&     Action;
-//         floatT       epsilon;
+template<typename IntegratorT, typename ActionT>
+struct GlobalWilsonFlowKernel
+{
+    private:
+        // TODO: Possible parameter ExpFunction?
+        const GaugeField&  U_unflowed;
+              GaugeField&  U_flowed;
+              GaugeField&  Force;
+              IntegratorT& Integrator;
+              ActionT&     Action;
+              floatT       epsilon;
 
-//         // The integrator needs to access private member functions
-//         friend IntegratorT;
+        // The integrator needs to access private member functions
+        friend IntegratorT;
 
-//         // TODO: For higher order integrators, we want to save C since it is used in the following integration steps
-//         // void EvolveLink(link_coord& current_link) const noexcept
-//         // {
-//         //     Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
-//         //     Matrix_3x3 A  {st * Gluon(current_link).adjoint()};
-//         //     Matrix_3x3 B  {A - A.adjoint()};
-//         //     Matrix_3x3 C  {static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity()};
-//         //     // Cayley-Hamilton exponential
-//         //     Gluon(current_link) = SU3::exp(-i<floatT> * epsilon * C) * Gluon(current_link);
-//         //     // Eigen exponential (Scaling and squaring)
-//         //     // Gluon(current_link) = (epsilon * C).exp() * Gluon(current_link);
-//         //     // Projection to SU(3) (necessary?)
-//         //     SU3::Projection::GramSchmidt(Gluon(current_link));
-//         // }
+        void UpdateFields(GaugeField& U, const GaugeField& Z, const floatT c) const noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            for (int mu = 0; mu < 4; ++mu)
+            {
+                link_coord current_link {t, x, y, z, mu};
+                // Cayley-Hamilton exponential
+                // U(current_link) = SU3::exp(-i<floatT> * gamma * Z) * U(current_link);
+                // Eigen exponential (Scaling and squaring)
+                U(current_link) = (c * Z(current_link)).exp() * U(current_link);
+                // Projection to SU(3) (necessary?)
+                SU3::Projection::GramSchmidt(U(current_link));
+            }
+        }
 
-//         void UpdateFields(GaugeField& U, GaugeField& Z, const floatT gamma) const noexcept
-//         {
-//             #pragma omp parallel for
-//             for (int t = 0; t < Nt; ++t)
-//             for (int x = 0; x < Nx; ++x)
-//             for (int y = 0; y < Ny; ++y)
-//             for (int z = 0; z < Nz; ++z)
-//             for (int mu = 0; mu < 4; ++mu)
-//             {
-//                 // Cayley-Hamilton exponential
-//                 // U(current_link) = SU3::exp(-i<floatT> * gamma * Z) * U(current_link);
-//                 // Eigen exponential (Scaling and squaring)
-//                 U(current_link) = (gamma * Z).exp() * U(current_link);
-//                 // Projection to SU(3) (necessary?)
-//                 SU3::Projection::GramSchmidt(U(current_link));
-//             }
-//         }
+        // void AddForces(GaugeField& Z_1, const GaugeField& Z_2, const floatT c_1, const floatT c_2) const noexcept
+        // {
+        //     #pragma omp parallel for
+        //     for (int t = 0; t < Nt; ++t)
+        //     for (int x = 0; x < Nx; ++x)
+        //     for (int y = 0; y < Ny; ++y)
+        //     for (int z = 0; z < Nz; ++z)
+        //     for (int mu = 0; mu < 4; ++mu)
+        //     {
+        //         link_coord current_link {t, x, y, z, mu};
+        //         Z_1(current_link) = c_1 * Z_1(current_link) + c_2 * Z_2(current_link);
+        //     }
+        // }
 
-//         void CalculateZ(const GaugeField& U, GaugeField& Z, const floatT epsilon) const noexcept
-//         {
-//             #pragma omp parallel for
-//             for (int t = 0; t < Nt; ++t)
-//             for (int x = 0; x < Nx; ++x)
-//             for (int y = 0; y < Ny; ++y)
-//             for (int z = 0; z < Nz; ++z)
-//             {
-//                 for (int mu = 0; mu < 4; ++mu)
-//                 {
-//                     link_coord current_link {t, x, y, z, mu};
-//                     Matrix_3x3 st {Action.Staple(U, current_link)};
-//                     Matrix_3x3 A  {st * U(current_link).adjoint()};
-//                     Z(current_link) = epsilon * SU3::Projection::Algebra(A);
-//                 }
-//             }
-//         }
+        void CalculateZ(const GaugeField& U, GaugeField& Z, const floatT epsilon) const noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            {
+                for (int mu = 0; mu < 4; ++mu)
+                {
+                    link_coord current_link {t, x, y, z, mu};
+                    Matrix_3x3 st {Action.Staple(U, current_link)};
+                    Matrix_3x3 A  {st * U(current_link).adjoint()};
+                    Z(current_link) = epsilon * SU3::Projection::Algebra(A);
+                }
+            }
+        }
 
-//     public:
-//         explicit GlobalWilsonFlowKernel(GaugeField& Gluon_in, GaugeField& Gluon_flowed_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
-//         Gluon(Gluon_in), Gluon_flowed(Gluon_flowed_in), Integrator(Integrator_in), Action(Action_in), epsilon(epsilon_in)
-//         {}
+        void UpdateZ(const GaugeField& U, GaugeField& Z, const floatT c_1, const floatT c_2) const noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            {
+                for (int mu = 0; mu < 4; ++mu)
+                {
+                    link_coord current_link {t, x, y, z, mu};
+                    Matrix_3x3 st {Action.Staple(U, current_link)};
+                    Matrix_3x3 A  {st * U(current_link).adjoint()};
+                    Z(current_link) = c_1 * Z(current_link) + c_2 * SU3::Projection::Algebra(A);
+                }
+            }
+        }
 
-//         void operator()(const int n_step) const noexcept
-//         {
-//             // TODO: Add more arguments to EvolveLink (like a reference to an array holding the force, and then bind those parameters using a lambda?)
-//             // Iterator::Checkerboard(Gluon, EvolveLink);
-//             Gluon_flowed = Gluon;
-//             Integrator(*this, n_step);
-//         }
+    public:
+        explicit GlobalWilsonFlowKernel(const GaugeField& U_unflowed_in, GaugeField& U_flowed_in, GaugeField& Force_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
+        U_unflowed(U_unflowed_in), U_flowed(U_flowed_in), Force(Force_in), Integrator(Integrator_in), Action(Action_in), epsilon(epsilon_in)
+        {}
 
-//         void SetEpsilon(const floatT epsilon_in) noexcept
-//         {
-//             epsilon = epsilon_in;
-//         }
+        void operator()(const int n_step) const noexcept
+        {
+            // TODO: Add more arguments to EvolveLink (like a reference to an array holding the force, and then bind those parameters using a lambda?)
+            // Iterator::Checkerboard(U_unflowed, EvolveLink);
+            U_flowed = U_unflowed;
+            Integrator(*this, n_step);
+        }
 
-//         floatT GetEpsilon() const noexcept
-//         {
-//             return epsilon;
-//         }
-// };
+        void Resume(const int n_step) const noexcept
+        {
+            // Integrate without copying U_unflowed into U_flowed
+            Integrator(*this, n_step);
+        }
+
+        void SetEpsilon(const floatT epsilon_in) noexcept
+        {
+            epsilon = epsilon_in;
+        }
+
+        floatT GetEpsilon() const noexcept
+        {
+            return epsilon;
+        }
+};
 
 #endif // LETTUCE_WILSON_FLOW_HPP
