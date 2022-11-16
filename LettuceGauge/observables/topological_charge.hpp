@@ -282,6 +282,76 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
     return 1.0 / (16.0 * pi<double> * pi<double>) * Q;
 }
 
+
+// TODO: WIP, still need to implement and check if all these functions make sense
+// namespace TopologicalCharge
+// {
+
+//     [[nodiscard]]
+//     double PlaquetteChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double PlaquetteChargeFromFTensor(const FullTensor& F) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double CloverChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double CloverChargeFromClover(const FullTensor& Clover) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double CloverChargeFromFTensor(const FullTensor& F) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double ImprovedCloverChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double ImprovedCloverChargeFromClover(const FullTensor& Clover_plaq, const FullTensor& Clover_rect) noexcept
+//     {
+//         //
+//     }
+
+//     [[nodiscard]]
+//     double ImprovedCloverChargeFromFTensor(const FullTensor& F) noexcept
+//     {
+//         //
+//     }
+// }
+
+// [[nodiscard]]
+// double CloverChargeFromF(const FullTensor& F) noexcept
+// {
+//     double Q {0.0};
+//     #pragma omp parallel for reduction(+:Q)
+//     for (int t = 0; t < Nt; ++t)
+//     for (int x = 0; x < Nx; ++x)
+//     for (int y = 0; y < Ny; ++y)
+//     for (int z = 0; z < Nz; ++z)
+//     {
+//         site_coord current_site {t, x, y, z};
+//         Q += std::real((F(current_site, 0, 1) * F(current_site, 2, 3) + F(current_site, 0, 2) * F(current_site, 3, 1) + F(current_site, 0, 3) * F(current_site, 1, 2)).trace());
+//     }
+//     return 1.0 / (4.0 * pi<double> * pi<double>) * Q;
+// }
+
 //-----
 // Calculate field-theoretic topological charge using field-strength tensor
 

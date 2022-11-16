@@ -110,7 +110,9 @@ namespace EnergyDensity
         // TODO: Factor 2.0 due to symmetry (see above)?
         //       Currently, this is missing an additional factor 0.5 compared to Stephan's definition
         //       Question is, what is the definition used for w_0?
-        return 1.0 / (9.0 * 2.0 * F.Volume()) * E;
+        // return 1.0 / (9.0 * 2.0 * F.Volume()) * E;
+        // This should match Stephan's definition
+        return 1.0 / (36.0 * F.Volume()) * E;
     }
 } // namespace EnergyDensity
 
