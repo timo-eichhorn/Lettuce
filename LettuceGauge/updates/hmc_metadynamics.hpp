@@ -158,10 +158,11 @@ namespace HMC_MetaD
         {
             link_coord current_link {t, x, y, z, mu};
             // This is the usual (thin-link) contribution to the momenta
-            Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
-            Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
+            Matrix_3x3 tmp {WilsonAction::Staple(Gluon, current_link) * Gluon(current_link).adjoint()};
+            // Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
             // Update with both the thin-link and fat-link contribution at the same time
-            Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity()) + ForceFatLink(current_link));
+            // Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity()) + ForceFatLink(current_link));
+            Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
             // // Now comes the fat-link contribution
             // Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
         }
