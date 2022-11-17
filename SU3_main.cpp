@@ -1233,27 +1233,29 @@ int main()
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
     Integrators::HMC::OMF_4      OMF_4_Integrator;
-    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, distribution_prob);
+    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
     // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
     // if constexpr(metadynamics_enabled)
     // {
         // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 8000, 0.02, 1000.0};
+        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
         // TopBiasPotential.LoadPotential("metapotential_22.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        // TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
         if constexpr(metadynamics_enabled)
         {
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < 20; ++i)
             {
-                Iterator::Checkerboard(Heatbath, 1);
-                Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+                // Iterator::Checkerboard(Heatbath, 1);
+                // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+                HMC(10, false);
             }
         }
         // for (int n_count = 0; n_count < n_run; ++n_count)
@@ -1401,7 +1403,7 @@ int main()
         // auto start_update_meta = std::chrono::system_clock::now();
         if constexpr(metadynamics_enabled)
         {
-            HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, n_hmc, true, distribution_prob);
+            HMCMetaD(n_hmc, true);
             // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, n_heatbath, n_orelax, distribution_prob, distribution_uniform);
         }
         // auto end_update_meta = std::chrono::system_clock::now();
