@@ -112,7 +112,9 @@ namespace EnergyDensity
         //       Question is, what is the definition used for w_0?
         // return 1.0 / (9.0 * 2.0 * F.Volume()) * E;
         // This should match Stephan's definition
-        return 1.0 / (36.0 * F.Volume()) * E;
+        // return 1.0 / (36.0 * F.Volume()) * E;
+        // Empirically this similar results for t^2 * E for both the plaquette- and clover-based definitions
+        return 1.0 / (6.0 * F.Volume()) * E;
     }
 } // namespace EnergyDensity
 

@@ -59,6 +59,7 @@ namespace Iterator
     template<typename funcT>
     void Checkerboard(funcT&& function, const int n_sweep = 1)
     {
+        static_assert(Nt % 2 == 0 and Nx % 2 == 0 and Ny % 2 == 0 and Nz % 2 == 0, "Currently, only even lattice sizes are supported with parallelization.");
         // #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
@@ -83,6 +84,7 @@ namespace Iterator
     template<typename funcT, typename sumT>
     void CheckerboardSum(funcT&& function, sumT& sum, const int n_sweep = 1)
     {
+        static_assert(Nt % 2 == 0 and Nx % 2 == 0 and Ny % 2 == 0 and Nz % 2 == 0, "Currently, only even lattice sizes are supported with parallelization.");
         // #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)

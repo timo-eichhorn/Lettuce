@@ -825,9 +825,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       the temporary Action functor to be the same as the Flow functor.
     // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
     //       forwarding references in the constructor. Also, check if more references should be made const members
-    // Integrators::WilsonFlow::RK3 Flow_Integrator;
+    Integrators::WilsonFlow::Euler Flow_Integrator;
     // GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
-    // GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
+    GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -892,8 +892,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     {
         // Apply smearing
         // auto start_smearing = std::chrono::system_clock::now();
-        StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
-        // Flow(1);
+        // StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
+        Flow(n_smear_skip);
         // Gluonsmeared1 = Gluon;
         // Iterator::Checkerboard(Cooling, 1);
         // WilsonFlowForward(Gluonsmeared1, 0.12, 1);
@@ -927,8 +927,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
-            StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
-            // Flow.Resume(n_smear_skip);
+            // StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
+            Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // TODO: FIX THIS, INCORRECT IF n_smear_skip is even!
@@ -941,20 +941,20 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             //     // placeholder
             // }
             // Calculate observables
-            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared2);
-            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared2);
-            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared2);
-            EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared2);
-            FieldStrengthTensor::Clover(Gluonsmeared2, F_tensor);
+            Action[smear_count]                      = WilsonAction::ActionNormalized(Gluonsmeared1);
+            ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
+            Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
+            EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared1);
+            FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
             EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
-            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared2, Gluonchain);
-            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared2, Gluonchain);
-            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared2, Gluonchain);
-            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared2);
+            WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
+            WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
+            WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
+            PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
             // TopologicalCharge[smear_count] = TopChargeGluonic(Gluonsmeared2);
-            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared2);
+            TopologicalChargeSymm[smear_count]       = TopChargeGluonicSymm(Gluonsmeared1);
             // TopologicalChargeSymm[smear_count]       = CloverChargeFromF(F_tensor);
-            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared2);
+            TopologicalChargeUnimproved[smear_count] = TopChargeGluonicUnimproved(Gluonsmeared1);
             // ActionStruct.Calculate(smear_count, std::cref(Gluonsmeared2));
         }
         // Odd
@@ -962,8 +962,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         {
             // Apply smearing
             // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
-            StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
-            // Flow.Resume(n_smear_skip);
+            // StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
+            Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
             // Calculate observables
@@ -1098,10 +1098,7 @@ int main()
         ndist_vector = CreateNormalDistributions();
     }
 
-    // acceptance_count = 0;
-    // acceptance_count_or = 0;
     // Default width of random numbers used in Metropolis update is 0.5
-    // floatT epsilon {0.001}; // Used to test stability of instanton configurations
     floatT epsilon {0.5};
 
     std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
@@ -1115,112 +1112,6 @@ int main()
     auto startcalc {std::chrono::system_clock::now()};
     datalog.open(logfilepath, std::fstream::out | std::fstream::app);
     wilsonlog.open(wilsonfilepath, std::fstream::out | std::fstream::app);
-
-    // Instanton multiplication test
-    // std::uniform_real_distribution<floatT> distribution_unitary(-0.001, 0.001);
-    // InstantonStart(Gluon, 1);
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    // for (int n_count = 0; n_count < 5; ++n_count)
-    // {
-    //     MetropolisUpdate(Gluon, 1, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    //     // HeatbathSU3(Gluon, 1, distribution_uniform);
-    // }
-    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
-    // std::exit(0);
-
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    // // MultiplyInstanton(Gluon, 1);
-    // MultiplyLocalInstanton(Gluon);
-    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
-    // std::exit(0);
-    // Instanton start test
-    // for (int Q = 0; Q < 10; ++Q)
-    // {
-    //     InstantonStart(Gluon, Q);
-    //     Observables(Gluon, Gluonchain, wilsonlog, Q, n_smear);
-    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonic(Gluon) << endl;
-    //     cout << "This configuration should have charge " << Q <<". The charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
-    //     MultiplyInstanton(Gluon, 1);
-    //     Observables(Gluon, Gluonchain, wilsonlog, Q, n_smear);
-    //     cout << "After multiplication the charge is: " << TopChargeGluonic(Gluon) << endl;
-    //     cout << "After multiplication the charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
-    //     // InstantonStart(Gluon, -Q);
-    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonic(Gluon) << endl;
-    //     // cout << "This configuration should have charge " << -Q <<". The charge is: " << TopChargeGluonicUnimproved(Gluon) << endl;
-    // }
-
-    // Generate 1 instanton
-    // LocalInstantonStart(Gluon);
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    // int        L_half {Nt/2 - 1};
-    // site_coord center {L_half, L_half, L_half, L_half};
-    // std::cout << "Generating instanton with center: " << center;
-    // for (int radius = 3; radius < 18; ++radius)
-    // {
-    //     CreateBPSTInstanton(Gluon, Gluonsmeared1, true, center, radius);
-    //     // std::cout << "Action of instanton (radius " << radius << "): " << WilsonAction::Action(Gluon) << std::endl;
-    //     Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
-    //     CreateBPSTInstanton(Gluon, Gluonsmeared1, false, center, radius);
-    //     Observables(Gluon, Gluonchain, wilsonlog, radius, n_smear);
-    // }
-    // std::exit(0);
-
-    // InstantonStart(Gluon, 1);
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    // for (int n_count = 0; n_count < 20; ++n_count)
-    // {
-    //     MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // }
-    // Observables(Gluon, Gluonchain, wilsonlog, -1, 0);
-    // for (int flow_count = 0; flow_count < 10; ++flow_count)
-    // {
-    //     WilsonFlowForward(Gluon, 0.06, 1);
-    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    // }
-    // // MultiplyInstanton(Gluon, 1);
-    // MultiplyLocalInstanton(Gluon);
-    // Observables(Gluon, Gluonchain, wilsonlog, -1, 0);
-    // for (int flow_count = 0; flow_count < 10; ++flow_count)
-    // {
-    //     WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
-    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    // }
-    // std::exit(0);
-
-    // auto end = std::chrono::system_clock::now();
-    // std::chrono::duration<double> elapsed_seconds = end - startcalc;
-    // std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-
-    // PrintFinal(datalog, acceptance_count, acceptance_count_or, epsilon, end_time, elapsed_seconds);
-    // datalog.close();
-    // datalog.clear();
-
-    // datalog.open(parameterfilepath, std::fstream::out | std::fstream::app);
-    // PrintFinal(datalog, acceptance_count, acceptance_count_or, epsilon, end_time, elapsed_seconds);
-    // datalog.close();
-    // datalog.clear();
-
-    // PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, epsilon, end_time, elapsed_seconds);
-    // wilsonlog.close();
-    // wilsonlog.clear();
-
-    // std::exit(0);
-
-    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, n_smear);
-    // // Multiply with 1 instanton, resulting configuration should have charge (Q_1 + 1) * (1 + 1) = (1 + 1) * (1 + 1) = 4
-    // InstantonStart(Gluon, 1);
-    // MultiplyInstanton(Gluon, 1);
-    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
-
-    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(Gluon, Gluonchain, wilsonlog, 1, n_smear);
-    // // Generate 4 instanton
-    // InstantonStart(Gluon, 4);
-    // Observables(Gluon, Gluonchain, wilsonlog, 2, n_smear);
-
-    // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-    // Observables(Gluon, Gluonchain, wilsonlog, 2, n_smear);
 
     // Commonly used gauge actions
     GaugeAction::WilsonAction.SetBeta(beta);
@@ -1251,12 +1142,14 @@ int main()
         // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
         if constexpr(metadynamics_enabled)
         {
+            datalog << "[HMC start thermalization]\n";
             for (int i = 0; i < 20; ++i)
             {
                 // Iterator::Checkerboard(Heatbath, 1);
                 // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
                 HMC(10, false);
             }
+            datalog << "[HMC end thermalization]\n" << std::endl;
         }
         // for (int n_count = 0; n_count < n_run; ++n_count)
         // {
@@ -1277,47 +1170,6 @@ int main()
         //     Iterator::Checkerboard();
         // }
     // }
-
-    //-----
-    // BPST instanton test
-    // Thermalization
-    // for (int i = 0; i < 5; ++i)
-    // {
-    //     Iterator::Checkerboard(Heatbath, 1);
-    //     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-    // }
-    // Observables(Gluon, Gluonchain, wilsonlog, -1, n_smear);
-    // // Instanton update starts here
-    // JacobianInstanton = 0.0;
-    // for (int flow_count = 0; flow_count < 5; ++flow_count)
-    // {
-    //     WilsonFlowForward(Gluon, 0.06, 1);
-    //     JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
-    //     //-----
-    //     // WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
-    //     // JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
-    //     std::cout << JacobianInstanton << std::endl;
-    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    // }
-    // int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
-    // int        L_half      {Nt/2 - 1};
-    // site_coord center      {L_half, L_half, L_half, L_half};
-    // int        radius      {5};
-    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, false, distribution_prob, true);
-    // Observables(Gluon, Gluonchain, wilsonlog, 0, 0);
-    // for (int flow_count = 0; flow_count < 5; ++flow_count)
-    // {
-    //     // WilsonFlowForward(Gluon, 0.06, 1);
-    //     // JacobianInstanton += 0.06 * PlaquetteSum(Gluon);
-    //     //-----
-    //     WilsonFlowBackward(Gluon, Gluonsmeared1, -0.06, 1);
-    //     JacobianInstanton += -0.06 * PlaquetteSum(Gluon);
-    //     std::cout << JacobianInstanton << std::endl;
-    //     Observables(Gluon, Gluonchain, wilsonlog, flow_count, 0);
-    // }
-    // JacobianInstanton *= -16.0/3.0;
-    // datalog << "JacobianInstanton: " << JacobianInstanton << std::endl;
-    // std::exit(0);
 
     // When using HMC, the thermalization is done without accept-reject step
     if constexpr(n_hmc != 0 and !metadynamics_enabled)
