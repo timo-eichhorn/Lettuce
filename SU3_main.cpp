@@ -542,8 +542,8 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     // TODO: Is that true? Better check to be sure
     // auto start_copy = std::chrono::system_clock::now();
     Gluon1 = Gluon;
-    HeatbathKernel               Heatbath1(Gluon1, distribution_uniform);
-    OverrelaxationSubgroupKernel OverrelaxationSubgroup1(Gluon1);
+    HeatbathKernel               Heatbath1(Gluon1, GaugeAction::WilsonAction, distribution_uniform);
+    OverrelaxationSubgroupKernel OverrelaxationSubgroup1(Gluon1, GaugeAction::WilsonAction);
     // auto end_copy = std::chrono::system_clock::now();
     // std::chrono::duration<double> copy_time = end_copy - start_copy;
     // std::cout << "Time for copy: " << copy_time.count() << std::endl;
@@ -1120,9 +1120,9 @@ int main()
     GaugeAction::DBW2Action.SetBeta(beta);
 
     // Initialize update functors
-    HeatbathKernel               Heatbath(Gluon, distribution_uniform);
+    HeatbathKernel               Heatbath(Gluon, GaugeAction::WilsonAction, distribution_uniform);
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
-    OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon);
+    OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon, GaugeAction::WilsonAction);
     Integrators::HMC::OMF_4      OMF_4_Integrator;
     GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
@@ -1189,7 +1189,7 @@ int main()
         if constexpr(n_metro != 0 and multi_hit != 0 and !metadynamics_enabled)
         {
             std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
-            MetropolisKernel Metropolis(Gluon, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
+            MetropolisKernel Metropolis(Gluon, GaugeAction::WilsonAction, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
             Iterator::CheckerboardSum(Metropolis, acceptance_count, n_metro);
             // TODO: Perhaps this should all happen automatically inside the functor?
             //       At the very least, we should probably combine the two actions below into one function

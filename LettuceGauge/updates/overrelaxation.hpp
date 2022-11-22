@@ -3,7 +3,6 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-#include "../actions/gauge/wilson_action.hpp"
 #include "../math/su2.hpp"
 #include "../math/su3.hpp"
 //-----
@@ -28,29 +27,30 @@
 //| Cabibbo-Marinari decomposition into SU(2) subgroups is also provided.           |
 //+---------------------------------------------------------------------------------+
 
-template<typename floatT>
+template<typename floatT, typename ActionT>
 struct OverrelaxationDirectKernel
 {
     private:
-        // TODO: Add action as parameter, so we can update with respect to different actions
         GaugeField&                             Gluon;
+        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+        ActionT&                                Action;
         std::uniform_real_distribution<floatT>& distribution_prob;
     public:
-        explicit OverrelaxationDirectKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-        Gluon(Gluon_in), distribution_prob(distribution_prob_in)
+        explicit OverrelaxationDirectKernel(GaugeField& Gluon_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+        Gluon(Gluon_in), Action(Action_in), distribution_prob(distribution_prob_in)
         {}
 
         bool operator()(const link_coord& current_link) const noexcept
         {
-            Matrix_3x3 st        {WilsonAction::Staple(Gluon, current_link)};
+            Matrix_3x3 st        {Action.Staple(Gluon, current_link)};
             // Use normalized staple and project onto group via Kenney-Laub projection (using a Gram-Schmidt projection will lead to worse accceptance rates in the end)
             Matrix_SU3 or_matrix {static_cast<floatT>(1.0/6.0) * st};
             SU3::Projection::KenneyLaub(or_matrix);
             Matrix_SU3 old_link  {Gluon(current_link)};
             Matrix_SU3 new_link  {or_matrix * old_link.adjoint() * or_matrix};
             // Calculate action difference
-            double     S_old     {WilsonAction::Local(old_link, st)};
-            double     S_new     {WilsonAction::Local(new_link, st)};
+            double     S_old     {Action.Local(old_link, st)};
+            double     S_new     {Action.Local(new_link, st)};
             double     p         {std::exp(-S_new + S_old)};
             #if defined(_OPENMP)
             double     q         {distribution_prob(prng_vector[omp_get_thread_num()])};
@@ -68,10 +68,13 @@ struct OverrelaxationDirectKernel
 };
 
 // template<typename floatT>
+template<typename ActionT>
 struct OverrelaxationSubgroupKernel
 {
     private:
         GaugeField& Gluon;
+        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+        ActionT&    Action;
         // Overrelaxation update for SU(2)
         template<typename floatT>
         SU2_comp<floatT> OverrelaxationSU2(const SU2_comp<floatT>& A) const noexcept
@@ -85,33 +88,33 @@ struct OverrelaxationSubgroupKernel
             // return a_norm * (A * A).adjoint();
         }
     public:
-        explicit OverrelaxationSubgroupKernel(GaugeField& Gluon_in) noexcept :
-        Gluon(Gluon_in)
+        explicit OverrelaxationSubgroupKernel(GaugeField& Gluon_in, ActionT& Action_in) noexcept :
+        Gluon(Gluon_in), Action(Action_in)
         {}
 
         void operator()(const link_coord& current_link) const noexcept
         {
             SU2_comp<floatT> subblock;
             // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3       st_adj {(WilsonAction::Staple(Gluon, current_link)).adjoint()};
+            Matrix_3x3       st_adj {(Action.Staple(Gluon, current_link)).adjoint()};
             //-----
             // Update (0, 1) subgroup
-            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << Action.Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract01<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed01(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << Action.Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (0, 2) subgroup
-            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << Action::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract02<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed02(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << Action.Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (1, 2) subgroup
-            // std::cout << "Action before: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action before: " << Action::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             subblock            = Extract12<floatT>(Gluon(current_link) * st_adj);
             Gluon(current_link) = Embed12(OverrelaxationSU2(subblock)) * Gluon(current_link);
-            // std::cout << "Action after: " << WilsonAction::Local(Gluon(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Action after: " << Action::Local(Gluon(current_link), st_adj.adjoint()) << endl;
             //-----
             SU3::Projection::GramSchmidt(Gluon(current_link));
         }

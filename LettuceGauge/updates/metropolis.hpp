@@ -3,17 +3,16 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-#include "../actions/gauge/wilson_action.hpp"
 #include "../math/su3.hpp"
 //----------------------------------------
 // Standard library headers
-// ...
+#include <omp.h>
 //----------------------------------------
 // Standard C++ headers
-// ...
+#include <random>
 //----------------------------------------
 // Standard C headers
-// ...
+#include <cmath>
 
 //+---------------------------------------------------------------------------------+
 //| This file provides a functor implementing a (multi-hit) Metropolis update for   |
@@ -25,11 +24,13 @@
 //+---------------------------------------------------------------------------------+
 
 // template<typename floatT>
+template<typename ActionT>
 struct MetropolisKernel
 {
     private:
-        // TODO: Add action as parameter, so we can update with respect to different actions
         GaugeField&                             Gluon;
+        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+        ActionT&                                Action;
         int                                     n_hit;
         // TODO: These distributions should be thread-safe, so we can probably get away with only having one instance of each distribution?
         std::uniform_real_distribution<floatT>& distribution_prob;
@@ -38,15 +39,15 @@ struct MetropolisKernel
         // TODO: Should we track the acceptance rates in the functors? Might be annoying to deal with when changing parameters/creating new instances of functors...
         //       Also unclear how to combine with parallelization
     public:
-        explicit MetropolisKernel(GaugeField& Gluon_in, const int n_hit_in, std::uniform_real_distribution<floatT>& distribution_prob_in, std::uniform_real_distribution<floatT>& distribution_unitary_in, std::uniform_int_distribution<int>& distribution_choice_in) noexcept :
-        Gluon(Gluon_in), n_hit(n_hit_in), distribution_prob(distribution_prob_in), distribution_unitary(distribution_unitary_in), distribution_choice(distribution_choice_in)
+        explicit MetropolisKernel(GaugeField& Gluon_in, ActionT& Action_in, const int n_hit_in, std::uniform_real_distribution<floatT>& distribution_prob_in, std::uniform_real_distribution<floatT>& distribution_unitary_in, std::uniform_int_distribution<int>& distribution_choice_in) noexcept :
+        Gluon(Gluon_in), Action(Action_in), n_hit(n_hit_in), distribution_prob(distribution_prob_in), distribution_unitary(distribution_unitary_in), distribution_choice(distribution_choice_in)
         {}
 
         int operator()(const link_coord& current_link) const noexcept
         {
-            Matrix_3x3 st           {WilsonAction::Staple(Gluon, current_link)};
+            Matrix_3x3 st           {Action.Staple(Gluon, current_link)};
             Matrix_SU3 old_link     {Gluon(current_link)};
-            double     S_old        {WilsonAction::Local(old_link, st)};
+            double     S_old        {Action.Local(old_link, st)};
             int        accept_count {0};
 
             // Perform multiple hits on the same link
@@ -66,7 +67,7 @@ struct MetropolisKernel
                 #endif
 
                 // auto start_accept_reject = std::chrono::high_resolution_clock::now();
-                double     S_new        {WilsonAction::Local(new_link, st)};
+                double     S_new        {Action.Local(new_link, st)};
                 double     p            {std::exp(-S_new + S_old)};
                 // TODO: Does this help in any way? Also try out for Orelax
                 // double p {std::exp(SLocalDiff(old_link - new_link, st))};

@@ -3,7 +3,6 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-#include "../actions/gauge/wilson_action.hpp"
 #include "../math/su2.hpp"
 #include "../math/su3.hpp"
 //-----
@@ -28,12 +27,13 @@
 //| PhysLettB.156.393.                                                              |
 //+---------------------------------------------------------------------------------+
 
-template<typename floatT>
+template<typename floatT, typename ActionT>
 struct HeatbathKernel
 {
     private:
-        // TODO: Add action as parameter, so we can update with respect to different actions
         GaugeField&                             Gluon;
+        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+        ActionT&                                Action;
         std::uniform_real_distribution<floatT>& distribution_uniform;
         // TODO: Include this as parameters in constructor
         int                                     N_col {3};
@@ -101,15 +101,15 @@ struct HeatbathKernel
             return {SU2_comp<floatT> {std::complex<floatT> (x0, x1), std::complex<floatT> (x2, x3)} * V.adjoint()};
         }
     public:
-        explicit HeatbathKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
-        Gluon(Gluon_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
+        explicit HeatbathKernel(GaugeField& Gluon_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
+        Gluon(Gluon_in), Action(Action_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
         {}
 
         void operator()(const link_coord& current_link) const noexcept
         {
             SU2_comp<floatT> subblock;
             // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3       st_adj {(WilsonAction::Staple(Gluon, current_link)).adjoint()};
+            Matrix_3x3       st_adj {(Action.Staple(Gluon, current_link)).adjoint()};
             //-----
             // Update (0, 1) subgroup
             subblock            = Extract01<floatT>(Gluon(current_link) * st_adj);
