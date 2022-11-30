@@ -69,7 +69,7 @@ namespace FieldStrengthTensor
 
 namespace EnergyDensity
 {
-    // TODO: Replace by/add function which computes the energy density from already calculates plaquettes?
+    // TODO: Replace by/add function which computes the energy density from already calculated plaquettes?
     [[nodiscard]]
     double Plaquette(const GaugeField& U) noexcept
     {
@@ -85,7 +85,10 @@ namespace EnergyDensity
         //     //               + F(current_site, )).trace())
         // }
         double E {PlaquetteSum(U)};
-        return 6.0 - 1.0 / (3.0 * U.Volume()) * E;
+        // Old definition (required factor 6 in analysis)
+        // return 6.0 - 1.0 / (3.0 * U.Volume()) * E;
+        // New definition
+        return 36.0 - 2.0 * E / U.Volume();
     }
 
     [[nodiscard]]
@@ -104,17 +107,13 @@ namespace EnergyDensity
             // Due to the real trace, we can simplify the sum to go over (mu < nu) instead of (mu, nu) and get a factor of two
             E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
                           + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
-            // E += std::real((F(current_site, 0, 1) * F(current_site, 1, 0) + F(current_site, 0, 2) * F(current_site, 2, 0) + F(current_site, 0, 3) * F(current_site, 3, 0)
-            //               + F(current_site, 1, 2) * F(current_site, 2, 1) + F(current_site, 1, 3) * F(current_site, 3, 1) + F(current_site, 2, 3) * F(current_site, 3, 2)).trace());
         }
-        // TODO: Factor 2.0 due to symmetry (see above)?
-        //       Currently, this is missing an additional factor 0.5 compared to Stephan's definition
-        //       Question is, what is the definition used for w_0?
-        // return 1.0 / (9.0 * 2.0 * F.Volume()) * E;
         // This should match Stephan's definition
         // return 1.0 / (36.0 * F.Volume()) * E;
-        // Empirically this similar results for t^2 * E for both the plaquette- and clover-based definitions
-        return 1.0 / (6.0 * F.Volume()) * E;
+        // Old definition (required factor 6 in analysis)
+        // return 1.0 / (6.0 * F.Volume()) * E;
+        // New definition
+        return E / F.Volume();
     }
 } // namespace EnergyDensity
 

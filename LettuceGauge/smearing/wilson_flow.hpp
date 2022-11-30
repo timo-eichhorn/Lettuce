@@ -111,30 +111,26 @@ namespace Integrators::WilsonFlow
     //     }
     // };
 
-    // TODO: This seems to lead to worse results (compared to RK3) than the simple Euler integrator
-    // struct RK2
-    // {
-    //     template<typename WilsonFlow_Functor>
-    //     void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
-    //     {
-    //         // TODO: Is this correct? I think I got this from the adaptive step-size paper?
-    //         // W_0             = V_t
-    //         // W_1             = exp(1/4 * Z_0)      * W_0
-    //         // V_{t + epsilon} = exp(2 * Z_1 - Z_0)  * W_0
-    //         // Z_i = epsilon * Z(W_i)
-    //         for (int step_count = 0; step_count < n_step; ++step_count)
-    //         {
-    //             // WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 2.0 * WilsonFlow.epsilon);
-    //             // WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
-    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
+    // TODO: For smaller step sizes, this seems to perform better than the Euler integrator, but not clear for larger step sizes (check!)
+    struct RK2
+    {
+        template<typename WilsonFlow_Functor>
+        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        {
+            // W_0             = V_t
+            // W_1             = exp(1/2 * Z_0)        * W_0
+            // V_{t + epsilon} = exp(Z_1 - 1/2 * Z_0)  * W_0
+            // Z_i = epsilon * Z(W_i)
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
 
-    //             WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0, -0.5 * WilsonFlow.epsilon);
-    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
-    //         }
-    //     }
-    // };
+                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -0.5, WilsonFlow.epsilon);
+                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+            }
+        }
+    };
 
     struct RK3
     {
@@ -160,6 +156,12 @@ namespace Integrators::WilsonFlow
         }
     };
 
+    // TODO: Implement here or as separate functor (adaptive integration needs more memory than standard integrators)?
+    //       Second order integrator looks something like this:
+    //       W_0             = V_t
+    //       W_1             = exp(1/4 * Z_0)      * W_0
+    //       V_{t + epsilon} = exp(2 * Z_1 - Z_0)  * W_0
+    //       Z_i = epsilon * Z(W_i)
     // struct RK3_adaptive
     // {
     //     template<typename WilsonFlow_Functor>
@@ -198,7 +200,7 @@ struct GlobalWilsonFlowKernel
             {
                 link_coord current_link {t, x, y, z, mu};
                 // Cayley-Hamilton exponential
-                // U(current_link) = SU3::exp(-i<floatT> * gamma * Z) * U(current_link);
+                // U(current_link) = SU3::exp(-i<floatT> * c * Z(current_link)) * U(current_link);
                 // Eigen exponential (Scaling and squaring)
                 U(current_link) = (c * Z(current_link)).exp() * U(current_link);
                 // Projection to SU(3) (necessary?)
@@ -238,7 +240,7 @@ struct GlobalWilsonFlowKernel
             }
         }
 
-        void UpdateZ(const GaugeField& U, GaugeField& Z, const floatT c_1, const floatT c_2) const noexcept
+        void UpdateZ(const GaugeField& U, GaugeField& Z, const floatT c_old, const floatT c_new) const noexcept
         {
             #pragma omp parallel for
             for (int t = 0; t < Nt; ++t)
@@ -251,7 +253,7 @@ struct GlobalWilsonFlowKernel
                     link_coord current_link {t, x, y, z, mu};
                     Matrix_3x3 st {Action.Staple(U, current_link)};
                     Matrix_3x3 A  {st * U(current_link).adjoint()};
-                    Z(current_link) = c_1 * Z(current_link) + c_2 * SU3::Projection::Algebra(A);
+                    Z(current_link) = c_old * Z(current_link) + c_new * SU3::Projection::Algebra(A);
                 }
             }
         }
