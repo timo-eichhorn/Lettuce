@@ -799,7 +799,8 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 //     datalog << TopologicalChargeUnimproved.back() << "\n" << endl;
 // }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const bool print_newline = true)
+// TODO: Remove parameter rho_stout_ (only introduced for gradient flow integrator stepsize test)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const double rho_stout_, const bool print_newline = true)
 {
     vector<double>               Action(n_smear + 1);
     vector<double>               ActionImproved(n_smear + 1);
@@ -827,7 +828,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       forwarding references in the constructor. Also, check if more references should be made const members
     Integrators::WilsonFlow::Euler Flow_Integrator;
     // GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
-    GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
+    GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout_);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -1075,7 +1076,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, false);
+    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, rho_stout, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
     datalog << "CV_MetaD: " << CV_current << "\n";
@@ -1099,7 +1100,7 @@ int main()
     }
 
     // Default width of random numbers used in Metropolis update is 0.5
-    floatT epsilon {0.5};
+    floatT epsilon {0.005};
 
     std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
     std::uniform_real_distribution<floatT> distribution_uniform(0.0, 1.0);
@@ -1124,11 +1125,135 @@ int main()
     // OverrelaxationDirectKernel   OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel OverrelaxationSubgroup(Gluon, GaugeAction::WilsonAction);
     Integrators::HMC::OMF_4      OMF_4_Integrator;
-    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+    GaugeUpdates::HMCKernel      HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, distribution_prob);
 
-    // TODO: Rewrite this, maybe keep metadynamics updates in separate main?
-    // if constexpr(metadynamics_enabled)
-    // {
+    // Regular updates without Metadynamics
+    if constexpr(!metadynamics_enabled)
+    {
+        // When using HMC, the thermalization is done without accept-reject step
+        if constexpr(n_hmc != 0)
+        {
+            datalog << "[HMC start thermalization]\n";
+            for (int n_count = 0; n_count < 20; ++n_count)
+            {
+                HMC(10, false);
+            }
+            datalog << "[HMC end thermalization]\n" << std::endl;
+        }
+        else
+        {
+            for (int n_count = 0; n_count < 20; ++n_count)
+            {
+                Iterator::Checkerboard(Heatbath, n_heatbath);
+                Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
+            }
+        }
+
+        for (int n_count = 0; n_count < n_run; ++n_count)
+        {
+            // auto start_update_metro {std::chrono::system_clock::now()};
+            if constexpr(n_metro != 0 and multi_hit != 0)
+            {
+                std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
+                MetropolisKernel Metropolis(Gluon, GaugeAction::WilsonAction, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
+                Iterator::CheckerboardSum(Metropolis, acceptance_count, n_metro);
+                // TODO: Perhaps this should all happen automatically inside the functor?
+                //       At the very least, we should probably combine the two actions below into one function
+                epsilon = Metropolis.AdjustedEpsilon(epsilon, acceptance_count);
+                acceptance_count = 0;
+                // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
+            }
+            // auto end_update_metro {std::chrono::system_clock::now()};
+            // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
+            // cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << endl;
+            //-----
+            // auto start_update_heatbath {std::chrono::system_clock::now()};
+            if constexpr(n_heatbath != 0)
+            {
+                // HeatbathSU3(Gluon, n_heatbath, distribution_uniform);
+                Iterator::Checkerboard(Heatbath, n_heatbath);
+            }
+            // auto end_update_heatbath {std::chrono::system_clock::now()};
+            // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
+            // cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << endl;
+            //-----
+            // auto start_update_hmc {std::chrono::system_clock::now()};
+            if constexpr(n_hmc != 0)
+            {
+                HMC(n_hmc, true);
+            }
+            // auto end_update_hmc {std::chrono::system_clock::now()};
+            // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
+            // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
+            //-----
+            // auto start_update_or = std::chrono::system_clock::now();
+            if constexpr(n_orelax != 0)
+            {
+                // double action_before {WilsonAction::Action(Gluon)};
+                // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
+                Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
+                // double action_after {WilsonAction::Action(Gluon)};
+                // std::cout << "Action (before): " << action_before << std::endl;
+                // std::cout << "Action (after): " << action_after << std::endl;
+                // std::cout << action_after - action_before << std::endl;
+            }
+            // auto end_update_or = std::chrono::system_clock::now();
+            // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+            // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+            //-----
+            if constexpr(n_instanton_update != 0)
+            {
+                int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
+                int        L_half      {Nt/2 - 1};
+                site_coord center      {L_half, L_half, L_half, L_half};
+                int        radius      {5};
+                // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
+                if (n_count == 0)
+                {
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, true);
+                }
+                else
+                {
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, false);
+                }
+            }
+            //-----
+            if (n_count % expectation_period == 0)
+            {
+                // auto start_observable = std::chrono::system_clock::now();
+                // n_smear = 300;
+                // n_smear_skip = 1;
+                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.12);
+
+                // n_smear = 300;
+                // n_smear_skip = 1;
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.08);
+
+                // n_smear = 300;
+                // n_smear_skip = 2;
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.04);
+
+                // n_smear = 300;
+                // n_smear_skip = 4;
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.02);
+
+                // n_smear = 300;
+                // n_smear_skip = 8;
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.01);
+
+                // n_smear = 300;
+                // n_smear_skip = 16;
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.005);
+                // auto end_observable = std::chrono::system_clock::now();
+                // std::chrono::duration<double> observable_time {end_observable - start_observable};
+                // cout << "Time for calculating observables: " << observable_time.count() << endl;
+            }
+        }
+    }
+
+    // Updates with Metadynamics
+    if constexpr(metadynamics_enabled)
+    {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
         // TopBiasPotential.LoadPotential("metapotential_22.txt");
@@ -1139,146 +1264,31 @@ int main()
         GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
-        // HMC::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, acceptance_count_hmc, HMC::OMF_4, 10, false, distribution_prob);
-        if constexpr(metadynamics_enabled)
-        {
-            datalog << "[HMC start thermalization]\n";
-            for (int i = 0; i < 20; ++i)
-            {
-                // Iterator::Checkerboard(Heatbath, 1);
-                // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-                HMC(10, false);
-            }
-            datalog << "[HMC end thermalization]\n" << std::endl;
-        }
-        // for (int n_count = 0; n_count < n_run; ++n_count)
-        // {
-        //     HMC_MetaD::HMCGauge(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, acceptance_count_hmc, HMC_MetaD::OMF_4, n_smear_meta, true, n_hmc, true, distribution_prob);
-        //     Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
-        // }
-
-        // Calculate first CV so that we don't have to recompute it later on (Metadynamics with local updates)
-        double CV {0.0};
-        // if constexpr(metadynamics_enabled)
-        // {
-        //     CV = MetaCharge(Gluon, Gluonsmeared1, Gluonsmeared2, n_smear_meta, rho_stout);
-        // }
-        // auto CV_function = [](){MetaCharge(*Gluon, *Gluonsmeared1, *Gluonsmeared2, 15);};
-        // auto Update_function = []()
-        // {
-        //     Iterator::Checkerboard(Heatbath);
-        //     Iterator::Checkerboard();
-        // }
-    // }
-
-    // When using HMC, the thermalization is done without accept-reject step
-    if constexpr(n_hmc != 0 and !metadynamics_enabled)
-    {
         datalog << "[HMC start thermalization]\n";
-        for (int n_count = 0; n_count < 20; ++n_count)
+        for (int i = 0; i < 20; ++i)
         {
+            // Iterator::Checkerboard(Heatbath, 1);
+            // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
             HMC(10, false);
         }
         datalog << "[HMC end thermalization]\n" << std::endl;
-    }
 
-    for (int n_count = 0; n_count < n_run; ++n_count)
-    {
-        // InstantonStart(*Gluon, 2);
-        // auto start_update_metro {std::chrono::system_clock::now()};
-        if constexpr(n_metro != 0 and multi_hit != 0 and !metadynamics_enabled)
+        for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
-            MetropolisKernel Metropolis(Gluon, GaugeAction::WilsonAction, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
-            Iterator::CheckerboardSum(Metropolis, acceptance_count, n_metro);
-            // TODO: Perhaps this should all happen automatically inside the functor?
-            //       At the very least, we should probably combine the two actions below into one function
-            epsilon = Metropolis.AdjustedEpsilon(epsilon, acceptance_count);
-            acceptance_count = 0;
-            // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
-        }
-        // auto end_update_metro {std::chrono::system_clock::now()};
-        // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
-        // cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << endl;
-        //-----
-        // auto start_update_heatbath {std::chrono::system_clock::now()};
-        if constexpr(n_heatbath != 0 and !metadynamics_enabled)
-        {
-            // HeatbathSU3(Gluon, n_heatbath, distribution_uniform);
-            Iterator::Checkerboard(Heatbath, n_heatbath);
-        }
-        // auto end_update_heatbath {std::chrono::system_clock::now()};
-        // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
-        // cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << endl;
-        //-----
-        // auto start_update_hmc {std::chrono::system_clock::now()};
-        if constexpr(n_hmc != 0 and !metadynamics_enabled)
-        {
-            HMC(n_hmc, true);
-        }
-        // auto end_update_hmc {std::chrono::system_clock::now()};
-        // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
-        // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
-        //-----
-        // auto start_update_or = std::chrono::system_clock::now();
-        if constexpr(n_orelax != 0 and !metadynamics_enabled)
-        {
-            // double action_before {WilsonAction::Action(Gluon)};
-            // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
-            Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
-            // double action_after {WilsonAction::Action(Gluon)};
-            // std::cout << "Action (before): " << action_before << std::endl;
-            // std::cout << "Action (after): " << action_after << std::endl;
-            // std::cout << action_after - action_before << std::endl;
-        }
-        // auto end_update_or = std::chrono::system_clock::now();
-        // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-        // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
-        //-----
-        if constexpr(n_instanton_update != 0 and !metadynamics_enabled)
-        {
-            int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
-            int        L_half      {Nt/2 - 1};
-            site_coord center      {L_half, L_half, L_half, L_half};
-            int        radius      {5};
-            // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
-            if (n_count == 0)
-            {
-                BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, true);
-            }
-            else
-            {
-                BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, false);
-            }
-        }
-        //-----
-        // auto start_update_meta = std::chrono::system_clock::now();
-        if constexpr(metadynamics_enabled)
-        {
+            // auto start_update_meta = std::chrono::system_clock::now();
             HMCMetaD(n_hmc, true);
             // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, n_heatbath, n_orelax, distribution_prob, distribution_uniform);
-        }
-        // auto end_update_meta = std::chrono::system_clock::now();
-        // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
-        // cout << "Time for meta update: " << update_time_meta.count() << endl;
-        if (n_count % expectation_period == 0)
-        {
-            if constexpr(!metadynamics_enabled)
-            {
-                // auto start_observable = std::chrono::system_clock::now();
-                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
-                // auto end_observable = std::chrono::system_clock::now();
-                // std::chrono::duration<double> observable_time {end_observable - start_observable};
-                // cout << "Time for calculating observables: " << observable_time.count() << endl;
-            }
-            else
+            // auto end_update_meta = std::chrono::system_clock::now();
+            // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
+            // cout << "Time for meta update: " << update_time_meta.count() << endl;
+            if (n_count % expectation_period == 0)
             {
                 Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
-            }
-            if constexpr(metapotential_updated)
-            {
-                if (n_count % (1 * expectation_period) == 0)
-                TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+                if constexpr(metapotential_updated)
+                {
+                    if (n_count % (1 * expectation_period) == 0)
+                    TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+                }
             }
         }
     }

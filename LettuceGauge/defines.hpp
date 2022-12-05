@@ -51,9 +51,12 @@ std::string LatticeSizeString;                              // Lattice size (str
 int n_run;                                                  // Number of runs
 double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-inline constexpr int n_smear {7};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
-inline constexpr int n_smear_skip {5};                      // Number of smearing steps to skip between measurements
-inline constexpr floatT rho_stout {0.12};                   // Stout smearing parameter
+// inline constexpr int n_smear {20};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+// inline constexpr int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
+// inline constexpr floatT rho_stout {0.04};                   // Stout smearing parameter
+inline int n_smear {3000};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+inline int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
+inline floatT rho_stout {0.12};                   // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {1};                        // Number of heatbath sweeps per total update sweep

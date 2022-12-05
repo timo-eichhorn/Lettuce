@@ -200,9 +200,9 @@ struct GlobalWilsonFlowKernel
             {
                 link_coord current_link {t, x, y, z, mu};
                 // Cayley-Hamilton exponential
-                // U(current_link) = SU3::exp(-i<floatT> * c * Z(current_link)) * U(current_link);
+                U(current_link) = SU3::exp(-i<floatT> * c * Z(current_link)) * U(current_link);
                 // Eigen exponential (Scaling and squaring)
-                U(current_link) = (c * Z(current_link)).exp() * U(current_link);
+                // U(current_link) = (c * Z(current_link)).exp() * U(current_link);
                 // Projection to SU(3) (necessary?)
                 SU3::Projection::GramSchmidt(U(current_link));
             }

@@ -11,6 +11,7 @@
 //----------------------------------------
 // Standard C++ headers
 #include <complex>
+#include <limits>
 //----------------------------------------
 // Standard C headers
 #include <cmath>
@@ -196,7 +197,9 @@ namespace SU3
         c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
         c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
         signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
-        theta     (std::acos(c0/c0_max)),
+        // TODO: On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which trats NaNs as missing data
+        //       Also add this to ExpDerivativeConstants below
+        theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta)
         // denom     (static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2)),
@@ -217,6 +220,17 @@ namespace SU3
                 h0    = ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)));
                 h1    = (static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2)));
                 h2    = (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
+            }
+            // TODO: denom can still be 0
+            //       Macros FLT_MIN, DBL_MIN, LDBL_MIN or std::numeric_limits<T>::min()?
+            // TODO: Do we still need to check during assignment of theta above?
+            // if (c0_max < DBL_MIN)
+            if (c0_max < std::numeric_limits<floatT>::min())
+            {
+                denom = static_cast<floatT>(1.0);
+                h0    = static_cast<floatT>(1.0);
+                h1    = static_cast<floatT>(0.0);
+                h2    = static_cast<floatT>(0.0);
             }
         }
     };
