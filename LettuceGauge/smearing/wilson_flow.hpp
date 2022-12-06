@@ -25,6 +25,8 @@
 //|       For adaptive stepsize see arXiv:1301.4388.                                |
 //+---------------------------------------------------------------------------------+
 
+// TODO: This can be removed, as it is never used in the code. We can then rename the new kernel found below to WilsonFlowKernel.
+//       Perhaps one last benchmark to compare the old and new kernel performance.
 // template<typename GaugeActionT>
 struct WilsonFlowKernel
 {

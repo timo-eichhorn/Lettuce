@@ -181,7 +181,7 @@ namespace Integrators::HMC
             HMC.UpdateMomenta(alpha);
         }
     };
-} // namespace HMC
+} // namespace Integrators::HMC
 
 namespace GaugeUpdates
 {
