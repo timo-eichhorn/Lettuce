@@ -18,7 +18,7 @@
 // Standard C headers
 // ...
 
-// We can reuse the integrators define in hmc_gauge.hpp
+// We can reuse the integrators defined in hmc_gauge.hpp
 
 namespace GaugeUpdates
 {

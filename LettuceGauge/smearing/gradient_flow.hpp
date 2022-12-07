@@ -1,15 +1,14 @@
-#ifndef LETTUCE_WILSON_FLOW_HPP
-#define LETTUCE_WILSON_FLOW_HPP
+#ifndef LETTUCE_GRADIENT_FLOW_HPP
+#define LETTUCE_GRADIENT_FLOW_HPP
 
 // Non-standard library headers
-#include "../actions/gauge/wilson_action.hpp"
 #include "../math/su3.hpp"
 #include "../math/su3_exp.hpp"
 //-----
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
-// ...
+#include <omp.h>
 //----------------------------------------
 // Standard C++ headers
 // ...
@@ -19,71 +18,27 @@
 
 //+---------------------------------------------------------------------------------+
 //| This file provides a functor implementing the gradient flow for SU(3) gauge     |
-//| theory integrated with the explicit (first order) Euler integrator.             |
+//| theory, supporting generic integrators and actions. In addition, three integra- |
+//| tors (Euler, RK2, RK3) are provided.                                            |
 //| For more details see arXiv:0907.5491 and arXiv:1006.4518.                       |
-//| TODO: Implement higher order Runge-Kutta integrator and adaptive stepsize.      |
-//|       For adaptive stepsize see arXiv:1301.4388.                                |
+//| TODO: Implement adaptive stepsize integrator (see arXiv:1301.4388).             |
 //+---------------------------------------------------------------------------------+
 
-// TODO: This can be removed, as it is never used in the code. We can then rename the new kernel found below to WilsonFlowKernel.
-//       Perhaps one last benchmark to compare the old and new kernel performance.
-// template<typename GaugeActionT>
-struct WilsonFlowKernel
-{
-    private:
-        // TODO: Possible parameters are epsilon, tau, GaugeAction, Integrator, ExpFunction...
-        GaugeField& Gluon;
-        floatT      epsilon;
-    public:
-        explicit WilsonFlowKernel(GaugeField& Gluon_in, const floatT epsilon_in) noexcept :
-        Gluon(Gluon_in), epsilon(epsilon_in)
-        {}
-
-        // First order explicit Euler integrator (basically equivalent to stout smearing other than the fact that flowed links are immediately used to update other links)
-        void operator()(const link_coord& current_link) const noexcept
-        {
-            // Generally this can be the staple of any action
-            // What we want in the end is the algebra-valued derivative of the gauge action, i.e.:
-            // T^{a} \partial^{a}_{x, \mu} S_{g}
-            // This corresponds to the term C below, i.e., the traceless antihermitian projector applied to the staple
-            Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
-            Matrix_3x3 A  {st * Gluon(current_link).adjoint()};
-            Matrix_3x3 B  {A - A.adjoint()};
-            Matrix_3x3 C  {static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity()};
-            // Cayley-Hamilton exponential
-            Gluon(current_link) = SU3::exp(-i<floatT> * epsilon * C) * Gluon(current_link);
-            // Eigen exponential (Scaling and squaring)
-            // Gluon(current_link) = (epsilon * C).exp() * Gluon(current_link);
-            // Projection to SU(3) (necessary?)
-            SU3::Projection::GramSchmidt(Gluon(current_link));
-        }
-
-        void SetEpsilon(const floatT epsilon_in) noexcept
-        {
-            epsilon = epsilon_in;
-        }
-
-        floatT GetEpsilon() const noexcept
-        {
-            return epsilon;
-        }
-};
-
-namespace Integrators::WilsonFlow
+namespace Integrators::GradientFlow
 {
     // TODO: Implement
     struct Euler
     {
-        template<typename WilsonFlow_Functor>
-        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        template<typename GradientFlowFunctor>
+        void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
             // W_0             = V_t
             // V_{t + epsilon} = exp(Z_0)  * W_0
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
         }
     };
@@ -91,8 +46,8 @@ namespace Integrators::WilsonFlow
     // TODO: This seems to be incorrect
     // struct Midpoint
     // {
-    //     template<typename WilsonFlow_Functor>
-    //     void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+    //     template<typename GradientFlowFunctor>
+    //     void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
     //     {
     //         // W_0             = V_t
     //         // W_1             = exp(1/2 * Z_0)      * W_0
@@ -100,15 +55,15 @@ namespace Integrators::WilsonFlow
     //         // Z_i = epsilon * Z(W_i)
     //         for (int step_count = 0; step_count < n_step; ++step_count)
     //         {
-    //             // WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 2.0 * WilsonFlow.epsilon);
-    //             // WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
-    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
+    //             // GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+    //             // GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -1.0, 2.0 * GradientFlow.epsilon);
+    //             // GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
+    //             GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+    //             GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 0.5);
 
-    //             WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-    //             // WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, 0.0, 1.0 * WilsonFlow.epsilon);
-    //             WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+    //             GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+    //             // GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, 0.0, 1.0 * GradientFlow.epsilon);
+    //             GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
     //         }
     //     }
     // };
@@ -116,8 +71,8 @@ namespace Integrators::WilsonFlow
     // TODO: For smaller step sizes, this seems to perform better than the Euler integrator, but not clear for larger step sizes (check!)
     struct RK2
     {
-        template<typename WilsonFlow_Functor>
-        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        template<typename GradientFlowFunctor>
+        void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
             // W_0             = V_t
             // W_1             = exp(1/2 * Z_0)        * W_0
@@ -125,19 +80,19 @@ namespace Integrators::WilsonFlow
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.5);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 0.5);
 
-                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -0.5, WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -0.5, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
         }
     };
 
     struct RK3
     {
-        template<typename WilsonFlow_Functor>
-        void operator()(WilsonFlow_Functor& WilsonFlow, const int n_step) const noexcept
+        template<typename GradientFlowFunctor>
+        void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
             // W_0             = V_t
             // W_1             = exp(1/4 * Z_0)                           * W_0
@@ -146,14 +101,14 @@ namespace Integrators::WilsonFlow
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                WilsonFlow.CalculateZ(WilsonFlow.U_flowed, WilsonFlow.Force, WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 0.25);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 0.25);
 
-                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -17.0/36.0, 8.0/9.0 * WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -17.0/36.0, 8.0/9.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
 
-                WilsonFlow.UpdateZ(WilsonFlow.U_flowed, WilsonFlow.Force, -1.0, 3.0/4.0 * WilsonFlow.epsilon);
-                WilsonFlow.UpdateFields(WilsonFlow.U_flowed, WilsonFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -1.0, 3.0/4.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
         }
     };
@@ -166,18 +121,17 @@ namespace Integrators::WilsonFlow
     //       Z_i = epsilon * Z(W_i)
     // struct RK3_adaptive
     // {
-    //     template<typename WilsonFlow_Functor>
-    //     void operator()(WilsonFlow_Functor& WilsonFlow) noexcept
+    //     template<typename GradientFlowFunctor>
+    //     void operator()(GradientFlowFunctor& GradientFlow) noexcept
     //     {
     //         //
     //     }
     // };
-}
+} // namespace Integrators::GradientFlow
 
-// TODO: This is still work in progress
 // template<typename floatT>
 template<typename IntegratorT, typename ActionT>
-struct GlobalWilsonFlowKernel
+struct GradientFlowKernel
 {
     private:
         // TODO: Possible parameter ExpFunction?
@@ -261,7 +215,7 @@ struct GlobalWilsonFlowKernel
         }
 
     public:
-        explicit GlobalWilsonFlowKernel(const GaugeField& U_unflowed_in, GaugeField& U_flowed_in, GaugeField& Force_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
+        explicit GradientFlowKernel(const GaugeField& U_unflowed_in, GaugeField& U_flowed_in, GaugeField& Force_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
         U_unflowed(U_unflowed_in), U_flowed(U_flowed_in), Force(Force_in), Integrator(Integrator_in), Action(Action_in), epsilon(epsilon_in)
         {}
 
@@ -290,4 +244,4 @@ struct GlobalWilsonFlowKernel
         }
 };
 
-#endif // LETTUCE_WILSON_FLOW_HPP
+#endif // LETTUCE_GRADIENT_FLOW_HPP

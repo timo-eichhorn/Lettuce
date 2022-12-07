@@ -40,6 +40,8 @@ struct HeatbathKernel
         floatT                                  prefactor {static_cast<floatT>(N_col) / beta};
         int                                     max_iteration;
 
+        // TODO: Provide two functions to generate SU(2) links (original Creutz algorithm which might be more efficient for very low beta, as well as already existing
+        //       Fabricius-Haan/Kennedy-Pendleton algorithm)?
         // SU(2) heatbath which can be used in combination with a Cabibbo-Marinari decomposition to obtain a SU(N) (pseudo-)heatbath algorithm
         [[nodiscard]]
         SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, std::uniform_real_distribution<floatT>& distribution_uniform, const int max_iteration) const noexcept
@@ -127,6 +129,7 @@ struct HeatbathKernel
         }
 };
 
+// TODO: Implement this?
 // template<typename floatT>
 // struct HeatbathPietarinenKernel
 // {

@@ -139,7 +139,7 @@ namespace SU3
         // {}
         bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2, const bool signflip) noexcept
         {
-            // TODO: Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is big enough
+            // TODO: Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is too small
             if (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2) < std::numeric_limits<floatT>::min())
             {
                 b_denom = static_cast<floatT>(0.0);
@@ -207,7 +207,6 @@ namespace SU3
         c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
         signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
         // TODO: On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which trats NaNs as missing data
-        //       Also add this to ExpDerivativeConstants below
         theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta)
@@ -231,9 +230,7 @@ namespace SU3
                 h2    = (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
             }
             // TODO: denom can still be 0
-            //       Macros FLT_MIN, DBL_MIN, LDBL_MIN or std::numeric_limits<T>::min()?
-            // TODO: Do we still need to check during assignment of theta above?
-            // if (c0_max < DBL_MIN)
+            // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
             if (c0_max < std::numeric_limits<floatT>::min())
             {
                 denom = static_cast<floatT>(1.0);
@@ -325,9 +322,7 @@ namespace SU3
                 h2    = (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
             }
             // TODO: denom can still be 0
-            //       Macros FLT_MIN, DBL_MIN, LDBL_MIN or std::numeric_limits<T>::min()?
-            // TODO: Do we still need to check during assignment of theta above?
-            // if (c0_max < DBL_MIN)
+            // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
             if (c0_max < std::numeric_limits<floatT>::min())
             {
                 denom = static_cast<floatT>(1.0);

@@ -21,7 +21,7 @@
 #include "LettuceGauge/observables/wilson_loop.hpp"
 #include "LettuceGauge/smearing/cooling.hpp"
 #include "LettuceGauge/smearing/stout_smearing.hpp"
-#include "LettuceGauge/smearing/wilson_flow.hpp"
+#include "LettuceGauge/smearing/gradient_flow.hpp"
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
 #include "LettuceGauge/updates/hmc_metadynamics.hpp"
@@ -826,12 +826,12 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       the temporary Action functor to be the same as the Flow functor.
     // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
     //       forwarding references in the constructor. Also, check if more references should be made const members
-    Integrators::WilsonFlow::Euler Flow_Integrator;
-    // GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
-    GlobalWilsonFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout_);
+    Integrators::GradientFlow::Euler Flow_Integrator;
+    // GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
+    GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout_);
 
     // CoolingKernel Cooling(Gluonsmeared1);
-    // WilsonFlowKernel Cooling(Gluonsmeared1, 0.12);
+    // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
 
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();

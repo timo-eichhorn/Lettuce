@@ -1,5 +1,5 @@
-#ifndef LETTUCE_HMC_GAUGE_HPP
-#define LETTUCE_HMC_GAUGE_HPP
+#ifndef LETTUCE_SMD_GAUGE_HPP
+#define LETTUCE_SMD_GAUGE_HPP
 
 // Non-standard library headers
 #include "../defines.hpp"
@@ -15,177 +15,13 @@
 // Standard C headers
 // ...
 
-namespace Integrators::HMC
-{
-    // Leapfrog integrator for HMC
-    struct Leapfrog
-    {
-        template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
-        {
-            // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
-            // Perform integration
-            // Momentum updates are merged in the loop
-            HMC.UpdateMomenta(0.5 * epsilon);
-            for (int step_count = 0; step_count < n_step - 1; ++step_count)
-            {
-                HMC.UpdateFields(epsilon);
-                HMC.UpdateMomenta(epsilon);
-            }
-            HMC.UpdateFields(epsilon);
-            HMC.UpdateMomenta(0.5 * epsilon);
-        }
-    };
-    //-----
-    // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
-    // cf. hep-lat/0505020
-    // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
-    struct OMF_2_slow
-    {
-        template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
-        {
-            // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
-            // Integrator constants
-            double alpha {0.1931833275037836 * epsilon};
-            double beta  {0.5 * epsilon};
-            double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
-            // Perform integration
-            for (int step_count = 0; step_count < n_step; ++step_count)
-            {
-                HMC.UpdateMomenta(alpha);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(alpha);
-            }
-        }
-    };
-    //-----
-    // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
-    // cf. hep-lat/0505020
-    struct OMF_2
-    {
-        template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
-        {
-            // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
-            // Integrator constants
-            double alpha {0.1931833275037836 * epsilon};
-            double beta  {0.5 * epsilon};
-            double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
-            // Perform integration
-            // Momentum updates are merged in the loop
-            HMC.UpdateMomenta(alpha);
-            HMC.UpdateFields(beta);
-            HMC.UpdateMomenta(gamma);
-            HMC.UpdateFields(beta);
-            for (int step_count = 0; step_count < n_step - 1; ++step_count)
-            {
-                HMC.UpdateMomenta(2.0 * alpha);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(beta);
-            }
-            HMC.UpdateMomenta(alpha);
-        }
-    };
-    //-----
-    // Omelyan-Mryglod-Folk fourth order minimum norm integrator
-    // cf. hep-lat/0505020
-    // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
-    struct OMF_4_slow
-    {
-        template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
-        {
-            // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
-            // Integrator constants
-            double alpha {0.08398315262876693 * epsilon};
-            double beta  {0.2539785108410595 * epsilon};
-            double gamma {0.6822365335719091 * epsilon};
-            double delta {-0.03230286765269967 * epsilon};
-            double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
-            double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
-            // Perform integration
-            // Momentum updates are not merged in the loop
-            for (int step_count = 0; step_count < n_step; ++step_count)
-            {
-                HMC.UpdateMomenta(alpha);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(delta);
-
-                HMC.UpdateMomenta(mu);
-                HMC.UpdateFields(nu);
-                HMC.UpdateMomenta(mu);
-
-                HMC.UpdateFields(delta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(alpha);
-            }
-        }
-    };
-    //-----
-    // Omelyan-Mryglod-Folk fourth order minimum norm integrator
-    // cf. hep-lat/0505020
-    struct OMF_4
-    {
-        template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
-        {
-            // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
-            // Integrator constants
-            double alpha {0.08398315262876693 * epsilon};
-            double beta  {0.2539785108410595 * epsilon};
-            double gamma {0.6822365335719091 * epsilon};
-            double delta {-0.03230286765269967 * epsilon};
-            double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
-            double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
-            // Perform integration
-            // Momentum updates are merged in the loop
-            HMC.UpdateMomenta(alpha);
-            HMC.UpdateFields(beta);
-            HMC.UpdateMomenta(gamma);
-            HMC.UpdateFields(delta);
-
-            HMC.UpdateMomenta(mu);
-            HMC.UpdateFields(nu);
-            HMC.UpdateMomenta(mu);
-
-            HMC.UpdateFields(delta);
-            HMC.UpdateMomenta(gamma);
-            HMC.UpdateFields(beta);
-            for (int step_count = 0; step_count < n_step - 1; ++step_count)
-            {
-                HMC.UpdateMomenta(2.0 * alpha);
-                HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(delta);
-
-                HMC.UpdateMomenta(mu);
-                HMC.UpdateFields(nu);
-                HMC.UpdateMomenta(mu);
-
-                HMC.UpdateFields(delta);
-                HMC.UpdateMomenta(gamma);
-                HMC.UpdateFields(beta);
-            }
-            HMC.UpdateMomenta(alpha);
-        }
-    };
-} // namespace Integrators::HMC
-
+// TODO: Implement!
+// In contrast to the HMC, you need to make sure that the Momentum field is not reused/overwritten by other functions,
+// since the momenta are only partially refreshed at the start of a new trajectory!
 namespace GaugeUpdates
 {
     template<typename IntegratorT, typename ActionT>
-    struct HMCKernel
+    struct SMDKernel
     {
         private:
             GaugeField&  Gluon;
@@ -228,7 +64,7 @@ namespace GaugeUpdates
             }
 
             //-----
-            // Reverse momenta for HMC reversibility test
+            // Reverse momenta for SMD reversibility test
 
             void ReverseMomenta() const noexcept
             {
@@ -245,7 +81,7 @@ namespace GaugeUpdates
             }
 
             //-----
-            // Update momenta for HMC
+            // Update momenta for SMD
 
             void UpdateMomenta(const floatT epsilon) const noexcept
             {
@@ -258,15 +94,13 @@ namespace GaugeUpdates
                 {
                     link_coord current_link {t, x, y, z, mu};
                     Matrix_3x3 tmp {Action.Staple(Gluon, current_link) * Gluon(current_link).adjoint()};
-                    // Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
-                    // Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
                     Momentum(current_link) -= epsilon * i<floatT> * beta / 6.0 * SU3::Projection::Algebra(tmp);
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
 
             //-----
-            // Update gauge fields for HMC
+            // Update gauge fields for SMD
 
             void UpdateFields(const floatT epsilon) const noexcept
             {
@@ -307,7 +141,7 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+            explicit SMDKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
             Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
             {}
 
@@ -338,12 +172,13 @@ namespace GaugeUpdates
                     // datalog << "DeltaH: " << DeltaH << std::endl;
                     if (q <= p)
                     {
-                        acceptance_count_hmc += 1;
+                        acceptance_count_smd += 1;
                         return true;
                     }
                     else
                     {
                         Gluon = Gluon_copy;
+                        ReverseMomenta();
                         return false;
                     }
                 }
@@ -356,4 +191,4 @@ namespace GaugeUpdates
     };
 } // namespace GaugeUpdates
 
-#endif // LETTUCE_HMC_GAUGE_HPP
+#endif // LETTUCE_SMD_GAUGE_HPP
