@@ -17,6 +17,14 @@
 //-----
 // Polyakov loops
 
+// With G++, OpenMP reduction on std::complex<T> doesn't work, so we have to define it ourselves
+// #pragma omp declare \
+// reduction(  \
+//     + : \
+//     std::complex<double> :  \
+//     omp_out += omp_in ) \
+// initializer( omp_priv = omp_orig )
+
 [[nodiscard]]
 std::complex<double> PolyakovLoop(const GaugeField& Gluon) noexcept
 {

@@ -54,6 +54,11 @@ struct site_coord
             // TODO: Compiler will probably complain that we have no default case?
         }
     }
+    [[nodiscard]]
+    inline int sum() const noexcept
+    {
+        return t + x + y + z;
+    }
     friend std::ostream& operator<<(std::ostream& stream, const site_coord& site)
     {
         stream << "Site(" << site.t << ", " << site.x << ", " << site.y << ", " << site.z << ")\n";
@@ -105,6 +110,11 @@ struct link_coord
                 return mu;
             // TODO: Compiler will probably complain that we have no default case?
         }
+    }
+    [[nodiscard]]
+    inline int sum() const noexcept
+    {
+        return t + x + y + z;
     }
     friend std::ostream& operator<<(std::ostream& stream, const link_coord& link)
     {
