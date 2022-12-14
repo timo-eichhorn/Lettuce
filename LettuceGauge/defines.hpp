@@ -54,8 +54,8 @@ int expectation_period;                                     // Number of updates
 // inline constexpr int n_smear {20};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
 // inline constexpr int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
 // inline constexpr floatT rho_stout {0.04};                   // Stout smearing parameter
-inline int n_smear {3000};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
-inline int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
+inline int n_smear {10};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+inline int n_smear_skip {1};                      // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.12};                   // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm

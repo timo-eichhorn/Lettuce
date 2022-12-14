@@ -173,6 +173,9 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     #ifdef DEBUG_MODE_TERMINAL
     datalog << "DEBUG_MODE_TERMINAL\n";
     #endif
+    #ifdef FIXED_SEED
+    datalog << "FIXED_SEED\n";
+    #endif
     datalog << starttimestring << "\n";
     datalog << "START_PARAMS\n";
     datalog << "Gauge field precision = "   << typeid(floatT).name()   << "\n";
@@ -799,8 +802,7 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 //     datalog << TopologicalChargeUnimproved.back() << "\n" << endl;
 // }
 
-// TODO: Remove parameter rho_stout_ (only introduced for gradient flow integrator stepsize test)
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const double rho_stout_, const bool print_newline = true)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const bool print_newline = true)
 {
     vector<double>               Action(n_smear + 1);
     vector<double>               ActionImproved(n_smear + 1);
@@ -828,7 +830,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       forwarding references in the constructor. Also, check if more references should be made const members
     Integrators::GradientFlow::Euler Flow_Integrator;
     // GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
-    GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout_);
+    GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -1076,7 +1078,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, rho_stout, false);
+    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
     datalog << "CV_MetaD: " << CV_current << "\n";
@@ -1186,20 +1188,20 @@ int main()
             // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
             // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
             //-----
-            // auto start_update_or = std::chrono::system_clock::now();
+            auto start_update_or = std::chrono::system_clock::now();
             if constexpr(n_orelax != 0)
             {
-                // double action_before {WilsonAction::Action(Gluon)};
+                // double action_before {GaugeAction::WilsonAction.Action(Gluon)};
                 // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
                 Iterator::Checkerboard(OverrelaxationSubgroup, n_orelax);
-                // double action_after {WilsonAction::Action(Gluon)};
+                // double action_after {GaugeAction::WilsonAction.Action(Gluon)};
                 // std::cout << "Action (before): " << action_before << std::endl;
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
             }
-            // auto end_update_or = std::chrono::system_clock::now();
-            // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-            // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+            auto end_update_or = std::chrono::system_clock::now();
+            std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+            cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
             //-----
             if constexpr(n_instanton_update != 0)
             {
@@ -1221,9 +1223,14 @@ int main()
             if (n_count % expectation_period == 0)
             {
                 // auto start_observable = std::chrono::system_clock::now();
+                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
+                // auto end_observable = std::chrono::system_clock::now();
+                // std::chrono::duration<double> observable_time {end_observable - start_observable};
+                // cout << "Time for calculating observables: " << observable_time.count() << endl;
+
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.12);
+                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.12);
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
@@ -1244,9 +1251,6 @@ int main()
                 // n_smear = 300;
                 // n_smear_skip = 16;
                 // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.005);
-                // auto end_observable = std::chrono::system_clock::now();
-                // std::chrono::duration<double> observable_time {end_observable - start_observable};
-                // cout << "Time for calculating observables: " << observable_time.count() << endl;
             }
         }
     }
