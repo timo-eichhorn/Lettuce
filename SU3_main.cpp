@@ -559,7 +559,7 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     // OverrelaxationSubgroupOld(Gluon1, n_sweep_orelax);
     // Update_function(Gluon1, distribution_uniform, n_sweep_heatbath, n_sweep_orelax);
     Iterator::Checkerboard(Heatbath1, n_sweep_heatbath);
-    Iterator::Checkerboard(OverrelaxationSubgroup1, n_sweep_heatbath);
+    Iterator::Checkerboard(OverrelaxationSubgroup1, n_sweep_orelax);
     // Get new value of collective variable
     double CV_new {CV_function(Gluon1, Gluon2, Gluon3, n_smear_meta, rho_stout)};
     //-----
@@ -828,7 +828,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       the temporary Action functor to be the same as the Flow functor.
     // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
     //       forwarding references in the constructor. Also, check if more references should be made const members
-    Integrators::GradientFlow::Euler Flow_Integrator;
+    Integrators::GradientFlow::RK3 Flow_Integrator;
     // GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
     GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
@@ -1188,7 +1188,7 @@ int main()
             // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
             // cout << "Time for one HMC trajectory: " << update_time_hmc.count() << endl;
             //-----
-            auto start_update_or = std::chrono::system_clock::now();
+            // auto start_update_or = std::chrono::system_clock::now();
             if constexpr(n_orelax != 0)
             {
                 // double action_before {GaugeAction::WilsonAction.Action(Gluon)};
@@ -1199,9 +1199,9 @@ int main()
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
             }
-            auto end_update_or = std::chrono::system_clock::now();
-            std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-            cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
+            // auto end_update_or = std::chrono::system_clock::now();
+            // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+            // cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << endl;
             //-----
             if constexpr(n_instanton_update != 0)
             {

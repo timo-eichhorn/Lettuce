@@ -132,7 +132,6 @@ Matrix_3x3 RectangularLoop<2, 1>(const GaugeField& Gluon, const site_coord& curr
     site_coord site_mup     {Move<1>(current_site, mu)};
     site_coord site_mupp    {Move<1>(site_mup    , mu)};
     site_coord site_mup_nup {Move<1>(site_mup    , nu)};
-    site_coord site_nupp    {Move<2>(current_site, nu)};
     site_coord site_nup     {Move<1>(current_site, nu)};
     return Gluon(current_site, mu) * Gluon(site_mup, mu) * Gluon(site_mupp, nu) * Gluon(site_mup_nup, mu).adjoint() * Gluon(site_nup, mu).adjoint() * Gluon(current_site, nu).adjoint();
 }

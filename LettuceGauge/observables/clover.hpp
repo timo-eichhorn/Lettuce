@@ -94,7 +94,6 @@ void CalculateClover(const GaugeField& Gluon, FullTensor& Clov) noexcept
 Matrix_3x3 CloverDerivativeComponent(const GaugeField& Gluon, const FullTensor& Clover, const site_coord& current_site, const int mu, const int nu, const int rho, const int sigma) noexcept
 {
     site_coord site_mup     = Move< 1>(current_site, mu);
-    site_coord site_mud     = Move<-1>(current_site, mu);
     site_coord site_nup     = Move< 1>(current_site, nu);
     site_coord site_nud     = Move<-1>(current_site, nu);
     site_coord site_mup_nup = Move< 1>(site_mup, nu);

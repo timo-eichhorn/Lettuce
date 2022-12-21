@@ -136,7 +136,8 @@ namespace Iterator
     template<typename funcT>
     void Checkerboard4(funcT&& function, const int n_sweep = 1)
     {
-        static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
+        // TODO: If checked like this, the static_assert complains, even if the function is never used. Need to explicitly check on an array that we pass to the function...
+        // static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         // For each direction, the lattice is split up into 4 sublattices that must be update one after another
@@ -160,7 +161,8 @@ namespace Iterator
     template<typename funcT, typename sumT>
     void Checkerboard4Sum(funcT&& function, sumT& sum, const int n_sweep = 1)
     {
-        static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
+        // TODO: If checked like this, the static_assert complains, even if the function is never used. Need to explicitly check on an array that we pass to the function...
+        // static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         // For each direction, the lattice is split up into 4 sublattices that must be update one after another
