@@ -20,6 +20,8 @@
 // Provides functions relevant for SU(3) elements like group projections
 
 
+// TODO: Currently, this might be somehwat inconsistent/unclear: Are the generators the Gell-Mann matrices lambda_j (which are hermitian), or are the generators
+//       i * lambda_j (which are algebra elements/antihermitian)? Perhaps we should rename our functions so we can provide both...
 // The Gell-Mann matrices lambda_i are traceless hermitian (3x3)-matrices that generate the SU(3) in it's defining representation
 // Namely, any group element U may be written as U = exp(i * 0.5 * alpha_j * lambda_j), where alpha_j are eight real coefficients and the summation over j is implicit
 namespace SU3::Generators

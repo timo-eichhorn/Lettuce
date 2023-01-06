@@ -25,7 +25,7 @@ namespace WilsonAction
     {
         double S {0.0};
 
-        #pragma omp parallel for reduction(+:S)
+        #pragma omp parallel for reduction(+: S)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -49,7 +49,7 @@ namespace WilsonAction
         double S {0.0};
         // Matrix_SU3_double pl;
 
-        #pragma omp parallel for reduction(+:S)
+        #pragma omp parallel for reduction(+: S)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -309,58 +309,5 @@ namespace WilsonAction
     //     return -beta/static_cast<floatT>(3.0) * std::real((Udiff * st.adjoint()).trace());
     // }
 } // namespace WilsonAction
-
-// namespace GaugeAction
-// {
-//     class Wilson
-//     {
-//         // Do not store the gauge field/a reference to the gauge field in the class, since we might want to use the same action for different fields (e.g. during smearing?)
-//         // Instead, the field is always passed as an external reference
-//         private:
-//             double beta;
-//         public:
-//             // If we keep this constexpr, we can use it as template parameter in our coordinate move functions
-//             static constexpr int stencil_radius {1};
-//             //...
-//             WilsonAction_(const double beta_in) noexcept :
-//             beta(beta_in)
-//             {}
-
-//             void SetBeta(const double beta_in) noexcept
-//             {
-//                 beta = beta_in;
-//             }
-
-//             [[nodiscard]]
-//             double GetBeta() noexcept
-//             {
-//                 return beta;
-//             }
-
-//             [[nodiscard]]
-//             double ActionLocal() noexcept
-//             {
-//                 return;
-//             }
-
-//             [[nodiscard]]
-//             double Action() noexcept
-//             {
-//                 return;
-//             }
-
-//             [[nodiscard]]
-//             double ActionNormalized() noexcept
-//             {
-//                 return;
-//             }
-
-//             [[nodiscard]]
-//             Matrix_3x3 Staple(const link_coord& link) noexcept
-//             {
-//                 return;
-//             }
-//     };
-// }
 
 #endif // WILSON_ACTION_HPP

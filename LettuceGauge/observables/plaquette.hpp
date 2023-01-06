@@ -29,7 +29,7 @@ Matrix_SU3 Plaquette(const GaugeField& Gluon, const site_coord& current_site, co
 double PlaquetteSum(const GaugeField& Gluon) noexcept
 {
     double Plaq_sum {0.0};
-    #pragma omp parallel for reduction(+:Plaq_sum)
+    #pragma omp parallel for reduction(+: Plaq_sum)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)

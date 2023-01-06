@@ -271,7 +271,7 @@ class GaugeField4DSmeared
         std::unique_ptr<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]> gaugefield {std::make_unique<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]>(Nsmear)};
     public:
         // Constructor with Nsmear as argument
-        GaugeField4DSmeared(const int Nsmear_in) noexcept :
+        explicit GaugeField4DSmeared(const int Nsmear_in) noexcept :
         Nsmear(Nsmear_in)
         {
             std::cout << "Creating GaugeField4DSmeared (Nsmear = " << Nsmear << ") with volume: " << V << std::endl;
@@ -479,8 +479,7 @@ struct SmearedFieldTuple
     SmearedFieldTuple(GaugeField& Field1_in, GaugeField& Field2_in) noexcept :
     Field1(Field1_in), Field2(Field2_in)
     {}
-    ~SmearedFieldTuple()
-    {}
+    ~SmearedFieldTuple() = default;
     SmearedFieldTuple(const SmearedFieldTuple& tuple_in) noexcept :
     Field1(tuple_in.Field1), Field2(tuple_in.Field2)
     {}

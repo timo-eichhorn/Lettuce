@@ -198,7 +198,7 @@ namespace SU3
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
         ExpConstants() = default;
-        ExpConstants(const Matrix_3x3& Mat_in) noexcept :
+        explicit ExpConstants(const Matrix_3x3& Mat_in) noexcept :
         Mat       (Mat_in),
         Mat2      (Mat_in * Mat_in),
         // We want to avoid negative c0 due to numerical instabilities, so always use the absolute value and remember the sign in signflip
@@ -280,7 +280,7 @@ namespace SU3
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
         ExpDerivativeConstants() = default;
-        ExpDerivativeConstants(const Matrix_3x3& Mat_in) noexcept :
+        explicit ExpDerivativeConstants(const Matrix_3x3& Mat_in) noexcept :
         Mat       (Mat_in),
         Mat2      (Mat_in * Mat_in),
         // We want to avoid negative c0 due to numerical instabilities, so always use the absolute value and remember the sign in signflip
@@ -338,7 +338,7 @@ namespace SU3
             B_1      = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
             B_2      = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
         }
-        ExpDerivativeConstants(const ExpConstants& ExpConstants_in) noexcept :
+        explicit ExpDerivativeConstants(const ExpConstants& ExpConstants_in) noexcept :
         Mat       (ExpConstants_in.Mat),
         Mat2      (ExpConstants_in.Mat2),
         c0        (ExpConstants_in.c0),

@@ -112,9 +112,6 @@ using std::conj;
 using std::array;
 using std::vector;
 
-// template<typename T, size_t Nx, size_t Nt>
-// using GaugeField = array<array<array<T, 2>, Nx>, Nt>;
-
 // template<typename T>
 // using 3x3mat = Eigen::Matrix<std::complex<T>, 3, 3>;
 
@@ -137,9 +134,9 @@ using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2>;
 using Matrix_SU2     = Matrix_2x2;
 using Matrix_3x3     = Eigen::Matrix<std::complex<floatT>, 3, 3>;
 using Matrix_SU3     = Matrix_3x3;
-using Gl_Lattice     = array<array<array<array<array<Matrix_SU3, 4>, Nz>, Ny>, Nx>, Nt>;
 using Local_tensor   = array<array<Matrix_SU3, 4>, 4>;
-using Spatial_tensor = array<array<array<array<array<array<Matrix_SU3, 3>, 3>, Nz>, Ny>, Nx>, Nt>;
+// using Gl_Lattice     = array<array<array<array<array<Matrix_SU3, 4>, Nz>, Ny>, Nx>, Nt>;
+// using Spatial_tensor = array<array<array<array<array<array<Matrix_SU3, 3>, 3>, Nz>, Ny>, Nx>, Nt>;
 // using Full_tensor    = array<array<array<array<array<array<Matrix_SU3, 4>, 4>, Nz>, Ny>, Nx>, Nt>;
 
 //-----
@@ -175,7 +172,8 @@ template <typename T>
 [[nodiscard]]
 constexpr int sign(T x)
 {
-    return (x > T(0)) - (x < T(0));
+    // return (x > T(0)) - (x < T(0));
+    return (x > static_cast<T>(0)) - (x < static_cast<T>(0));
 }
 
 #endif // LETTUCE_DEFINES_HPP

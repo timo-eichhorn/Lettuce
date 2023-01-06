@@ -141,6 +141,6 @@ namespace let::col
     {
         return os << "\033[1m\033[37m";
     }
-}
+} // namespace let::col
 
 #endif // LETTUCE_COLORS_HPP

@@ -45,7 +45,7 @@ double WilsonLoop(const GaugeField& Gluon, GaugeField& Gluonchain) noexcept
             Gluonchain({t, x, y, z, 3}) *= Gluon({t, x, y, (z + n)%Nz, 3});
         }
     }
-    #pragma omp parallel for reduction(+:W)
+    #pragma omp parallel for reduction(+: W)
     for (int t = 0; t < Nt; ++t)
     {
         int tp {(t + Nmu_end)%Nt};

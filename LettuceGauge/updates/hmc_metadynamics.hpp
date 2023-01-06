@@ -205,7 +205,7 @@ namespace GaugeUpdates
                 double potential_energy {Action.Action(U)};
                 double kinetic_energy   {0.0};
                 // TODO: Momentum * Momentum.adjoint() or Momentum^2? Also is there a prefactor 0.5 or not?
-                #pragma omp parallel for reduction(+:kinetic_energy)
+                #pragma omp parallel for reduction(+: kinetic_energy)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)

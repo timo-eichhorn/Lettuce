@@ -42,8 +42,8 @@ namespace Iterator
         // #pragma omp parallel
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         {
-            #pragma omp parallel for reduction(+:sum)
-            // #pragma omp for reduction(+:sum)
+            #pragma omp parallel for reduction(+: sum)
+            // #pragma omp for reduction(+: sum)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -90,8 +90,8 @@ namespace Iterator
         for (int mu = 0; mu < 4; ++mu)
         for (int eo = 0; eo < 2; ++eo)
         {
-            #pragma omp parallel for reduction(+:sum)
-            // #pragma omp for reduction(+:sum)
+            #pragma omp parallel for reduction(+: sum)
+            // #pragma omp for reduction(+: sum)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -168,7 +168,7 @@ namespace Iterator
         // For each direction, the lattice is split up into 4 sublattices that must be update one after another
         for (int sublat = 0; sublat < 4; ++sublat)
         {
-            #pragma omp parallel for reduction(+:sum)
+            #pragma omp parallel for reduction(+: sum)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)

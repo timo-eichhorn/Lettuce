@@ -8,12 +8,15 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
+#include <algorithm>
 #include <fstream>
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
-#include <iostream>
-#include <iterator>
 //----------------------------------------
 // Standard C headers
 #include <cassert>
@@ -34,6 +37,7 @@ private:
     std::ofstream binlog;
     std::ifstream binload;
 public:
+    // TODO: Rewrite constructor
     MetaBiasPotential(const double CV_min_in, const double CV_max_in, const size_t bin_number_in, const double weight_in, const double threshold_weight_in)
     {
         assert(CV_min_in < CV_max_in);
@@ -394,7 +398,7 @@ public:
             }
             // Load histogram into bin_count
             bin_count.clear();
-            while(std::getline(binload, current_line, ','))
+            while (std::getline(binload, current_line, ','))
             {
                 bin_count.push_back(std::stod(current_line));
             }

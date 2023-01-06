@@ -53,7 +53,7 @@ struct SingleObservable
         observableT operator[](const int i) const noexcept
         {
             return observable_vector[i];
-        } 
+        }
 
         void SaveToFile(std::ofstream& stream) const noexcept
         {
@@ -113,7 +113,7 @@ auto CreateObservable(FuncT& ObservableFunction, const int n_smear_in, const std
 //         double operator[](const int i) const noexcept
 //         {
 //             return observable_vector[i];
-//         } 
+//         }
 
 //         void SaveToFile(std::ofstream& stream) const noexcept
 //         {

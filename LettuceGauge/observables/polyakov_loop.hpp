@@ -29,7 +29,7 @@
 std::complex<double> PolyakovLoop(const GaugeField& Gluon) noexcept
 {
     std::complex<floatT> P {0.0, 0.0};
-    #pragma omp parallel for reduction(+:P)
+    #pragma omp parallel for reduction(+: P)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)

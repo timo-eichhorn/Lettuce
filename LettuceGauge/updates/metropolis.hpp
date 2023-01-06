@@ -134,8 +134,8 @@ struct MetropolisKernel
 //     for (int mu = 0; mu < 4; ++mu)
 //     for (int eo = 0; eo < 2; ++eo)
 //     {
-//         // #pragma omp parallel for reduction(+:acceptance_count) shared(prng_vector) private(st, old_link, new_link, s, sprime) firstprivate(eo, mu)
-//         #pragma omp parallel for reduction(+:acceptance_count) shared(prng_vector)
+//         // #pragma omp parallel for reduction(+: acceptance_count) shared(prng_vector) private(st, old_link, new_link, s, sprime) firstprivate(eo, mu)
+//         #pragma omp parallel for reduction(+: acceptance_count) shared(prng_vector)
 //         for (int t = 0; t < Nt; ++t)
 //         for (int x = 0; x < Nx; ++x)
 //         for (int y = 0; y < Ny; ++y)

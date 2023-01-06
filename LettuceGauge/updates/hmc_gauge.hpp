@@ -49,9 +49,9 @@ namespace Integrators::HMC
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(1.0)/n_step};
             // Integrator constants
-            double alpha {0.1931833275037836 * epsilon};
-            double beta  {0.5 * epsilon};
-            double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
+            const double alpha {0.1931833275037836 * epsilon};
+            const double beta  {0.5 * epsilon};
+            const double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
             // Perform integration
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
@@ -74,9 +74,9 @@ namespace Integrators::HMC
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(1.0)/n_step};
             // Integrator constants
-            double alpha {0.1931833275037836 * epsilon};
-            double beta  {0.5 * epsilon};
-            double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
+            const double alpha {0.1931833275037836 * epsilon};
+            const double beta  {0.5 * epsilon};
+            const double gamma {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
             // Perform integration
             // Momentum updates are merged in the loop
             HMC.UpdateMomenta(alpha);
@@ -105,12 +105,12 @@ namespace Integrators::HMC
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(1.0)/n_step};
             // Integrator constants
-            double alpha {0.08398315262876693 * epsilon};
-            double beta  {0.2539785108410595 * epsilon};
-            double gamma {0.6822365335719091 * epsilon};
-            double delta {-0.03230286765269967 * epsilon};
-            double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
-            double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
+            const double alpha {0.08398315262876693 * epsilon};
+            const double beta  {0.2539785108410595 * epsilon};
+            const double gamma {0.6822365335719091 * epsilon};
+            const double delta {-0.03230286765269967 * epsilon};
+            const double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
+            const double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
             // Perform integration
             // Momentum updates are not merged in the loop
             for (int step_count = 0; step_count < n_step; ++step_count)
@@ -142,12 +142,12 @@ namespace Integrators::HMC
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(1.0)/n_step};
             // Integrator constants
-            double alpha {0.08398315262876693 * epsilon};
-            double beta  {0.2539785108410595 * epsilon};
-            double gamma {0.6822365335719091 * epsilon};
-            double delta {-0.03230286765269967 * epsilon};
-            double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
-            double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
+            const double alpha {0.08398315262876693 * epsilon};
+            const double beta  {0.2539785108410595 * epsilon};
+            const double gamma {0.6822365335719091 * epsilon};
+            const double delta {-0.03230286765269967 * epsilon};
+            const double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
+            const double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
             // Perform integration
             // Momentum updates are merged in the loop
             HMC.UpdateMomenta(alpha);
@@ -216,12 +216,20 @@ namespace GaugeUpdates
                     floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
                     floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
                     floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Random momentum in su(3) given by phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann matrix)
                     // Technically A is a traceless hermitian matrix, while su(3) matrices are anti-hermitian
+                    // Matrix_3x3 A;
+                    // A << std::complex<floatT>(phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi1,-phi2),std::complex<floatT>(phi4,-phi5),
+                    //      std::complex<floatT>(phi1,phi2),                std::complex<floatT>(-phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi6,-phi7),
+                    //      std::complex<floatT>(phi4,phi5),                std::complex<floatT>(phi6,phi7),std::complex<floatT>(-2.0*phi8/sqrt(3.0),0.0);
+                    // Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
+                    // TODO: This is the new version where the momenta are algebra elements
                     Matrix_3x3 A;
-                    A << std::complex<floatT>(phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi1,-phi2),std::complex<floatT>(phi4,-phi5),
-                         std::complex<floatT>(phi1,phi2),                std::complex<floatT>(-phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi6,-phi7),
-                         std::complex<floatT>(phi4,phi5),                std::complex<floatT>(phi6,phi7),std::complex<floatT>(-2.0*phi8/sqrt(3.0),0.0);
+                    A << std::complex<floatT>(0.0,phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi2,phi1),                  std::complex<floatT>(phi5,phi4),
+                         std::complex<floatT>(-phi2,phi1),                std::complex<floatT>(0.0,-phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi7,phi6),
+                         std::complex<floatT>(-phi5,phi4),                std::complex<floatT>(-phi7,phi6),                 std::complex<floatT>(0.0,-2.0*phi8/sqrt(3.0));
                     Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
                 }
                 // std::cout << "Random momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
@@ -260,7 +268,11 @@ namespace GaugeUpdates
                     Matrix_3x3 tmp {Action.Staple(Gluon, current_link) * Gluon(current_link).adjoint()};
                     // Matrix_3x3 tmp {st * Gluon(current_link).adjoint() - Gluon(current_link) * st.adjoint()};
                     // Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(12.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-                    Momentum(current_link) -= epsilon * i<floatT> * beta / 6.0 * SU3::Projection::Algebra(tmp);
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Momentum(current_link) -= epsilon * i<floatT> * beta / 6.0 * SU3::Projection::Algebra(tmp);
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Momentum(current_link) += epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp);
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
@@ -278,7 +290,12 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Matrix_3x3 tmp_mat {(i<floatT> * epsilon * Momentum({t, x, y, z, mu})).exp()};
-                    Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Matrix_3x3 tmp_mat {SU3::exp(-i<floatT> * epsilon * Momentum({t, x, y, z, mu}))};
+
                     Gluon({t, x, y, z, mu}) = tmp_mat * Gluon({t, x, y, z, mu});
                     SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
                 }
@@ -290,18 +307,20 @@ namespace GaugeUpdates
             [[nodiscard]]
             double Hamiltonian() const noexcept
             {
-                // double potential_energy {WilsonAction::Action(Gluon)};
                 double potential_energy {Action.Action(Gluon)};
                 double kinetic_energy   {0.0};
                 // TODO: Momentum * Momentum.adjoint() or Momentum^2? Also is there a prefactor 0.5 or not?
-                #pragma omp parallel for reduction(+:kinetic_energy)
+                #pragma omp parallel for reduction(+: kinetic_energy)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
                 for (int z = 0; z < Nz; ++z)
                 for (int mu = 0; mu < 4; ++mu)
                 {
-                    kinetic_energy += std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // kinetic_energy += std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
+                    // TODO: This is the new version where the momenta are algebra elements
+                    kinetic_energy -= std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
                 }
                 // std::cout << "kinetic_energy: " << kinetic_energy << " potential_energy: " << potential_energy << std::endl;
                 return potential_energy + kinetic_energy;

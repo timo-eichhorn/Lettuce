@@ -85,7 +85,7 @@ namespace EnergyDensity
     double Clover(const FullTensor& F) noexcept
     {
         double E {0.0};
-        #pragma omp parallel for reduction(+:E)
+        #pragma omp parallel for reduction(+: E)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)

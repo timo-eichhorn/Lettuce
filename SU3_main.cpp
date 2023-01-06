@@ -158,8 +158,7 @@ void Configuration()
     cout << "n_orelax is "                    << n_orelax << ".\n";
     cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
-    cout << "metapotential_updated is "       << metapotential_updated << ".\n"; 
-    //cout << "Overall, there are " <<  << " lattice sites.\n\n";
+    cout << "metapotential_updated is "       << metapotential_updated << ".\n";
 }
 
 //-----
@@ -828,7 +827,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //       the temporary Action functor to be the same as the Flow functor.
     // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
     //       forwarding references in the constructor. Also, check if more references should be made const members
-    Integrators::GradientFlow::RK3 Flow_Integrator;
+    Integrators::GradientFlow::Euler Flow_Integrator;
     // GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
     GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
@@ -1051,7 +1050,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     datalog << "Wilson_loop(L=8): ";
     // std::copy(WLoop8.cbegin(), std::prev(WLoop8.cend()), std::ostream_iterator<double>(datalog, " "));
     std::copy(std::cbegin(WLoop8), std::prev(std::cend(WLoop8)), std::ostream_iterator<double>(datalog, " "));
-    datalog << WLoop8.back() << "\n"; //<< endl;
+    datalog << WLoop8.back() << "\n";
     //-----
     datalog << "Polyakov_loop(Re): ";
     std::copy(std::cbegin(PLoopRe), std::prev(std::cend(PLoopRe)), std::ostream_iterator<double>(datalog, " "));
@@ -1102,7 +1101,7 @@ int main()
     }
 
     // Default width of random numbers used in Metropolis update is 0.5
-    floatT epsilon {0.005};
+    floatT epsilon {0.5};
 
     std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
     std::uniform_real_distribution<floatT> distribution_uniform(0.0, 1.0);
@@ -1260,12 +1259,12 @@ int main()
     {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
-        // TopBiasPotential.LoadPotential("metapotential_22.txt");
+        // TopBiasPotential.LoadPotential("SU(3)_N=16x16x16x16_beta=2.850000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
-        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::WilsonAction, n_smear_meta, distribution_prob);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         datalog << "[HMC start thermalization]\n";

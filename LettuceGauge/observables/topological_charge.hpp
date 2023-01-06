@@ -26,7 +26,7 @@
 double TopChargeGluonic(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+:Q)
+    #pragma omp parallel for reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -98,7 +98,7 @@ double TopChargeGluonic(const GaugeField& Gluon) noexcept
 double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+:Q)
+    #pragma omp parallel for reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -205,7 +205,7 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
 double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+:Q)
+    #pragma omp parallel for reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -234,7 +234,7 @@ double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
 double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+:Q)
+    #pragma omp parallel for reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -340,7 +340,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 // double CloverChargeFromF(const FullTensor& F) noexcept
 // {
 //     double Q {0.0};
-//     #pragma omp parallel for reduction(+:Q)
+//     #pragma omp parallel for reduction(+: Q)
 //     for (int t = 0; t < Nt; ++t)
 //     for (int x = 0; x < Nx; ++x)
 //     for (int y = 0; y < Ny; ++y)
@@ -360,7 +360,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 // double TopChargeGluonic(const Gl_Lattice& Gluon, funcT&& PlaqFunc)
 // {
 //     double Q {0.0};
-//     #pragma omp parallel for reduction(+:Q)
+//     #pragma omp parallel for reduction(+: Q)
 //     for (int t = 0; t < Nt; ++t)
 //     for (int x = 0; x < Nx; ++x)
 //     for (int y = 0; y < Ny; ++y)
@@ -434,7 +434,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 // double TopChargeGluonicImproved(const Gl_Lattice& Gluon)
 // {
 //     double Q {0.0};
-//     #pragma omp parallel for reduction(+:Q)
+//     #pragma omp parallel for reduction(+: Q)
 //     for (int t = 0; t < Nt; ++t)
 //     for (int x = 0; x < Nx; ++x)
 //     for (int y = 0; y < Ny; ++y)
@@ -514,7 +514,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 // double TopChargeGluonicOld(const Gl_Lattice& Gluon, Full_tensor& F)
 // {
 //     double Q {0.0};
-//     #pragma omp parallel for reduction(+:Q)
+//     #pragma omp parallel for reduction(+: Q)
 //     for (int t = 0; t < Nt; ++t)
 //     for (int x = 0; x < Nx; ++x)
 //     for (int y = 0; y < Ny; ++y)

@@ -35,8 +35,8 @@ class PRNG
 
         // TODO: Perhaps it's besser to take the distributions as template parameters?
 
-        PRNG(int n_thread) noexcept
-        { 
+        explicit PRNG(int n_thread) noexcept
+        {
             // std::vector<prngT> prng_vec(n_thread, prngT(seed_source));
             std::vector<pcg64> generator_vec;
             for (int i = 0; i < n_thread; ++i)
@@ -84,7 +84,7 @@ class PRNG
                 pcg_extras::seed_seq_from<std::random_device> seed_source_temp;
                 pcg64 generator_rand_temp(seed_source_temp);
                 element = generator_rand_temp;
-            }   
+            }
         }
 
         // TODO: Need to save the distribution states as well (at least for the normal distribution)
@@ -109,7 +109,6 @@ class PRNG
                 state_stream_in >> prng_el;
                 // TODO: Some kind of delimiter??
             }
-
         }
 
         std::ostream& operator<<(std::ofstream& stream, const PRNG& prng)

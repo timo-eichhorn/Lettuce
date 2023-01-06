@@ -262,7 +262,7 @@ void InstantonStart(GaugeField& Gluon, const int Q)
     tau << 1, 0,  0,
            0, 0,  0,
            0, 0, -1;
-    // Unit matrices in sigma and tau subspace 
+    // Unit matrices in sigma and tau subspace
     Matrix_3x3 id_sig {sig * sig};
     Matrix_3x3 id_tau {tau * tau};
     // Orthogonal complement
@@ -399,7 +399,7 @@ void MultiplyInstanton(GaugeField& Gluon, const int Q)
     tau << 1, 0,  0,
            0, 0,  0,
            0, 0, -1;
-    // Unit matrices in sigma and tau subspace 
+    // Unit matrices in sigma and tau subspace
     Matrix_3x3 id_sig {sig * sig};
     Matrix_3x3 id_tau {tau * tau};
     // Orthogonal complement
