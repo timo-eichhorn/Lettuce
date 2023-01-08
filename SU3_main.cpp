@@ -4,8 +4,10 @@
 // #define EIGEN_USE_MKL_ALL
 
 // Non-standard library headers
+#include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 #include "LettuceGauge/coords.hpp"
 #include "LettuceGauge/defines.hpp"
+#include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -28,7 +30,6 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
-#include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
@@ -119,11 +120,11 @@ void ValidatedIn(const std::string& message, T& target)
 {
     // Keep count of tries and abort after too many tries (e.g. important when using nohup)
     size_t count {0};
-    while (std::cout << message << "\n" && !(std::cin >> target) && count < 10)
+    while (std::cout << Lettuce::Color::BoldBlue << message << Lettuce::Color::Reset << "\n" && !(std::cin >> target) && count < 10)
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid input.\n";
+        std::cout << Lettuce::Color::Red << "Invalid input." << Lettuce::Color::Reset << "\n";
         ++count;
     }
 }
@@ -135,9 +136,14 @@ void ValidatedIn(const std::string& message, T& target)
 
 void Configuration()
 {
-    cout << "\n\nSU(3) theory simulation\n";
-    cout << "Current version: " << program_version;
-    cout << "\n\n----------------------------------------\n\n";
+    // std::cout << Lettuce::Color::BoldBlue << "\n\nSU(3) theory simulation\n";
+    // std::cout << "Current version: " << program_version;
+    // std::cout << "\n\n----------------------------------------\n\n" << Lettuce::Color::Reset;
+
+    std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
+    std::cout << std::left << std::setw(49) << "| SU(3) theory simulation" << "|\n";
+    std::cout << std::left << std::setw(49) << "| Current version: " + program_version << "|\n";
+    std::cout << "+------------------------------------------------+\n\n" << Lettuce::Color::Reset;
     // Get simulation parameters from user input
     ValidatedIn("Please enter beta: ", beta);
     ValidatedIn("Please enter n_run: ", n_run);
@@ -147,18 +153,18 @@ void Configuration()
     {
         metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
     }
-    cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
-    cout << "beta is "                        << beta << ".\n";
-    cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
-    cout << "n_metro is "                     << n_metro << ".\n";
-    cout << "multi_hit is "                   << multi_hit << ".\n";
-    cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
-    cout << "n_heatbath is "                  << n_heatbath << ".\n";
-    cout << "n_hmc is "                       << n_hmc << ".\n";
-    cout << "n_orelax is "                    << n_orelax << ".\n";
-    cout << "n_instanton_update is "          << n_instanton_update << ".\n";
-    cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
-    cout << "metapotential_updated is "       << metapotential_updated << ".\n";
+    std::cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
+    std::cout << "beta is "                        << beta << ".\n";
+    std::cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
+    std::cout << "n_metro is "                     << n_metro << ".\n";
+    std::cout << "multi_hit is "                   << multi_hit << ".\n";
+    std::cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
+    std::cout << "n_heatbath is "                  << n_heatbath << ".\n";
+    std::cout << "n_hmc is "                       << n_hmc << ".\n";
+    std::cout << "n_orelax is "                    << n_orelax << ".\n";
+    std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
+    std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
+    std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
 }
 
 //-----
@@ -198,7 +204,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
     datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
     datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
-    datalog << "END_PARAMS\n"               << endl;
+    datalog << "END_PARAMS\n"               << std::endl;
     datalog.close();
     datalog.clear();
 }
@@ -208,29 +214,29 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
 
 void CreateFiles()
 {
-    LatticeSizeString = to_string(Nx) + "x" + to_string(Ny) + "x" + to_string(Nz) + "x" + to_string(Nt);
-    betaString        = to_string(beta);
+    LatticeSizeString = std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt);
+    betaString        = std::to_string(beta);
     directoryname_pre = "SU(3)_N=" + LatticeSizeString + "_beta=" + betaString;
     directoryname     = directoryname_pre;
     append = 1;
     while (std::filesystem::exists(directoryname) == true)
     {
-        appendString = to_string(append);
+        appendString  = std::to_string(append);
         directoryname = directoryname_pre + " (" + appendString + ")";
         ++append;
     }
     std::filesystem::create_directory(directoryname);
-    cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
+    std::cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
     logfilepath           = directoryname + "/log.txt";
     parameterfilepath     = directoryname + "/parameters.txt";
     wilsonfilepath        = directoryname + "/wilson.txt";
     metapotentialfilepath = directoryname + "/metapotential.txt";
-    cout << "Filepath (log):\t\t"      << logfilepath           << "\n";
-    cout << "Filepath (parameters):\t" << parameterfilepath     << "\n";
-    cout << "Filepath (wilson):\t"     << wilsonfilepath        << "\n";
-    cout << "Filepath (metadyn):\t"    << metapotentialfilepath << "\n";
+    std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
+    std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
+    std::cout                             << "Filepath (wilson):\t"     << wilsonfilepath                                 << "\n";
+    std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath << Lettuce::Color::Reset << "\n";
     #ifdef DEBUG_MODE_TERMINAL
-    cout << "DEBUG_MODE_TERMINAL\n\n";
+    std::cout << "DEBUG_MODE_TERMINAL\n\n";
     #endif
 
     //-----
@@ -292,7 +298,7 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
     #else
         int max_thread_num {1};
     #endif
-    cout << "Maximum number of threads: " << max_thread_num << endl;
+    std::cout << "Maximum number of threads: " << max_thread_num << std::endl;
     #if defined(_OPENMP)
         if (thread_num != 0)
         {
@@ -302,11 +308,11 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
     #endif
     if (max_thread_num != 1)
     {
-        cout << "Creating PRNG vector with " << max_thread_num << " PRNGs.\n" << endl;
+        std::cout << "Creating PRNG vector with " << max_thread_num << " PRNGs.\n" << std::endl;
     }
     else
     {
-        cout << "Creating PRNG vector with " << max_thread_num << " PRNG.\n" << endl;
+        std::cout << "Creating PRNG vector with " << max_thread_num << " PRNG.\n" << std::endl;
     }
     for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
     {
@@ -336,7 +342,7 @@ vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thr
     #else
         int max_thread_num {1};
     #endif
-    cout << "Maximum number of threads: " << max_thread_num << endl;
+    std::cout << "Maximum number of threads: " << max_thread_num << std::endl;
     #if defined(_OPENMP)
         if (thread_num != 0)
         {
@@ -346,11 +352,11 @@ vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thr
     #endif
     if (max_thread_num != 1)
     {
-        cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << endl;
+        std::cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << std::endl;
     }
     else
     {
-        cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << endl;
+        std::cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << std::endl;
     }
     for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
     {
@@ -382,7 +388,7 @@ void SetGluonToOne(GaugeField& Gluon)
     {
         Gluon({t, x, y, z, mu}).setIdentity();
     }
-    cout << "Gauge Fields set to identity!" << endl;
+    std::cout << "Gauge Fields set to identity!" << std::endl;
 }
 
 //-----
@@ -1081,7 +1087,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBias
 
     double CV_current {Metapotential.ReturnCV_current()};
     datalog << "CV_MetaD: " << CV_current << "\n";
-    datalog << "Metapotential: " << Metapotential.ReturnPotential(CV_current) << "\n" << endl;
+    datalog << "Metapotential: " << Metapotential.ReturnPotential(CV_current) << "\n" << std::endl;
 }
 
 //-----
@@ -1090,7 +1096,7 @@ int main()
 {
     // iostream not synchronized with corresponding C streams, might cause a problem with C libraries and might not be thread safe
     std::ios_base::sync_with_stdio(false);
-    cout << std::setprecision(12) << std::fixed;
+    std::cout << std::setprecision(12) << std::fixed;
     datalog << std::setprecision(12) << std::fixed;
 
     Configuration();
@@ -1303,8 +1309,8 @@ int main()
     //-----
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 
-    cout << "\n";
-    PrintFinal(cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, epsilon, end_time, elapsed_seconds);
+    std::cout << "\n";
+    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, epsilon, end_time, elapsed_seconds);
 
     PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, epsilon, end_time, elapsed_seconds);
     datalog.close();

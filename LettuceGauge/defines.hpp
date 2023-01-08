@@ -104,11 +104,6 @@ uint_fast64_t acceptance_count_instanton {0};
 
 //-----
 
-using std::cin;
-using std::cout;
-using std::endl;
-using std::to_string;
-using std::conj;
 using std::array;
 using std::vector;
 

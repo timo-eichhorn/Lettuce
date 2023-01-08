@@ -11,17 +11,29 @@
 #include <ostream>
 //----------------------------------------
 // Standard C headers
-// ...
+#include <unistd.h>
 
 // Provides options to print colored output to an ANSI compatible terminal
 
-namespace let::col
+namespace Lettuce::Color
 {
+    bool stdout_supports_colors()
+    {
+        return isatty(fileno(stdout));
+    }
+
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& reset(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Reset(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[0m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[0m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     //-----
@@ -29,58 +41,114 @@ namespace let::col
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& black(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Black(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[30m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[0m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& red(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Red(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[31m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[31m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& green(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Green(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[32m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[32m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& yellow(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Yellow(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[33m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[33m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& blue(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Blue(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[34m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[34m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& magenta(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Magenta(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[35m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[35m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& cyan(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& Cyan(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[36m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[36m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& white(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& White(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[37m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[37m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     //-----
@@ -88,59 +156,115 @@ namespace let::col
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldblack(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldBlack(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[30m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[30m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldred(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldRed(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[31m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[31m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldgreen(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldGreen(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[32m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[32m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldyellow(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldYellow(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[33m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[33m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldblue(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldBlue(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[34m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[34m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldmagenta(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldMagenta(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[35m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[35m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldcyan(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldCyan(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[36m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[36m";
+        }
+        else
+        {
+            return os;
+        }
     }
 
     template<typename CharT, typename Traits>
     constexpr
-    std::basic_ostream<CharT, Traits>& boldwhite(std::basic_ostream<CharT, Traits>& os)
+    std::basic_ostream<CharT, Traits>& BoldWhite(std::basic_ostream<CharT, Traits>& os)
     {
-        return os << "\033[1m\033[37m";
+        if (stdout_supports_colors())
+        {
+            return os << "\033[1m\033[37m";
+        }
+        else
+        {
+            return os;
+        }
     }
-} // namespace let::col
+} // namespace Lettuce::Color
 
 #endif // LETTUCE_COLORS_HPP

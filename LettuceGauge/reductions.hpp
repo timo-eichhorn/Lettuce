@@ -16,7 +16,7 @@
 //----------------------------------------
 // OpenmMP reductions
 
-namespace reductions
+namespace Reductions
 {
     template <typename scalarT>
     scalarT Sum(const int n_thread)
@@ -27,6 +27,6 @@ namespace reductions
         // Perform final reduction over partial sums to get total sum
         // ...
     }
-} // namespace reductions
+} // namespace Reductions
 
 #endif // LETTUCE_REDUCTIONS_HPP

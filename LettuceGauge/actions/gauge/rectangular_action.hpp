@@ -4,6 +4,8 @@
 // Non-standard library headers
 #include "../../defines.hpp"
 #include "../../coords.hpp"
+#include "../../lattice.hpp"
+#include "../../observables/plaquette.hpp"
 #include "../../observables/wilson_loop.hpp"
 //----------------------------------------
 // Standard library headers
