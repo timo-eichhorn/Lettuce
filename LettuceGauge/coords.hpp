@@ -154,6 +154,8 @@ site_coord Move(const site_coord& site, const int direction) noexcept
     }
     else
     {
+        // TODO: Perhaps replace with safer (potentially less efficient) verion?
+        static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
         // Alternative: Use negative indices (how to deal with 0 then?)
         switch(direction)
         {
@@ -202,6 +204,8 @@ link_coord Move(const link_coord& link, const int direction) noexcept
     }
     else
     {
+        // TODO: Perhaps replace with safer (potentially less efficient) verion?
+        static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
         // Alternative: Use negative indices (how to deal with 0 then?)
         switch(direction)
         {

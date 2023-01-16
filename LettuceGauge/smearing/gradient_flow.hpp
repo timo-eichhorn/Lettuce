@@ -41,6 +41,11 @@ namespace Integrators::GradientFlow
                 GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
         }
+
+        std::string ReturnName() const
+        {
+            return "Euler/StoutSmearing";
+        }
     };
 
     // TODO: This seems to be incorrect
@@ -66,6 +71,11 @@ namespace Integrators::GradientFlow
     //             GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
     //         }
     //     }
+
+    //     std::string ReturnName() const
+    //     {
+    //         return "Midpoint";
+    //     }
     // };
 
     // TODO: For smaller step sizes, this seems to perform better than the Euler integrator, but not clear for larger step sizes (check!)
@@ -86,6 +96,11 @@ namespace Integrators::GradientFlow
                 GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -0.5, GradientFlow.epsilon);
                 GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
+        }
+
+        std::string ReturnName() const
+        {
+            return "RK2";
         }
     };
 
@@ -110,6 +125,11 @@ namespace Integrators::GradientFlow
                 GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -1.0, 3.0/4.0 * GradientFlow.epsilon);
                 GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
             }
+        }
+
+        std::string ReturnName() const
+        {
+            return "RK3";
         }
     };
 
@@ -241,6 +261,11 @@ struct GradientFlowKernel
         floatT GetEpsilon() const noexcept
         {
             return epsilon;
+        }
+
+        std::string ReturnIntegratorName() const
+        {
+            return Integrator.ReturnName();
         }
 };
 

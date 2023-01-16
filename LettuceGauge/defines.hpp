@@ -54,12 +54,12 @@ int expectation_period;                                     // Number of updates
 // inline constexpr int n_smear {20};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
 // inline constexpr int n_smear_skip {10};                      // Number of smearing steps to skip between measurements
 // inline constexpr floatT rho_stout {0.04};                   // Stout smearing parameter
-inline int n_smear {100};                           // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
-inline int n_smear_skip {1};                      // Number of smearing steps to skip between measurements
-inline floatT rho_stout {0.04};                   // Stout smearing parameter
+inline int n_smear {100};                                   // Number of smearing steps (total amount of smearing steps is actually 1 + (n_smear - 1) * n_smear_skip)
+inline int n_smear_skip {1};                                // Number of smearing steps to skip between measurements
+inline floatT rho_stout {0.04};                             // Stout smearing parameter
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
-inline constexpr int n_heatbath {1};                        // Number of heatbath sweeps per total update sweep
+inline constexpr int n_heatbath {1};                        // Number of heat bath sweeps per total update sweep
 inline constexpr int n_hmc {0};                             // Number of integration steps per HMC update
 inline constexpr int n_orelax {4};                          // Number of overrelaxation sweeps per total update sweep
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
@@ -138,18 +138,18 @@ using Local_tensor   = array<array<Matrix_SU3, 4>, 4>;
 // Better complex numbers?
 
 // Trick to allow type promotion below
-template <typename T>
+template<typename T>
 struct identity_t { typedef T type; };
 
 // Make working with std::complex<> numbers suck less... allow promotion.
 #define COMPLEX_OPS(OP)                                                 \
-  template <typename _Tp>                                               \
+  template<typename _Tp>                                               \
   std::complex<_Tp>                                                     \
   operator OP(std::complex<_Tp> lhs, const typename identity_t<_Tp>::type & rhs) \
   {                                                                     \
     return lhs OP rhs;                                                  \
   }                                                                     \
-  template <typename _Tp>                                               \
+  template<typename _Tp>                                               \
   std::complex<_Tp>                                                     \
   operator OP(const typename identity_t<_Tp>::type & lhs, const std::complex<_Tp> & rhs) \
   {                                                                     \
@@ -163,7 +163,7 @@ COMPLEX_OPS(/)
 
 // For some reason there is no inbuilt sign function???
 
-template <typename T>
+template<typename T>
 [[nodiscard]]
 constexpr int sign(T x)
 {

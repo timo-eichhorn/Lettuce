@@ -18,9 +18,9 @@
 #include <cmath>
 
 //+---------------------------------------------------------------------------------+
-//| This file provides a functor implementing a pseudo-heatbath update for SU(3)    |
+//| This file provides a functor implementing a pseudo heat bath update for SU(3)   |
 //| gauge theory, based on a Cabibbo-Marinari decomposition into SU(2) subgroups.   |
-//| The original heatbath update is described in PhysRevD.21.2308, and the          |
+//| The original heat bath update is described in PhysRevD.21.2308, and the         |
 //| decomposition into SU(2) subgroups was proposed in PhysLettB.119.387.           |
 //| There are two papers proposing an improvement to the sampling procedure compared|
 //| to the original Creutz paper which are used here, namely PhysLettB.143.459 and  |
@@ -42,7 +42,7 @@ struct HeatbathKernel
 
         // TODO: Provide two functions to generate SU(2) links (original Creutz algorithm which might be more efficient for very low beta, as well as already existing
         //       Fabricius-Haan/Kennedy-Pendleton algorithm)?
-        // SU(2) heatbath which can be used in combination with a Cabibbo-Marinari decomposition to obtain a SU(N) (pseudo-)heatbath algorithm
+        // SU(2) heat bath which can be used in combination with a Cabibbo-Marinari decomposition to obtain a SU(N) pseudo heat bath algorithm
         [[nodiscard]]
         SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, std::uniform_real_distribution<floatT>& distribution_uniform, const int max_iteration) const noexcept
         {

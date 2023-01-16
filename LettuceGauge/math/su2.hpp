@@ -16,7 +16,7 @@
 //----------------------------------------
 // Provides SU(2) subgroup class and functions to extract SU(2) matrices from SU(3) matrices/embed SU(2) matrices in SU(3) matrices
 // Note that this is class is also used for representing the sum of SU(2) matrices, which is still proportional to a SU(2) element, but generally not a SU(2) element itself
-// Used during Heatbath and Overrelaxation update
+// Used during heat bath and overrelaxation update
 
 template<typename floatT>
 class SU2_comp

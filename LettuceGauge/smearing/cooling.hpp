@@ -19,10 +19,10 @@
 #include <cmath>
 
 //+---------------------------------------------------------------------------------+
-//| This file provides a functor implementing a pseudo-heatbath based cooling       |
+//| This file provides a functor implementing a pseudo heat bath based cooling      |
 //| algorithm for SU(3) gauge theory.                                               |
-//| For more details regarding the pseudo-heatbath update and the decomposition into|
-//| SU(2) subgroups check the heatbath and overrelaxation files.                    |
+//| For more details regarding the pseudo heat bath update and the decomposition    |
+//| into SU(2) subgroups check the heat bath and overrelaxation files.              |
 //| While cooling is not as theoretically sound as the gradient flow, it leads to   |
 //| equivalent results in practice at a faster pace (one cooling sweep reduces the  |
 //| action more than a gradient flow step or a smearing step.                       |

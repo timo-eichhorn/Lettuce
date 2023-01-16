@@ -87,7 +87,7 @@ FullTensor                   F_tensor;
 //-----
 // Overload << for vectors and arrays?
 
-// template <typename T>
+// template<typename T>
 // std::ostream& operator<<(ostream& out, const std::vector<T>& container)
 // {
 //     out << "Container dump begins: ";
@@ -96,7 +96,7 @@ FullTensor                   F_tensor;
 //     return out;
 // }
 
-// template <typename T>
+// template<typename T>
 // std::ostream& operator<<(ostream& out, const std::array<T>& container)
 // {
 //     out << "Container dump begins: ";
@@ -1003,6 +1003,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // Write to logfile
     std::time_t log_time {std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())};
     datalog << "[Step " << n_count << "] -" << std::put_time(std::localtime(&log_time), "%c") << "-\n";
+    datalog << "Smoothing method: " << Flow.ReturnIntegratorName() << "\n";
     //-----
     if constexpr(n_hmc != 0)
     {

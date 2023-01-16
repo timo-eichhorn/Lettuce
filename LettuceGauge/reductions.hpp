@@ -18,7 +18,7 @@
 
 namespace Reductions
 {
-    template <typename scalarT>
+    template<typename scalarT>
     scalarT Sum(const int n_thread)
     {
         std::vector<scalarT> partial_sums(n_thread);

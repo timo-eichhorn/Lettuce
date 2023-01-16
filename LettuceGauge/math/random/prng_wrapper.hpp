@@ -15,7 +15,7 @@
 // Standard C headers
 // ...
 
-template <typename prngT, typename floatT, typename intT>
+template<typename prngT, typename floatT, typename intT>
 class PRNG
 {
     private:

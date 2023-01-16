@@ -82,7 +82,7 @@ struct OverrelaxationSubgroupKernel
             floatT   a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
             SU2_comp V      {a_norm * A};
             return (V * V).adjoint();
-            // TODO: Replace with version below? They definitely lead to different results when combined with heatbath, but Delta S seems to be similar for both versions
+            // TODO: Replace with version below? They definitely lead to different results when combined with heat bath, but Delta S seems to be similar for both versions
             //       Should probably test the energy violation in more detail and choose the version with smaller <Delta S>
             // floatT a_norm {static_cast<floatT>(1.0) / A.det()};
             // return a_norm * (A * A).adjoint();
