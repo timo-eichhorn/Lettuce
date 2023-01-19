@@ -436,60 +436,60 @@ namespace SU3
 
 namespace SU3::Projection
 {
+
+    // Used to restore full SU(3) matrix from first two columns
+    // __attribute__((always_inline))
+    void RestoreLastColumn(Matrix_SU3& GluonMatrix) noexcept
+    {
+        GluonMatrix(0, 2) = std::conj(GluonMatrix(1, 0) * GluonMatrix(2, 1) - GluonMatrix(2, 0) * GluonMatrix(1, 1));
+        GluonMatrix(1, 2) = std::conj(GluonMatrix(2, 0) * GluonMatrix(0, 1) - GluonMatrix(0, 0) * GluonMatrix(2, 1));
+        GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(1, 0) * GluonMatrix(0, 1));
+    }
+
     // Projects a single link back on SU(3) via Gram-Schmidt
     void GramSchmidt(Matrix_SU3& GluonMatrix) noexcept
     {
-        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * conj(GluonMatrix(0, 0)) + GluonMatrix(0, 1) * conj(GluonMatrix(0, 1)) + GluonMatrix(0, 2) * conj(GluonMatrix(0, 2))))};
+        // floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(0, 2) * std::conj(GluonMatrix(0, 2))))};
+        // for (int n = 0; n < 3; ++n)
+        // {
+        //     GluonMatrix(0, n) = norm0 * GluonMatrix(0, n);
+        // }
+        // std::complex<floatT> psi {GluonMatrix(1, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(1, 2) * std::conj(GluonMatrix(0, 2))};
+        // for (int n = 0; n < 3; ++n)
+        // {
+        //     GluonMatrix(1, n) =  GluonMatrix(1, n) - psi * GluonMatrix(0, n);
+        // }
+        // floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(1, 0) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 1)) + GluonMatrix(1, 2) * std::conj(GluonMatrix(1, 2))))};
+        // for (int n = 0; n < 3; ++n)
+        // {
+        //     GluonMatrix(1, n) = norm1 * GluonMatrix(1, n);
+        // }
+        // GluonMatrix(2, 0) = std::conj(GluonMatrix(0, 1) * GluonMatrix(1, 2) - GluonMatrix(0, 2) * GluonMatrix(1, 1));
+        // GluonMatrix(2, 1) = std::conj(GluonMatrix(0, 2) * GluonMatrix(1, 0) - GluonMatrix(0, 0) * GluonMatrix(1, 2));
+        // GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(0, 1) * GluonMatrix(1, 0));
+        // Per default, Eigen uses a column-major storage order, so the first index is the inner index in terms of the memory layout
+        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 0) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(2, 0) * std::conj(GluonMatrix(2, 0))))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(0, n) = norm0 * GluonMatrix(0, n);
+            GluonMatrix(n, 0) = norm0 * GluonMatrix(n, 0);
         }
-        std::complex<floatT> psi {GluonMatrix(1, 0) * conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * conj(GluonMatrix(0, 1)) + GluonMatrix(1, 2) * conj(GluonMatrix(0, 2))};
+        std::complex<floatT> psi {GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(2, 1) * std::conj(GluonMatrix(2, 0))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(1, n) =  GluonMatrix(1, n) - psi * GluonMatrix(0, n);
+            GluonMatrix(n, 1) = GluonMatrix(n, 1) - psi * GluonMatrix(n, 0);
         }
-        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(1, 0) * conj(GluonMatrix(1, 0)) + GluonMatrix(1, 1) * conj(GluonMatrix(1, 1)) + GluonMatrix(1, 2) * conj(GluonMatrix(1, 2))))};
+        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 1)) + GluonMatrix(2, 1) * std::conj(GluonMatrix(2, 1))))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(1, n) = norm1 * GluonMatrix(1, n);
+            GluonMatrix(n, 1) = norm1 * GluonMatrix(n, 1);
         }
-        GluonMatrix(2, 0) = conj(GluonMatrix(0, 1) * GluonMatrix(1, 2) - GluonMatrix(0, 2) * GluonMatrix(1, 1));
-        GluonMatrix(2, 1) = conj(GluonMatrix(0, 2) * GluonMatrix(1, 0) - GluonMatrix(0, 0) * GluonMatrix(1, 2));
-        GluonMatrix(2, 2) = conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(0, 1) * GluonMatrix(1, 0));
+        GluonMatrix(0, 2) = std::conj(GluonMatrix(1, 0) * GluonMatrix(2, 1) - GluonMatrix(2, 0) * GluonMatrix(1, 1));
+        GluonMatrix(1, 2) = std::conj(GluonMatrix(2, 0) * GluonMatrix(0, 1) - GluonMatrix(0, 0) * GluonMatrix(2, 1));
+        GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(1, 0) * GluonMatrix(0, 1));
+        // TODO: If RestoreLastColumn() is declared as an inline function, we get the same results as using the lines above,
+        //       but if it is not declared as inline, we get different results. Huhh???
+        // RestoreLastColumn(GluonMatrix);
     }
-
-    //-----
-    // Projects matrices back on SU(3) via Gram-Schmidt
-
-    // void ProjectionSU3(GaugeField4D<Matrix_SU3>& Gluon)
-    // {
-    //     for (auto& ind0 : Gluon)
-    //     for (auto& ind1 : ind0)
-    //     for (auto& ind2 : ind1)
-    //     for (auto& ind3 : ind2)
-    //     for (auto& GluonMatrix : ind3)
-    //     {
-    //         floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * conj(GluonMatrix(0, 0)) + GluonMatrix(0, 1) * conj(GluonMatrix(0, 1)) + GluonMatrix(0, 2) * conj(GluonMatrix(0, 2))))};
-    //         for (int n = 0; n < 3; ++n)
-    //         {
-    //             GluonMatrix(0, n) = norm0 * GluonMatrix(0, n);
-    //         }
-    //         std::complex<floatT> psi {GluonMatrix(1, 0) * conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * conj(GluonMatrix(0, 1)) + GluonMatrix(1, 2) * conj(GluonMatrix(0, 2))};
-    //         for (int n = 0; n < 3; ++n)
-    //         {
-    //             GluonMatrix(1, n) =  GluonMatrix(1, n) - psi * GluonMatrix(0, n);
-    //         }
-    //         floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(1, 0) * conj(GluonMatrix(1, 0)) + GluonMatrix(1, 1) * conj(GluonMatrix(1, 1)) + GluonMatrix(1, 2) * conj(GluonMatrix(1, 2))))};
-    //         for (int n = 0; n < 3; ++n)
-    //         {
-    //             GluonMatrix(1, n) = norm1 * GluonMatrix(1, n);
-    //         }
-    //         GluonMatrix(2, 0) = conj(GluonMatrix(0, 1) * GluonMatrix(1, 2) - GluonMatrix(0, 2) * GluonMatrix(1, 1));
-    //         GluonMatrix(2, 1) = conj(GluonMatrix(0, 2) * GluonMatrix(1, 0) - GluonMatrix(0, 0) * GluonMatrix(1, 2));
-    //         GluonMatrix(2, 2) = conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(0, 1) * GluonMatrix(1, 0));
-    //     }
-    // }
 
     //-----
     // Projects a single link back on SU(3) via Kenney-Laub iteration (used for direct SU(N) overrelaxation updates)

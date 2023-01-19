@@ -136,10 +136,6 @@ void ValidatedIn(const std::string& message, T& target)
 
 void Configuration()
 {
-    // std::cout << Lettuce::Color::BoldBlue << "\n\nSU(3) theory simulation\n";
-    // std::cout << "Current version: " << program_version;
-    // std::cout << "\n\n----------------------------------------\n\n" << Lettuce::Color::Reset;
-
     std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
     std::cout << std::left << std::setw(49) << "| SU(3) theory simulation" << "|\n";
     std::cout << std::left << std::setw(49) << "| Current version: " + program_version << "|\n";
