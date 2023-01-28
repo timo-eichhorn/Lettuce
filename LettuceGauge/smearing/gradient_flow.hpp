@@ -29,6 +29,12 @@ namespace Integrators::GradientFlow
     // TODO: Implement
     struct Euler
     {
+        GaugeField& Force;
+
+        explicit Euler(GaugeField& Force_in) noexcept :
+        Force(Force_in)
+        {}
+
         template<typename GradientFlowFunctor>
         void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
@@ -37,8 +43,8 @@ namespace Integrators::GradientFlow
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
             }
         }
 
@@ -81,6 +87,12 @@ namespace Integrators::GradientFlow
     // TODO: For smaller step sizes, this seems to perform better than the Euler integrator, but not clear for larger step sizes (check!)
     struct RK2
     {
+        GaugeField& Force;
+
+        explicit RK2(GaugeField& Force_in) noexcept :
+        Force(Force_in)
+        {}
+
         template<typename GradientFlowFunctor>
         void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
@@ -90,11 +102,11 @@ namespace Integrators::GradientFlow
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 0.5);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 0.5);
 
-                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -0.5, GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, Force, -0.5, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
             }
         }
 
@@ -106,6 +118,12 @@ namespace Integrators::GradientFlow
 
     struct RK3
     {
+        GaugeField& Force;
+
+        explicit RK3(GaugeField& Force_in) noexcept :
+        Force(Force_in)
+        {}
+
         template<typename GradientFlowFunctor>
         void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
@@ -116,14 +134,14 @@ namespace Integrators::GradientFlow
             // Z_i = epsilon * Z(W_i)
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
-                GradientFlow.CalculateZ(GradientFlow.U_flowed, GradientFlow.Force, GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 0.25);
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 0.25);
 
-                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -17.0/36.0, 8.0/9.0 * GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, Force, -17.0/36.0, 8.0/9.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
 
-                GradientFlow.UpdateZ(GradientFlow.U_flowed, GradientFlow.Force, -1.0, 3.0/4.0 * GradientFlow.epsilon);
-                GradientFlow.UpdateFields(GradientFlow.U_flowed, GradientFlow.Force, 1.0);
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, Force, -1.0, 3.0/4.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
             }
         }
 
@@ -139,12 +157,27 @@ namespace Integrators::GradientFlow
     //       W_1             = exp(1/4 * Z_0)      * W_0
     //       V_{t + epsilon} = exp(2 * Z_1 - Z_0)  * W_0
     //       Z_i = epsilon * Z(W_i)
+    // TODO: It is not yet clear to me how the interface should look like. While the simple fixed stepsize integrators obviously return
+    //       fields at evenly spaced flow times, adaptive stepsize integrators do not. Should we pass predetermined flow times at which
+    //       to calculate observables?
     // struct RK3_adaptive
     // {
+    //     GaugeField& Force;
+    //     GaugeField& U_flowed_lower_order;
+
     //     template<typename GradientFlowFunctor>
-    //     void operator()(GradientFlowFunctor& GradientFlow) noexcept
+    //     void operator()(GradientFlowFunctor& GradientFlow, const int n_step) noexcept
     //     {
-    //         //
+    //         for (int step_count = 0; step_count < n_step; ++step_count)
+    //         {
+    //             //
+    //             GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
+    //         }
+    //     }
+
+    //     std::string ReturnName() const
+    //     {
+    //         return "RK3_adaptive";
     //     }
     // };
 } // namespace Integrators::GradientFlow
@@ -157,7 +190,6 @@ struct GradientFlowKernel
         // TODO: Possible parameter ExpFunction?
         const GaugeField&  U_unflowed;
               GaugeField&  U_flowed;
-              GaugeField&  Force;
               IntegratorT& Integrator;
               ActionT&     Action;
               floatT       epsilon;
@@ -235,8 +267,8 @@ struct GradientFlowKernel
         }
 
     public:
-        explicit GradientFlowKernel(const GaugeField& U_unflowed_in, GaugeField& U_flowed_in, GaugeField& Force_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
-        U_unflowed(U_unflowed_in), U_flowed(U_flowed_in), Force(Force_in), Integrator(Integrator_in), Action(Action_in), epsilon(epsilon_in)
+        explicit GradientFlowKernel(const GaugeField& U_unflowed_in, GaugeField& U_flowed_in, IntegratorT& Integrator_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
+        U_unflowed(U_unflowed_in), U_flowed(U_flowed_in), Integrator(Integrator_in), Action(Action_in), epsilon(epsilon_in)
         {}
 
         void operator()(const int n_step) const noexcept
