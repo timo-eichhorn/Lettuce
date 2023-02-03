@@ -8,7 +8,7 @@
 #include "LettuceGauge/coords.hpp"
 #include "LettuceGauge/defines.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
-// #include "LettuceGauge/IO/config_io/read_bmw_format.hpp"
+#include "LettuceGauge/IO/config_io/read_bmw_format.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -289,7 +289,7 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
 [[nodiscard]]
 vector<pcg64> CreatePRNGs(const int thread_num = 0)
 {
-    vector<pcg64> temp_vec;
+    vector<pcg64> tmp_vec;
     #if defined(_OPENMP)
         int max_thread_num {omp_get_max_threads()};
     #else
@@ -314,17 +314,17 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
     for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
     {
         #ifdef FIXED_SEED
-        pcg64 generator_rand_temp(thread_count);
-        temp_vec.emplace_back(generator_rand_temp);
-        // temp_vec.emplace_back(generator_rand_temp(thread_count));
+        pcg64 generator_rand_tmp(thread_count);
+        tmp_vec.emplace_back(generator_rand_tmp);
+        // tmp_vec.emplace_back(generator_rand_tmp(thread_count));
         #else
-        pcg_extras::seed_seq_from<std::random_device> seed_source_temp;
-        pcg64 generator_rand_temp(seed_source_temp);
-        temp_vec.emplace_back(generator_rand_temp);
-        // temp_vec.emplace_back(generator_rand_temp(seed_source_temp));
+        pcg_extras::seed_seq_from<std::random_device> seed_source_tmp;
+        pcg64 generator_rand_tmp(seed_source_tmp);
+        tmp_vec.emplace_back(generator_rand_tmp);
+        // tmp_vec.emplace_back(generator_rand_tmp(seed_source_tmp));
         #endif
     }
-    return temp_vec;
+    return tmp_vec;
 }
 
 //-----
@@ -333,7 +333,7 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
 [[nodiscard]]
 vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thread_num = 0)
 {
-    vector<std::normal_distribution<floatT>> temp_vec;
+    vector<std::normal_distribution<floatT>> tmp_vec;
     #if defined(_OPENMP)
         int max_thread_num {omp_get_max_threads()};
     #else
@@ -357,10 +357,10 @@ vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thr
     }
     for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
     {
-        std::normal_distribution<floatT> temp_dist{0, 1};
-        temp_vec.emplace_back(temp_dist);
+        std::normal_distribution<floatT> tmp_dist{0, 1};
+        tmp_vec.emplace_back(tmp_dist);
     }
-    return temp_vec;
+    return tmp_vec;
 }
 
 //-----
@@ -459,9 +459,9 @@ void WilsonFlowForward(GaugeField& Gluon, const double epsilon, const int n_flow
 
 // Seems to be somewhat invertible if precision = 1e-12, but a precision of 1e-8 is definitely not sufficient
 
-void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double epsilon, const int n_flow, const floatT precision = 1e-14)
+void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_tmp, const double epsilon, const int n_flow, const floatT precision = 1e-14)
 {
-    Gluon_temp = Gluon;
+    Gluon_tmp = Gluon;
     Matrix_3x3 st;
     Matrix_3x3 A;
     Matrix_3x3 B;
@@ -485,23 +485,23 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
                 {
                     do
                     {
-                        old_link = Gluon_temp({t, x, y, z, mu});
+                        old_link = Gluon_tmp({t, x, y, z, mu});
                         SU3::Projection::GramSchmidt(old_link);
-                        st.noalias() = WilsonAction::Staple(Gluon_temp, {t, x, y, z}, mu);
-                        A.noalias() = st * Gluon_temp({t, x, y, z, mu}).adjoint();
+                        st.noalias() = WilsonAction::Staple(Gluon_tmp, {t, x, y, z}, mu);
+                        A.noalias() = st * Gluon_tmp({t, x, y, z, mu}).adjoint();
                         B.noalias() = A - A.adjoint();
                         C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                        // Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
-                        Gluon_temp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
+                        // Gluon_tmp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                        Gluon_tmp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                         //-----
-                        SU3::Projection::GramSchmidt(Gluon_temp({t, x, y, z, mu}));
+                        SU3::Projection::GramSchmidt(Gluon_tmp({t, x, y, z, mu}));
                     }
-                    while ((Gluon_temp({t, x, y, z, mu}) - old_link).norm() > precision);
+                    while ((Gluon_tmp({t, x, y, z, mu}) - old_link).norm() > precision);
                 }
             }
         }
         // Copy to original array
-        Gluon = Gluon_temp;
+        Gluon = Gluon_tmp;
     }
     #else
     // Sequential version
@@ -516,22 +516,22 @@ void WilsonFlowBackward(GaugeField& Gluon, GaugeField& Gluon_temp, const double 
             {
                 do
                 {
-                    old_link = Gluon_temp({t, x, y, z, mu});
+                    old_link = Gluon_tmp({t, x, y, z, mu});
                     SU3::Projection::GramSchmidt(old_link);
-                    st.noalias() = WilsonAction::Staple(Gluon_temp, {t, x, y, z}, mu);
-                    A.noalias() = st * Gluon_temp({t, x, y, z, mu}).adjoint();
+                    st.noalias() = WilsonAction::Staple(Gluon_tmp, {t, x, y, z}, mu);
+                    A.noalias() = st * Gluon_tmp({t, x, y, z, mu}).adjoint();
                     B.noalias() = A - A.adjoint();
                     C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-                    // Gluon_temp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
-                    Gluon_temp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
+                    // Gluon_tmp({t, x, y, z, mu}) = (epsilon * C).exp() * Gluon({t, x, y, z, mu});
+                    Gluon_tmp({t, x, y, z, mu}) = SU3::exp(-i<floatT> * epsilon * C) * Gluon({t, x, y, z, mu});
                     //-----
-                    SU3::Projection::GramSchmidt(Gluon_temp({t, x, y, z, mu}));
+                    SU3::Projection::GramSchmidt(Gluon_tmp({t, x, y, z, mu}));
                 }
-                while ((Gluon_temp({t, x, y, z, mu}) - old_link).norm() > precision);
+                while ((Gluon_tmp({t, x, y, z, mu}) - old_link).norm() > precision);
             }
         }
         // Copy to original array
-        Gluon = Gluon_temp;
+        Gluon = Gluon_tmp;
     }
     #endif
 }

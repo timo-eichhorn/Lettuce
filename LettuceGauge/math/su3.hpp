@@ -439,11 +439,18 @@ namespace SU3::Projection
 
     // Used to restore full SU(3) matrix from first two columns
     // __attribute__((always_inline))
-    void RestoreLastColumn(Matrix_SU3& GluonMatrix) noexcept
+    void RestoreLastColumn(Matrix_SU3& mat) noexcept
     {
-        GluonMatrix(0, 2) = std::conj(GluonMatrix(1, 0) * GluonMatrix(2, 1) - GluonMatrix(2, 0) * GluonMatrix(1, 1));
-        GluonMatrix(1, 2) = std::conj(GluonMatrix(2, 0) * GluonMatrix(0, 1) - GluonMatrix(0, 0) * GluonMatrix(2, 1));
-        GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(1, 0) * GluonMatrix(0, 1));
+        mat(0, 2) = std::conj(mat(1, 0) * mat(2, 1) - mat(2, 0) * mat(1, 1));
+        mat(1, 2) = std::conj(mat(2, 0) * mat(0, 1) - mat(0, 0) * mat(2, 1));
+        mat(2, 2) = std::conj(mat(0, 0) * mat(1, 1) - mat(1, 0) * mat(0, 1));
+    }
+
+    void RestoreLastRow(Matrix_SU3& mat) noexcept
+    {
+        mat(2, 0) = std::conj(mat(0, 1) * mat(1, 2) - mat(0, 2) * mat(1, 1));
+        mat(2, 1) = std::conj(mat(0, 2) * mat(1, 0) - mat(0, 0) * mat(1, 2));
+        mat(2, 2) = std::conj(mat(0, 0) * mat(1, 1) - mat(0, 1) * mat(1, 0));
     }
 
     // Projects a single link back on SU(3) via Gram-Schmidt

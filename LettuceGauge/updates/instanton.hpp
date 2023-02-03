@@ -186,11 +186,11 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
 {
     static GaugeField PositiveInstanton;
     static GaugeField NegativeInstanton;
-    static GaugeField Gluonsmeared_temp;
+    static GaugeField Gluonsmeared_tmp;
     if (create_instantons)
     {
-        CreateBPSTInstanton(PositiveInstanton, Gluonsmeared_temp, true, center, r);
-        CreateBPSTInstanton(NegativeInstanton, Gluonsmeared_temp, false, center, r);
+        CreateBPSTInstanton(PositiveInstanton, Gluonsmeared_tmp, true, center, r);
+        CreateBPSTInstanton(NegativeInstanton, Gluonsmeared_tmp, false, center, r);
     }
     // Actual update
     Gluon_copy = Gluon;

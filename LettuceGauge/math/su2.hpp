@@ -150,26 +150,26 @@ Matrix_3x3 Embed12(const SU2_comp<floatT>& mat) noexcept
 template<typename floatT>
 SU2_comp<floatT> Extract01(const Matrix_3x3& mat) noexcept
 {
-    std::complex<floatT> temp1 {static_cast<floatT>(0.5) * (mat(0, 0) + std::conj(mat(1, 1)))};
-    std::complex<floatT> temp2 {static_cast<floatT>(0.5) * (mat(0, 1) - std::conj(mat(1, 0)))};
-    return {temp1, temp2};
+    std::complex<floatT> tmp1 {static_cast<floatT>(0.5) * (mat(0, 0) + std::conj(mat(1, 1)))};
+    std::complex<floatT> tmp2 {static_cast<floatT>(0.5) * (mat(0, 1) - std::conj(mat(1, 0)))};
+    return {tmp1, tmp2};
 }
 
 // TODO: For symmetry reasons, make this (2, 0) instead of (0, 2)?
 template<typename floatT>
 SU2_comp<floatT> Extract02(const Matrix_3x3& mat) noexcept
 {
-    std::complex<floatT> temp1 {static_cast<floatT>(0.5) * (mat(0, 0) + std::conj(mat(2, 2)))};
-    std::complex<floatT> temp2 {static_cast<floatT>(0.5) * (mat(0, 2) - std::conj(mat(2, 0)))};
-    return {temp1, temp2};
+    std::complex<floatT> tmp1 {static_cast<floatT>(0.5) * (mat(0, 0) + std::conj(mat(2, 2)))};
+    std::complex<floatT> tmp2 {static_cast<floatT>(0.5) * (mat(0, 2) - std::conj(mat(2, 0)))};
+    return {tmp1, tmp2};
 }
 
 template<typename floatT>
 SU2_comp<floatT> Extract12(const Matrix_3x3& mat) noexcept
 {
-    std::complex<floatT> temp1 {static_cast<floatT>(0.5) * (mat(1, 1) + std::conj(mat(2, 2)))};
-    std::complex<floatT> temp2 {static_cast<floatT>(0.5) * (mat(1, 2) - std::conj(mat(2, 1)))};
-    return {temp1, temp2};
+    std::complex<floatT> tmp1 {static_cast<floatT>(0.5) * (mat(1, 1) + std::conj(mat(2, 2)))};
+    std::complex<floatT> tmp2 {static_cast<floatT>(0.5) * (mat(1, 2) - std::conj(mat(2, 1)))};
+    return {tmp1, tmp2};
 }
 
 // TODO: Test if this is faster. Preliminary test pretty much show no difference, probably due to Eigen's expression templates
@@ -180,9 +180,9 @@ SU2_comp<floatT> Extract12(const Matrix_3x3& mat) noexcept
 //     std::complex<floatT> prod_01 {mat1(0, 0) * mat2(0, 1) + mat1(0, 1) * mat2(1, 1) + mat1(0, 2) * mat2(2, 1)};
 //     std::complex<floatT> prod_10 {mat1(1, 0) * mat2(0, 0) + mat1(1, 1) * mat2(1, 0) + mat1(1, 2) * mat2(2, 0)};
 //     std::complex<floatT> prod_11 {mat1(1, 0) * mat2(0, 1) + mat1(1, 1) * mat2(1, 1) + mat1(1, 2) * mat2(2, 1)};
-//     std::complex<floatT> temp1   {static_cast<floatT>(0.5) * (prod_00 + std::conj(prod_11))};
-//     std::complex<floatT> temp2   {static_cast<floatT>(0.5) * (prod_01 - std::conj(prod_10))};
-//     return {temp1, temp2};
+//     std::complex<floatT> tmp1   {static_cast<floatT>(0.5) * (prod_00 + std::conj(prod_11))};
+//     std::complex<floatT> tmp2   {static_cast<floatT>(0.5) * (prod_01 - std::conj(prod_10))};
+//     return {tmp1, tmp2};
 // }
 
 // SU2_comp Extract02_new(const Matrix_3x3& mat1, const Matrix_3x3 mat2)
@@ -191,9 +191,9 @@ SU2_comp<floatT> Extract12(const Matrix_3x3& mat) noexcept
 //     std::complex<floatT> prod_02 {mat1(0, 0) * mat2(0, 2) + mat1(0, 1) * mat2(1, 2) + mat1(0, 2) * mat2(2, 2)};
 //     std::complex<floatT> prod_20 {mat1(2, 0) * mat2(0, 0) + mat1(2, 1) * mat2(1, 0) + mat1(2, 2) * mat2(2, 0)};
 //     std::complex<floatT> prod_22 {mat1(2, 0) * mat2(0, 2) + mat1(2, 1) * mat2(1, 2) + mat1(2, 2) * mat2(2, 2)};
-//     std::complex<floatT> temp1   {static_cast<floatT>(0.5) * (prod_00 + std::conj(prod_22))};
-//     std::complex<floatT> temp2   {static_cast<floatT>(0.5) * (prod_02 - std::conj(prod_20))};
-//     return {temp1, temp2};
+//     std::complex<floatT> tmp1   {static_cast<floatT>(0.5) * (prod_00 + std::conj(prod_22))};
+//     std::complex<floatT> tmp2   {static_cast<floatT>(0.5) * (prod_02 - std::conj(prod_20))};
+//     return {tmp1, tmp2};
 // }
 
 // SU2_comp Extract12_new(const Matrix_3x3& mat1, const Matrix_3x3 mat2)
@@ -202,9 +202,9 @@ SU2_comp<floatT> Extract12(const Matrix_3x3& mat) noexcept
 //     std::complex<floatT> prod_12 {mat1(1, 0) * mat2(0, 2) + mat1(1, 1) * mat2(1, 2) + mat1(1, 2) * mat2(2, 2)};
 //     std::complex<floatT> prod_21 {mat1(2, 0) * mat2(0, 1) + mat1(2, 1) * mat2(1, 1) + mat1(2, 2) * mat2(2, 1)};
 //     std::complex<floatT> prod_22 {mat1(2, 0) * mat2(0, 2) + mat1(2, 1) * mat2(1, 2) + mat1(2, 2) * mat2(2, 2)};
-//     std::complex<floatT> temp1   {static_cast<floatT>(0.5) * (prod_11 + std::conj(prod_22))};
-//     std::complex<floatT> temp2   {static_cast<floatT>(0.5) * (prod_12 - std::conj(prod_21))};
-//     return {temp1, temp2};
+//     std::complex<floatT> tmp1   {static_cast<floatT>(0.5) * (prod_11 + std::conj(prod_22))};
+//     std::complex<floatT> tmp2   {static_cast<floatT>(0.5) * (prod_12 - std::conj(prod_21))};
+//     return {tmp1, tmp2};
 // }
 
 #endif // LETTUCE_SU2_HPP

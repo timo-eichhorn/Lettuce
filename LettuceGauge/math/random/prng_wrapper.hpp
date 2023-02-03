@@ -42,16 +42,16 @@ class PRNG
             for (int i = 0; i < n_thread; ++i)
             {
                 #ifdef FIXED_SEED
-                pcg64 generator_temp(i);
-                generator_vec.emplace_back(generator_temp);
-                // temp_vec.emplace_back(generator_rand_temp(i));
+                pcg64 generator_tmp(i);
+                generator_vec.emplace_back(generator_tmp);
+                // tmp_vec.emplace_back(generator_rand_tmp(i));
                 #else
                 // TODO: pcg provides seed_seq_from which comes in handy, but that might not work on GPUs?
                 //       Better check if it is possible to construct on host and copy instances of this class to the device
-                pcg_extras::seed_seq_from<std::random_device> seed_source_temp;
-                pcg64 generator_rand_temp(seed_source_temp);
-                temp_vec.emplace_back(generator_rand_temp);
-                // temp_vec.emplace_back(generator_rand_temp(seed_source_temp));
+                pcg_extras::seed_seq_from<std::random_device> seed_source_tmp;
+                pcg64 generator_rand_tmp(seed_source_tmp);
+                tmp_vec.emplace_back(generator_rand_tmp);
+                // tmp_vec.emplace_back(generator_rand_tmp(seed_source_tmp));
                 #endif
             }
             std::vector<std::uniform_real_distribution<floatT>> uniform_real_vec(n_thread, std::uniform_real_distribution<floatT>(0.0, 1.0));
@@ -81,9 +81,9 @@ class PRNG
         {
             for (auto& element : generator_vec)
             {
-                pcg_extras::seed_seq_from<std::random_device> seed_source_temp;
-                pcg64 generator_rand_temp(seed_source_temp);
-                element = generator_rand_temp;
+                pcg_extras::seed_seq_from<std::random_device> seed_source_tmp;
+                pcg64 generator_rand_tmp(seed_source_tmp);
+                element = generator_rand_tmp;
             }
         }
 

@@ -9,6 +9,7 @@
 //----------------------------------------
 // Standard C++ headers
 #include <complex>
+#include <string>
 // #include <fstream>
 //----------------------------------------
 // Standard C headers
@@ -17,34 +18,31 @@
 // TODO: Lot's of cleanup still left to do here...
 //       Also benchmark how different buffer sizes (12 vs N_mu * 12) affect the performance
 
-// bool CheckFormatBMW(std::string_view filename)
+// bool CheckFormatBMW(const std::string& filename)
 // {
 //     // TODO: Implement
 // }
 
-template <typename T>
+template<typename T>
 void SwapEndianess(T* in) noexcept
 {
     char* const p = reinterpret_cast<char*>(in);
     for (std::size_t i = 0; i < sizeof(T) / 2; ++i)
     {
-        char temp = p[i];
+        char tmp = p[i];
         p[i] = p[sizeof(T) - i - 1];
-        p[sizeof(T) - i - 1] = temp;
+        p[sizeof(T) - i - 1] = tmp;
     }
 }
 
-Matrix_SU3 ReconstructMat(const std::array<double, 12>& buffer) noexcept
-// Matrix_SU3 ReconstructMat(double* buffer) noexcept
+Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
 {
-    // BMW format stores the first two rows
+    // BMW format stores only the first two rows
     Matrix_SU3 tmp;
     tmp << buffer[0] + i<floatT> * buffer[1], buffer[2] + i<floatT> * buffer[3], buffer[4] + i<floatT> * buffer[5],
            buffer[6] + i<floatT> * buffer[7], buffer[8] + i<floatT> * buffer[9], buffer[10] + i<floatT> * buffer[11],
            0.0, 0.0, 0.0;
-    tmp(2, 0) = std::conj(tmp(0, 1) * tmp(1, 2) - tmp(0, 2) * tmp(1, 1));
-    tmp(2, 1) = std::conj(tmp(0, 2) * tmp(1, 0) - tmp(0, 0) * tmp(1, 2));
-    tmp(2, 2) = std::conj(tmp(0, 0) * tmp(1, 1) - tmp(0, 1) * tmp(1, 0));
+    SU3::Projection::RestoreLastRow(tmp);
     return tmp;
 }
 
@@ -55,10 +53,10 @@ bool ReadConfigBMW(GaugeField& U, const std::string& filename)
     const std::size_t     header_block_size {4096};
     const std::size_t     object_size {1};
     char                  header_block[header_block_size];
-    site_coord            lattice_lengths {1, 1, 1, 1};
+    site_coord            lattice_lengths {0, 0, 0, 0};
     char                  checksum_read[32];
     char                  checksum_new[32];
-    int                   header_i {0}; // TODO: What is this?
+    int                   header_characters_read {0};
 
     // Attempt to open file and check stream status
     // config_stream.open(filename, std::fstream::in);
@@ -69,18 +67,21 @@ bool ReadConfigBMW(GaugeField& U, const std::string& filename)
     //     return;
     // }
 
-    auto start_read_header {std::chrono::high_resolution_clock::now()};
-    const char* filename_cstr = filename.c_str();
-    std::FILE*  file          = std::fopen(filename_cstr, "r");
+    std::cout << Lettuce::Color::BoldBlue << "Attempting to read configuration in BMW format from " << filename << ":" << Lettuce::Color::Reset << std::endl;
+
+    const char* filename_cstr   = filename.c_str();
+    std::FILE*  file            = std::fopen(filename_cstr, "r");
+    std::string indent_whitespace {"    "};
+    auto        start_read_header {std::chrono::high_resolution_clock::now()};
 
     // Read header block and check if file matches expected format
     // config_stream.read(reinterpret_cast<char*>(), header_block_size)
     std::size_t successful_reads   = std::fread(header_block, object_size, header_block_size, file);
-    // TODO: Perhaps rather a note, but pay attention to the order of lattice sizes here! For some reason it seems to be (x, y, z, t)!
-    std::size_t successful_assigns = std::sscanf(header_block, "#BMW %d %d %d %d %31s %n", &lattice_lengths.x, &lattice_lengths.y, &lattice_lengths.z, &lattice_lengths.t, checksum_read, &header_i);
-    if(successful_reads != header_block_size or successful_assigns < 5)
+    // BMW format stores the lattice lenghts in the following order: (x, y, z, t)
+    std::size_t successful_assigns = std::sscanf(header_block, "#BMW %d %d %d %d %31s %n", &lattice_lengths.x, &lattice_lengths.y, &lattice_lengths.z, &lattice_lengths.t, checksum_read, &header_characters_read);
+    if (successful_reads != header_block_size or successful_assigns < 5)
     {
-        std::cout << Lettuce::Color::BoldRed << "Header block does not match expected format!" << Lettuce::Color::Reset << std::endl;
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Header block does not match expected format!" << Lettuce::Color::Reset << std::endl;
         return false;
     }
 
@@ -92,17 +93,17 @@ bool ReadConfigBMW(GaugeField& U, const std::string& filename)
     }
     if (not lengths_match)
     {
-        std::cout << Lettuce::Color::BoldRed << "Lattice sizes do not match!\n";
-        std::cout << "Current sizes: " << Nt << ", " << Nx << ", " << Ny << ", " << Nz << "\n";
-        std::cout << lattice_lengths << Lettuce::Color::Reset << std::endl;
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Lattice sizes do not match!\n";
+        std::cout                            << indent_whitespace << "Current sizes: " << Nt << ", " << Nx << ", " << Ny << ", " << Nz << "\n";
+        std::cout                            << indent_whitespace << lattice_lengths << Lettuce::Color::Reset << std::endl;
         return false;
     }
-    std::cout << "Reading lattice from " << filename << std::endl;
+    std::cout << Lettuce::Color::BoldBlue << indent_whitespace << "Reading lattice from " << filename << "..." << Lettuce::Color::Reset << std::endl;
     auto end_read_header {std::chrono::high_resolution_clock::now()};
 
     auto start_read_config {std::chrono::high_resolution_clock::now()};
-    // double buffer[12];
     std::array<double, 12> buffer;
+    // BMW format link order corresponds to array[Nt][Nz][Ny][Nx], i.e., t is the slowest and x the fastest index
     for (int t = 0; t < Nt; ++t)
     for (int z = 0; z < Nz; ++z)
     for (int y = 0; y < Ny; ++y)
@@ -115,29 +116,42 @@ bool ReadConfigBMW(GaugeField& U, const std::string& filename)
     //     {
     //         SwapEndianess(buffer + i);
     //     }
-    //     U({t, x, y, z, 1}) = ReconstructMat(buffer);
-    //     U({t, x, y, z, 2}) = ReconstructMat(buffer + 12);
-    //     U({t, x, y, z, 3}) = ReconstructMat(buffer + 24);
-    //     U({t, x, y, z, 0}) = ReconstructMat(buffer + 36);
+    //     U({t, x, y, z, 1}) = ReconstructMatBMW(buffer);
+    //     U({t, x, y, z, 2}) = ReconstructMatBMW(buffer + 12);
+    //     U({t, x, y, z, 3}) = ReconstructMatBMW(buffer + 24);
+    //     U({t, x, y, z, 0}) = ReconstructMatBMW(buffer + 36);
     // }
     for (auto mu : {1, 2, 3, 0})
     {
-        // std::fread(&buffer, sizeof(double), 12, file);
         std::fread(buffer.data(), sizeof(double), 12, file);
         for (int i = 0; i < 12; ++i)
         {
-            // SwapEndianess(buffer + i);
             SwapEndianess(buffer.data() + i);
         }
-        U({t, x, y, z, mu}) = ReconstructMat(buffer);
+        U({t, x, y, z, mu}) = ReconstructMatBMW(buffer);
     }
     auto end_read_config {std::chrono::system_clock::now()};
     std::chrono::duration<double> read_time_header {end_read_header - start_read_header};
     std::chrono::duration<double> read_time_config {end_read_config - start_read_config};
-    std::cout << "Time for reading header: " << read_time_header.count() << std::endl;
-    std::cout << "Time for reading config: " << read_time_config.count() << std::endl;
-    std::cout << "Everything in SU(3)? " << SU3::Tests::TestSU3All(U) << std::endl;
-    return true;
+    std::cout << indent_whitespace << "Time for reading header: " << read_time_header.count() << "\n";
+    std::cout << indent_whitespace << "Time for reading config: " << read_time_config.count() << std::endl;
+
+    bool InGroup {SU3::Tests::TestSU3All(U)};
+    if (InGroup)
+    {
+        std::cout << Lettuce::Color::BoldGreen << indent_whitespace << "All elements are in SU(3)!" << Lettuce::Color::Reset << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Not all elements are in SU(3)!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
 }
+
+// bool SaveConfigBMW(GaugeField& U, const std::string& filename)
+// {
+//     // TODO
+// }
 
 #endif // LETTUCE_READ_BMW_FORMAT_HPP
