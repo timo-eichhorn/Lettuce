@@ -936,6 +936,7 @@ int main()
         // TopBiasPotential.LoadPotential("SU(3)_N=16x16x16x16_beta=1.220000/metapotential.txt");
         // TopBiasPotential.LoadPotential("metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
+        // TopBiasPotential.SymmetrizePotentialMaximum();
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);

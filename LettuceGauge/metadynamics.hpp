@@ -157,6 +157,17 @@ public:
         std::cout << "Metapotential symmetrized!" << std::endl;
     }
 
+    // Symmetrize, but do not take the average value, but rather the maximum value
+    void SymmetrizePotentialMaximum() noexcept
+    {
+        // TODO: We only need to check the maximum for the first half of the array, then we can simply reflect the first half...
+        //       Then again, this function is probably called once per run
+        std::vector<double> bin_count_reverse = bin_count;
+        std::reverse_copy(bin_count.cbegin(), bin_count.cend(), bin_count_reverse.begin());
+        std::transform(bin_count.begin(), bin_count.end(), bin_count_reverse.cbegin(), bin_count.begin(), [](auto element, auto element_reverse){return std::max(element, element_reverse);});
+        std::cout << "Metapotential symmetrized!" << std::endl;
+    }
+
     //-----
     // Create a penalty weight starting for values below CV_lower and values above CV_upper
 
