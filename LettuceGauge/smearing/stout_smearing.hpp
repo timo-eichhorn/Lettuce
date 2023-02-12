@@ -51,7 +51,6 @@ void StoutSmearing4D(const GaugeField& Gluon_unsmeared, GaugeField& Gluon_smeare
             Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
             // Eigen exponential (Scaling and squaring)
             // Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
-            // Gluon_smeared[t][x][y][z][mu] = CayleyMap(i<floatT> * smear_param * C) * Gluon_unsmeared[t][x][y][z][mu];
             SU3::Projection::GramSchmidt(Gluon_smeared(current_link));
         }
     }
@@ -284,7 +283,6 @@ void StoutForceRecursion(const GaugeField& Gluon, const GaugeField& Gluon_prev, 
 //             Gluon_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * Gluon_unsmeared(current_link);
 //             // Eigen exponential (Scaling and squaring)
 //             // Gluon_smeared(current_link) = (smear_param * C).exp() * Gluon_unsmeared(current_link);
-//             // Gluon_smeared[t][x][y][z][mu] = CayleyMap(i<floatT> * smear_param * C) * Gluon_unsmeared[t][x][y][z][mu];
 //             SU3::Projection::GramSchmidt(Gluon_smeared(current_link));
 //         }
 
