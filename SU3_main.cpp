@@ -798,6 +798,8 @@ int main()
     // OverrelaxationDirectKernel       OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel     OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
     Integrators::HMC::OMF_4          OMF_4_Integrator;
+    Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
+    Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
     GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
     // ReadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
@@ -940,7 +942,7 @@ int main()
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
-        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
 
         // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
         datalog << "[HMC start thermalization]\n";

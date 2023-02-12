@@ -330,7 +330,8 @@ namespace GaugeUpdates
             Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
             {}
 
-
+            // TODO: Add parameter: const double tau
+            //       Pass to integrators, implementation trivial
             bool operator()(const int n_step, const bool metropolis_step) const noexcept
             {
                 // Copy old field so we can restore it in case the update gets rejected

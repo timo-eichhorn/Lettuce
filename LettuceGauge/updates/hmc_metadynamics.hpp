@@ -20,6 +20,221 @@
 
 // We can reuse the integrators defined in hmc_gauge.hpp
 
+namespace Integrators::HMC
+{
+    struct Leapfrog_OMF_4
+    {
+        template<typename HMCFunctor>
+        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        {
+            // Calculate stepsize epsilon from n_step
+            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            // Integrator constants
+            const double alpha {0.08398315262876693 * epsilon};
+            const double beta  {0.2539785108410595 * epsilon};
+            const double gamma {0.6822365335719091 * epsilon};
+            const double delta {-0.03230286765269967 * epsilon};
+            const double mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
+            const double nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
+            // Perform integration
+            // The expensive Metadynamics momentum updates in the outer leapfrog integrator are merged in the loop
+            HMC.UpdateMetadynamicsMomenta(0.5 * epsilon);
+            for (int step_count = 0; step_count < n_step - 1; ++step_count)
+            {
+                HMC.UpdateGaugeMomenta(alpha);
+                HMC.UpdateFields(beta);
+                HMC.UpdateGaugeMomenta(gamma);
+                HMC.UpdateFields(delta);
+
+                HMC.UpdateGaugeMomenta(mu);
+                HMC.UpdateFields(nu);
+                HMC.UpdateGaugeMomenta(mu);
+
+                HMC.UpdateFields(delta);
+                HMC.UpdateGaugeMomenta(gamma);
+                HMC.UpdateFields(beta);
+                HMC.UpdateGaugeMomenta(alpha);
+
+                HMC.UpdateMetadynamicsMomenta(epsilon);
+            }
+            HMC.UpdateGaugeMomenta(alpha);
+            HMC.UpdateFields(beta);
+            HMC.UpdateGaugeMomenta(gamma);
+            HMC.UpdateFields(delta);
+
+            HMC.UpdateGaugeMomenta(mu);
+            HMC.UpdateFields(nu);
+            HMC.UpdateGaugeMomenta(mu);
+
+            HMC.UpdateFields(delta);
+            HMC.UpdateGaugeMomenta(gamma);
+            HMC.UpdateFields(beta);
+            HMC.UpdateGaugeMomenta(alpha);
+
+            HMC.UpdateMetadynamicsMomenta(0.5 * epsilon);
+        }
+    };
+
+    struct OMF_2_OMF_4_slow
+    {
+        template<typename HMCFunctor>
+        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        {
+            // Calculate stepsize epsilon from n_step
+            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            // OMF2 Integrator constants
+            const double OMF2_alpha {0.1931833275037836 * epsilon};
+            const double OMF2_beta  {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
+            // OMF4 Integrator constants
+            const double OMF4_alpha {0.08398315262876693 * epsilon};
+            const double OMF4_beta  {0.2539785108410595 * epsilon};
+            const double OMF4_gamma {0.6822365335719091 * epsilon};
+            const double OMF4_delta {-0.03230286765269967 * epsilon};
+            const double OMF4_mu    {(0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
+            const double OMF4_nu    {(1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
+            // Perform integration
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                // OMF2 momentum update of Metadynamics contribution
+                HMC.UpdateMetadynamicsMomenta(OMF2_alpha);
+                //-----
+                // OMF4 integration of gauge contribution
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_delta);
+
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+                HMC.UpdateFields(OMF4_nu);
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+
+                HMC.UpdateFields(OMF4_delta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                //-----
+                // OMF2 momentum update of Metadynamics contribution
+                HMC.UpdateMetadynamicsMomenta(OMF2_beta);
+                //-----
+                // OMF4 integration of gauge contribution
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_delta);
+
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+                HMC.UpdateFields(OMF4_nu);
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+
+                HMC.UpdateFields(OMF4_delta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                //-----
+                // OMF2 momentum update of Metadynamics contribution
+                HMC.UpdateMetadynamicsMomenta(OMF2_alpha);
+            }
+        }
+    };
+
+    struct OMF_2_OMF_4
+    {
+        template<typename HMCFunctor>
+        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        {
+            // Calculate stepsize epsilon from n_step
+            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            // OMF2 Integrator constants
+            const double OMF2_alpha {0.1931833275037836 * epsilon};
+            const double OMF2_beta  {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
+            // OMF4 Integrator constants (note the additional factor 0.5 since the OMF4 is embedded in the OMF2 scheme, where the fields are updated with half steps!)
+            const double OMF4_alpha {0.5 * 0.08398315262876693 * epsilon};
+            const double OMF4_beta  {0.5 * 0.2539785108410595 * epsilon};
+            const double OMF4_gamma {0.5 * 0.6822365335719091 * epsilon};
+            const double OMF4_delta {0.5 * -0.03230286765269967 * epsilon};
+            const double OMF4_mu    {0.5 * (0.5 - 0.6822365335719091 - 0.08398315262876693) * epsilon};
+            const double OMF4_nu    {0.5 * (1.0 - 2.0 * -0.03230286765269967 - 2.0 * 0.2539785108410595) * epsilon};
+            // Perform integration
+            // The expensive Metadynamics momentum updates in the outer OMF2 integrator are merged in the loop
+            // OMF2 momentum update of Metadynamics contribution
+            HMC.UpdateMetadynamicsMomenta(OMF2_alpha);
+            for (int step_count = 0; step_count < n_step - 1; ++step_count)
+            {
+                // OMF4 integration of gauge contribution
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_delta);
+
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+                HMC.UpdateFields(OMF4_nu);
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+
+                HMC.UpdateFields(OMF4_delta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                //-----
+                // OMF2 momentum update of Metadynamics contribution
+                HMC.UpdateMetadynamicsMomenta(OMF2_beta);
+                //-----
+                // OMF4 integration of gauge contribution
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_delta);
+
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+                HMC.UpdateFields(OMF4_nu);
+                HMC.UpdateGaugeMomenta(OMF4_mu);
+
+                HMC.UpdateFields(OMF4_delta);
+                HMC.UpdateGaugeMomenta(OMF4_gamma);
+                HMC.UpdateFields(OMF4_beta);
+                HMC.UpdateGaugeMomenta(OMF4_alpha);
+                //-----
+                // OMF2 momentum update of Metadynamics contribution (factor 2 due to merged momentum updates)
+                HMC.UpdateMetadynamicsMomenta(2.0 * OMF2_alpha);
+            }
+            // OMF4 integration of gauge contribution
+            HMC.UpdateGaugeMomenta(OMF4_alpha);
+            HMC.UpdateFields(OMF4_beta);
+            HMC.UpdateGaugeMomenta(OMF4_gamma);
+            HMC.UpdateFields(OMF4_delta);
+
+            HMC.UpdateGaugeMomenta(OMF4_mu);
+            HMC.UpdateFields(OMF4_nu);
+            HMC.UpdateGaugeMomenta(OMF4_mu);
+
+            HMC.UpdateFields(OMF4_delta);
+            HMC.UpdateGaugeMomenta(OMF4_gamma);
+            HMC.UpdateFields(OMF4_beta);
+            HMC.UpdateGaugeMomenta(OMF4_alpha);
+            //-----
+            // OMF2 momentum update of Metadynamics contribution
+            HMC.UpdateMetadynamicsMomenta(OMF2_beta);
+            //-----
+            // OMF4 integration of gauge contribution
+            HMC.UpdateGaugeMomenta(OMF4_alpha);
+            HMC.UpdateFields(OMF4_beta);
+            HMC.UpdateGaugeMomenta(OMF4_gamma);
+            HMC.UpdateFields(OMF4_delta);
+
+            HMC.UpdateGaugeMomenta(OMF4_mu);
+            HMC.UpdateFields(OMF4_nu);
+            HMC.UpdateGaugeMomenta(OMF4_mu);
+
+            HMC.UpdateFields(OMF4_delta);
+            HMC.UpdateGaugeMomenta(OMF4_gamma);
+            HMC.UpdateFields(OMF4_beta);
+            HMC.UpdateGaugeMomenta(OMF4_alpha);
+            //-----
+            // OMF2 momentum update of Metadynamics contribution
+            HMC.UpdateMetadynamicsMomenta(OMF2_alpha);
+        }
+    };
+} // namespace Integrators::HMC
+
 namespace GaugeUpdates
 {
     template<typename IntegratorT, typename ActionT>
@@ -178,6 +393,38 @@ namespace GaugeUpdates
             }
 
             //-----
+            // Partial momentum update functions to be used with multiple timescale integrators
+
+            void UpdateGaugeMomenta(const floatT epsilon) noexcept
+            {
+                #pragma omp parallel for
+                for (int t = 0; t < Nt; ++t)
+                for (int x = 0; x < Nx; ++x)
+                for (int y = 0; y < Ny; ++y)
+                for (int z = 0; z < Nz; ++z)
+                for (int mu = 0; mu < 4; ++mu)
+                {
+                    link_coord current_link {t, x, y, z, mu};
+                    Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
+                    Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp);
+                }
+            }            
+
+            void UpdateMetadynamicsMomenta(const floatT epsilon) noexcept
+            {
+                #pragma omp parallel for
+                for (int t = 0; t < Nt; ++t)
+                for (int x = 0; x < Nx; ++x)
+                for (int y = 0; y < Ny; ++y)
+                for (int z = 0; z < Nz; ++z)
+                for (int mu = 0; mu < 4; ++mu)
+                {
+                    link_coord current_link {t, x, y, z, mu};
+                    Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
+                }
+            }
+
+            //-----
             // Update gauge fields for HMC
 
             void UpdateFields(const floatT epsilon) const noexcept
@@ -256,7 +503,7 @@ namespace GaugeUpdates
                         {
                             Metapotential.UpdatePotential(CV_new);
                         }
-                        acceptance_count_hmc += 1;
+                        acceptance_count_metadynamics_hmc += 1;
                         return true;
                     }
                     else
