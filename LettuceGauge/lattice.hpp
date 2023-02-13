@@ -192,6 +192,19 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(t, x, y, z, mu)];
         }
+        void SetToIdentity() noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            for (int mu = 0; mu < Nmu; ++mu)
+            {
+                gaugefield[LinearCoordinate(t, x, y, z, mu)].setIdentity();
+            }
+            std::cout << "Gauge Fields set to identity!" << std::endl;
+        }
         std::size_t Volume() const noexcept
         {
             return V;

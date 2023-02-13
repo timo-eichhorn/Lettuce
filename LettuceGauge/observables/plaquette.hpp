@@ -16,10 +16,8 @@
 
 //-----
 // Calculates plaquette at given coordinates
-// TODO: Rewrite this? Is this even correct? Why does it return a zero matrix for nu = 0?
 
 [[nodiscard]]
-// Matrix_SU3 Plaquette(const GaugeField& U, const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
 Matrix_SU3 Plaquette(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     return U(current_site, mu) * U(Move<1>(current_site, mu), nu) * U(Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();

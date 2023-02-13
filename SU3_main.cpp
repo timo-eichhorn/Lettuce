@@ -365,31 +365,6 @@ vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thr
 }
 
 //-----
-// Set gauge fields to identity
-
-void SetGluonToOne(GaugeField& Gluon)
-{
-    #pragma omp parallel for
-    // for (auto &ind0 : Gluon)
-    // for (auto &ind1 : ind0)
-    // for (auto &ind2 : ind1)
-    // for (auto &ind3 : ind2)
-    // for (auto &GluonMatrix : ind3)
-    // {
-    //     GluonMatrix.setIdentity();
-    // }
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    for (int mu = 0; mu < 4; ++mu)
-    {
-        Gluon({t, x, y, z, mu}).setIdentity();
-    }
-    std::cout << "Gauge Fields set to identity!" << std::endl;
-}
-
-//-----
 // TODO: Metadynamics
 
 template<typename FuncT>
@@ -781,7 +756,7 @@ int main()
     std::uniform_int_distribution<int> distribution_instanton(0, 1);
 
     CreateFiles();
-    SetGluonToOne(Gluon);
+    Gluon.SetToIdentity();
 
     auto startcalc {std::chrono::system_clock::now()};
     datalog.open(logfilepath, std::fstream::out | std::fstream::app);
