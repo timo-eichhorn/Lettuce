@@ -299,12 +299,20 @@ namespace GaugeUpdates
                     floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
                     floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
                     floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Random momentum in su(3) given by phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann matrix)
                     // Technically A is a traceless hermitian matrix, while su(3) matrices are anti-hermitian
+                    // Matrix_3x3 A;
+                    // A << std::complex<floatT>(phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi1,-phi2),std::complex<floatT>(phi4,-phi5),
+                    //      std::complex<floatT>(phi1,phi2),                std::complex<floatT>(-phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi6,-phi7),
+                    //      std::complex<floatT>(phi4,phi5),                std::complex<floatT>(phi6,phi7),std::complex<floatT>(-2.0*phi8/sqrt(3.0),0.0);
+                    // Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
+                    // TODO: This is the new version where the momenta are algebra elements
                     Matrix_3x3 A;
-                    A << std::complex<floatT>(phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi1,-phi2),std::complex<floatT>(phi4,-phi5),
-                         std::complex<floatT>(phi1,phi2),                std::complex<floatT>(-phi3 + phi8/sqrt(3.0),0.0),std::complex<floatT>(phi6,-phi7),
-                         std::complex<floatT>(phi4,phi5),                std::complex<floatT>(phi6,phi7),std::complex<floatT>(-2.0*phi8/sqrt(3.0),0.0);
+                    A << std::complex<floatT>(0.0,phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi2,phi1),                  std::complex<floatT>(phi5,phi4),
+                         std::complex<floatT>(-phi2,phi1),                std::complex<floatT>(0.0,-phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi7,phi6),
+                         std::complex<floatT>(-phi5,phi4),                std::complex<floatT>(-phi7,phi6),                 std::complex<floatT>(0.0,-2.0*phi8/sqrt(3.0));
                     Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
                 }
                 // std::cout << "Random momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
@@ -387,7 +395,11 @@ namespace GaugeUpdates
                 {
                     link_coord current_link {t, x, y, z, mu};
                     Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
-                    Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Momentum(current_link) += epsilon * (beta / 6.0 * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
@@ -406,7 +418,11 @@ namespace GaugeUpdates
                 {
                     link_coord current_link {t, x, y, z, mu};
                     Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
-                    Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp);
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Momentum(current_link) -= epsilon * i<floatT> * beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp);
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Momentum(current_link) += epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp);
                 }
             }            
 
@@ -420,7 +436,10 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     link_coord current_link {t, x, y, z, mu};
-                    Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Momentum(current_link) += epsilon * ForceFatLink(current_link);
                 }
             }
 
@@ -437,7 +456,12 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Matrix_3x3 tmp_mat {(i<floatT> * epsilon * Momentum({t, x, y, z, mu})).exp()};
-                    Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
+
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
+                    // TODO: This is the new version where the momenta are algebra elements
+                    Matrix_3x3 tmp_mat {SU3::exp(-i<floatT> * epsilon * Momentum({t, x, y, z, mu}))};
+
                     U({t, x, y, z, mu}) = tmp_mat * U({t, x, y, z, mu});
                     SU3::Projection::GramSchmidt(U({t, x, y, z, mu}));
                 }
@@ -459,7 +483,10 @@ namespace GaugeUpdates
                 for (int z = 0; z < Nz; ++z)
                 for (int mu = 0; mu < 4; ++mu)
                 {
-                    kinetic_energy += std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
+                    // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
+                    // kinetic_energy += std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
+                    // TODO: This is the new version where the momenta are algebra elements
+                    kinetic_energy -= std::real((Momentum({t, x, y, z, mu}) * Momentum({t, x, y, z, mu})).trace());
                 }
                 // std::cout << "kinetic_energy: " << kinetic_energy << " potential_energy: " << potential_energy << std::endl;
                 return potential_energy + kinetic_energy;
