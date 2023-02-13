@@ -19,14 +19,14 @@
 // TODO: Rewrite this? Is this even correct? Why does it return a zero matrix for nu = 0?
 
 [[nodiscard]]
-// Matrix_SU3 Plaquette(const GaugeField& Gluon, const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
-Matrix_SU3 Plaquette(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+// Matrix_SU3 Plaquette(const GaugeField& U, const int t, const int x, const int y, const int z, const int mu, const int nu) noexcept
+Matrix_SU3 Plaquette(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    return Gluon(current_site, mu) * Gluon(Move<1>(current_site, mu), nu) * Gluon(Move<1>(current_site, nu), mu).adjoint() * Gluon(current_site, nu).adjoint();
+    return U(current_site, mu) * U(Move<1>(current_site, mu), nu) * U(Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
 }
 
 [[nodiscard]]
-double PlaquetteSum(const GaugeField& Gluon) noexcept
+double PlaquetteSum(const GaugeField& U) noexcept
 {
     double Plaq_sum {0.0};
     #pragma omp parallel for reduction(+: Plaq_sum)
@@ -38,7 +38,7 @@ double PlaquetteSum(const GaugeField& Gluon) noexcept
     {
         for (int mu = 0; mu < nu; ++mu)
         {
-            Plaq_sum += std::real(Plaquette(Gluon, {t, x, y, z}, mu, nu).trace());
+            Plaq_sum += std::real(Plaquette(U, {t, x, y, z}, mu, nu).trace());
         }
     }
     return Plaq_sum;
@@ -46,36 +46,36 @@ double PlaquetteSum(const GaugeField& Gluon) noexcept
 
 // Top right quadrant, i.e., P_{mu, nu}
 [[nodiscard]]
-Matrix_SU3 PlaquetteI(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+Matrix_SU3 PlaquetteI(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    return Gluon(current_site, mu) * Gluon(Move<1>(current_site, mu), nu) * Gluon(Move<1>(current_site, nu), mu).adjoint() * Gluon(current_site, nu).adjoint();
+    return U(current_site, mu) * U(Move<1>(current_site, mu), nu) * U(Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
 }
 
 // Top left quadrant, i.e., P_{nu, -mu}
 [[nodiscard]]
-Matrix_SU3 PlaquetteII(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+Matrix_SU3 PlaquetteII(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     site_coord site_mud     {Move<-1>(current_site, mu)};
-    return Gluon(current_site, nu) * Gluon(Move<1>(site_mud, nu), mu).adjoint() * Gluon(site_mud, nu).adjoint() * Gluon(site_mud, mu);
+    return U(current_site, nu) * U(Move<1>(site_mud, nu), mu).adjoint() * U(site_mud, nu).adjoint() * U(site_mud, mu);
 }
 
 // Bottom left quadrant, i.e., P_{-mu, -nu}
 [[nodiscard]]
-Matrix_SU3 PlaquetteIII(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+Matrix_SU3 PlaquetteIII(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     // TODO: We could reorder the expression below and replace one Move<-1> by a Move<1>
     //       Also, we could replace the last Move<-1> with a Move<1> from a different site
     site_coord site_mud     {Move<-1>(current_site, mu)};
     site_coord site_mud_nud {Move<-1>(site_mud    , nu)};
-    return Gluon(site_mud, mu).adjoint() * Gluon(site_mud_nud, nu).adjoint() * Gluon(site_mud_nud, mu) * Gluon(Move<-1>(current_site, nu), nu);
+    return U(site_mud, mu).adjoint() * U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(Move<-1>(current_site, nu), nu);
 }
 
 // Bottom right quadrant, i.e., P_{-nu, mu}
 [[nodiscard]]
-Matrix_SU3 PlaquetteIV(const GaugeField& Gluon, const site_coord& current_site, const int mu, const int nu) noexcept
+Matrix_SU3 PlaquetteIV(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     site_coord site_nud     {Move<-1>(current_site, nu)};
-    return Gluon(site_nud, nu).adjoint() * Gluon(site_nud, mu) * Gluon(Move<1>(site_nud, mu), nu) * Gluon(current_site, mu).adjoint();
+    return U(site_nud, nu).adjoint() * U(site_nud, mu) * U(Move<1>(site_nud, mu), nu) * U(current_site, mu).adjoint();
 }
 
 #endif // LETTUCE_PLAQUETTE_HPP

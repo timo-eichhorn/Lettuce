@@ -18,14 +18,15 @@
 // TODO: Implement!
 // In contrast to the HMC, you need to make sure that the Momentum field is not reused/overwritten by other functions,
 // since the momenta are only partially refreshed at the start of a new trajectory!
+// TODO: Change momentum convention to match HMC and MetaD-HMC
 namespace GaugeUpdates
 {
     template<typename IntegratorT, typename ActionT>
     struct SMDKernel
     {
         private:
-            GaugeField&  Gluon;
-            GaugeField&  Gluon_copy;
+            GaugeField&  U;
+            GaugeField&  U_copy;
             GaugeField&  Momentum;
             IntegratorT& Integrator;
             ActionT&     Action;
@@ -93,7 +94,7 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     link_coord current_link {t, x, y, z, mu};
-                    Matrix_3x3 tmp {Action.Staple(Gluon, current_link) * Gluon(current_link).adjoint()};
+                    Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
                     Momentum(current_link) -= epsilon * i<floatT> * beta / 6.0 * SU3::Projection::Algebra(tmp);
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
@@ -113,19 +114,19 @@ namespace GaugeUpdates
                 {
                     // Matrix_3x3 tmp_mat {(i<floatT> * epsilon * Momentum({t, x, y, z, mu})).exp()};
                     Matrix_3x3 tmp_mat {SU3::exp(epsilon * Momentum({t, x, y, z, mu}))};
-                    Gluon({t, x, y, z, mu}) = tmp_mat * Gluon({t, x, y, z, mu});
-                    SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
+                    U({t, x, y, z, mu}) = tmp_mat * U({t, x, y, z, mu});
+                    SU3::Projection::GramSchmidt(U({t, x, y, z, mu}));
                 }
-                // std::cout << "new test: " << TestSU3All(Gluon, 1e-8) << std::endl;
-                // std::cout << "new test: " << Gluon[1][3][4][7][2].determinant() << "\n" << Gluon[1][3][4][7][2] * Gluon[1][3][4][7][2].adjoint() << "\n" << std::endl;
-                // std::cout << "Fields lie in group: " << SU3::TestSU3All(Gluon, 1e-12) << std::endl;
+                // std::cout << "new test: " << TestSU3All(U, 1e-8) << std::endl;
+                // std::cout << "new test: " << U[1][3][4][7][2].determinant() << "\n" << U[1][3][4][7][2] * U[1][3][4][7][2].adjoint() << "\n" << std::endl;
+                // std::cout << "Fields lie in group: " << SU3::TestSU3All(U, 1e-12) << std::endl;
             }
 
             [[nodiscard]]
             double Hamiltonian() const noexcept
             {
-                // double potential_energy {WilsonAction::Action(Gluon)};
-                double potential_energy {Action.Action(Gluon)};
+                // double potential_energy {WilsonAction::Action(U)};
+                double potential_energy {Action.Action(U)};
                 double kinetic_energy   {0.0};
                 // TODO: Momentum * Momentum.adjoint() or Momentum^2? Also is there a prefactor 0.5 or not?
                 #pragma omp parallel for reduction(+: kinetic_energy)
@@ -141,15 +142,15 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit SMDKernel(GaugeField& Gluon_in, GaugeField& Gluon_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-            Gluon(Gluon_in), Gluon_copy(Gluon_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
+            explicit SMDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
             {}
 
 
             bool operator()(const int n_step, const bool metropolis_step) const noexcept
             {
                 // Copy old field so we can restore it in case the update gets rejected
-                Gluon_copy = Gluon;
+                U_copy = U;
                 // Generate random momenta and calculate energy before time evolution
                 RandomMomentum();
                 double energy_old {Hamiltonian()};
@@ -177,7 +178,7 @@ namespace GaugeUpdates
                     }
                     else
                     {
-                        Gluon = Gluon_copy;
+                        U = U_copy;
                         ReverseMomenta();
                         return false;
                     }

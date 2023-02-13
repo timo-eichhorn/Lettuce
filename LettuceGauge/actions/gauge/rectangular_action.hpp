@@ -59,7 +59,7 @@ namespace GaugeAction
             }
 
             [[nodiscard]]
-            double Action(const GaugeField& Gluon) const noexcept
+            double Action(const GaugeField& U) const noexcept
             {
                 double sum_plaq {0.0};
                 double sum_rect {0.0};
@@ -74,34 +74,34 @@ namespace GaugeAction
                     for (int mu = 0; mu < nu; ++mu)
                     {
                         // Plaquette contributions
-                        sum_plaq += std::real(Plaquette(Gluon, {t, x, y, z}, mu, nu).trace());
+                        sum_plaq += std::real(Plaquette(U, {t, x, y, z}, mu, nu).trace());
                         // Rectangle contributions
                         if constexpr(stencil_radius == 2)
                         {
-                            sum_rect += std::real((RectangularLoop<1, 2>(Gluon, {t, x, y, z}, mu, nu)).trace());
-                            sum_rect += std::real((RectangularLoop<2, 1>(Gluon, {t, x, y, z}, mu, nu)).trace());
+                            sum_rect += std::real((RectangularLoop<1, 2>(U, {t, x, y, z}, mu, nu)).trace());
+                            sum_rect += std::real((RectangularLoop<2, 1>(U, {t, x, y, z}, mu, nu)).trace());
                         }
                     }
                 }
                 if constexpr(stencil_radius == 1)
                 {
-                    return beta * c_plaq * (6.0 * Gluon.Volume() - 1.0/3.0 * sum_plaq);
+                    return beta * c_plaq * (6.0 * U.Volume() - 1.0/3.0 * sum_plaq);
                 }
                 else
                 {
-                    return beta * (c_plaq * (6.0 * Gluon.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 * Gluon.Volume() - 1.0/3.0 * sum_rect));
+                    return beta * (c_plaq * (6.0 * U.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 * U.Volume() - 1.0/3.0 * sum_rect));
                 }
             }
 
             [[nodiscard]]
-            double ActionNormalized(const GaugeField& Gluon) const noexcept
+            double ActionNormalized(const GaugeField& U) const noexcept
             {
-                return Action(Gluon) / (6.0 * beta * Gluon.Volume());
+                return Action(U) / (6.0 * beta * U.Volume());
             }
 
             // TODO: For now, the plaquette staple is written out explicitly, since the reduced index calculations lead to slightly better performance
             [[nodiscard]]
-            Matrix_3x3 StaplePlaq(const GaugeField& Gluon, const link_coord& current_link) const noexcept
+            Matrix_3x3 StaplePlaq(const GaugeField& U, const link_coord& current_link) const noexcept
             {
                 Matrix_3x3 st;
                 auto [t, x, y, z, mu] = current_link;
@@ -117,9 +117,9 @@ namespace GaugeAction
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 0}) * Gluon({tp, x, y, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1})
-                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 0}) * Gluon({tp, x, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2})
-                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 0}) * Gluon({tp, x, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3});
+                        st.noalias() = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
+                                     + U({t, x, y, z, 2}) * U({t, x, yp, z, 0}) * U({tp, x, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0}) * U({tp, x, ym, z, 2})
+                                     + U({t, x, y, z, 3}) * U({t, x, y, zp, 0}) * U({tp, x, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0}) * U({tp, x, y, zm, 3});
                     }
                     break;
 
@@ -132,9 +132,9 @@ namespace GaugeAction
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}) * Gluon({tm, xp, y, z, 0})
-                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 1}) * Gluon({t, xp, y, z, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2})
-                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 1}) * Gluon({t, xp, y, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3});
+                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
+                                     + U({t, x, y, z, 2}) * U({t, x, yp, z, 1}) * U({t, xp, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1}) * U({t, xp, ym, z, 2})
+                                     + U({t, x, y, z, 3}) * U({t, x, y, zp, 1}) * U({t, xp, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1}) * U({t, xp, y, zm, 3});
                     }
                     break;
 
@@ -147,9 +147,9 @@ namespace GaugeAction
                         int yp {(y + 1)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}) * Gluon({tm, x, yp, z, 0})
-                                     + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}) * Gluon({t, xm, yp, z, 1})
-                                     + Gluon({t, x, y, z, 3}) * Gluon({t, x, y, zp, 2}) * Gluon({t, x, yp, z, 3}).adjoint() + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3});
+                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
+                                     + U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 2}) * U({t, xm, yp, z, 1})
+                                     + U({t, x, y, z, 3}) * U({t, x, y, zp, 2}) * U({t, x, yp, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2}) * U({t, x, yp, zm, 3});
                     }
                     break;
 
@@ -162,9 +162,9 @@ namespace GaugeAction
                         int yp {(y + 1)%Ny};
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
-                        st.noalias() = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 3}) * Gluon({tm, x, y, zp, 0})
-                                     + Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 3}) * Gluon({t, xm, y, zp, 1})
-                                     + Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 3}) * Gluon({t, x, ym, zp, 2});
+                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
+                                     + U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 3}) * U({t, xm, y, zp, 1})
+                                     + U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 3}) * U({t, x, ym, zp, 2});
                     }
                     break;
                 }
@@ -220,15 +220,15 @@ namespace GaugeAction
             }
 
             [[nodiscard]]
-            Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& current_link) const noexcept
+            Matrix_3x3 Staple(const GaugeField& U, const link_coord& current_link) const noexcept
             {
                 if constexpr(stencil_radius == 1)
                 {
-                    return StaplePlaq(Gluon, current_link);
+                    return StaplePlaq(U, current_link);
                 }
                 else
                 {
-                    return c_plaq * StaplePlaq(Gluon, current_link) + c_rect * StapleRect(Gluon, current_link);
+                    return c_plaq * StaplePlaq(U, current_link) + c_rect * StapleRect(U, current_link);
                 }
             }
 
@@ -246,16 +246,16 @@ namespace GaugeAction
 
     // template<>
     // [[nodiscard]]
-    // double Rectangular<1, 1.0, 0.0>::Action(const GaugeField& Gluon) const noexcept {...;}
+    // double Rectangular<1, 1.0, 0.0>::Action(const GaugeField& U) const noexcept {...;}
 
     // // TODO: Do we need to specialize this, or will the normal definition work automatically once we specialize Action()?
     // template<>
     // [[nodiscard]]
-    // double Rectangular<1, 1.0, 0.0>::ActionNormalized(const GaugeField& Gluon) const noexcept {...;}
+    // double Rectangular<1, 1.0, 0.0>::ActionNormalized(const GaugeField& U) const noexcept {...;}
 
     // template<>
     // [[nodiscard]]
-    // Matrix_3x3 Staple(const GaugeField& Gluon, const link_coord& link) const noexcept {...;}
+    // Matrix_3x3 Staple(const GaugeField& U, const link_coord& link) const noexcept {...;}
 
     // Some commonly used improved gauge actions:
     // For all actions we define c_plaq = 1 - 8 * c_rect

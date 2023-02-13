@@ -26,7 +26,7 @@
 // initializer( omp_priv = omp_orig )
 
 [[nodiscard]]
-std::complex<double> PolyakovLoop(const GaugeField& Gluon) noexcept
+std::complex<double> PolyakovLoop(const GaugeField& U) noexcept
 {
     std::complex<floatT> P {0.0, 0.0};
     #pragma omp parallel for reduction(+: P)
@@ -38,7 +38,7 @@ std::complex<double> PolyakovLoop(const GaugeField& Gluon) noexcept
         Matrix_SU3 tmp {Matrix_SU3::Identity()};
         for (int t = 0; t < Nt; ++t)
         {
-            tmp *= Gluon({t, x, y, z, 0});
+            tmp *= U({t, x, y, z, 0});
         }
         P += tmp.trace();
     }

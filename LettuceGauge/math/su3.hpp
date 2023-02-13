@@ -439,69 +439,69 @@ namespace SU3::Projection
 
     // Used to restore full SU(3) matrix from first two columns
     // __attribute__((always_inline))
-    void RestoreLastColumn(Matrix_SU3& mat) noexcept
+    void RestoreLastColumn(Matrix_SU3& Mat) noexcept
     {
-        mat(0, 2) = std::conj(mat(1, 0) * mat(2, 1) - mat(2, 0) * mat(1, 1));
-        mat(1, 2) = std::conj(mat(2, 0) * mat(0, 1) - mat(0, 0) * mat(2, 1));
-        mat(2, 2) = std::conj(mat(0, 0) * mat(1, 1) - mat(1, 0) * mat(0, 1));
+        Mat(0, 2) = std::conj(Mat(1, 0) * Mat(2, 1) - Mat(2, 0) * Mat(1, 1));
+        Mat(1, 2) = std::conj(Mat(2, 0) * Mat(0, 1) - Mat(0, 0) * Mat(2, 1));
+        Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(1, 0) * Mat(0, 1));
     }
 
-    void RestoreLastRow(Matrix_SU3& mat) noexcept
+    void RestoreLastRow(Matrix_SU3& Mat) noexcept
     {
-        mat(2, 0) = std::conj(mat(0, 1) * mat(1, 2) - mat(0, 2) * mat(1, 1));
-        mat(2, 1) = std::conj(mat(0, 2) * mat(1, 0) - mat(0, 0) * mat(1, 2));
-        mat(2, 2) = std::conj(mat(0, 0) * mat(1, 1) - mat(0, 1) * mat(1, 0));
+        Mat(2, 0) = std::conj(Mat(0, 1) * Mat(1, 2) - Mat(0, 2) * Mat(1, 1));
+        Mat(2, 1) = std::conj(Mat(0, 2) * Mat(1, 0) - Mat(0, 0) * Mat(1, 2));
+        Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(0, 1) * Mat(1, 0));
     }
 
     // Projects a single link back on SU(3) via Gram-Schmidt
-    void GramSchmidt(Matrix_SU3& GluonMatrix) noexcept
+    void GramSchmidt(Matrix_SU3& Mat) noexcept
     {
-        // floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(0, 2) * std::conj(GluonMatrix(0, 2))))};
+        // floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 0) * std::conj(Mat(0, 0)) + Mat(0, 1) * std::conj(Mat(0, 1)) + Mat(0, 2) * std::conj(Mat(0, 2))))};
         // for (int n = 0; n < 3; ++n)
         // {
-        //     GluonMatrix(0, n) = norm0 * GluonMatrix(0, n);
+        //     Mat(0, n) = norm0 * Mat(0, n);
         // }
-        // std::complex<floatT> psi {GluonMatrix(1, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(1, 2) * std::conj(GluonMatrix(0, 2))};
+        // std::complex<floatT> psi {Mat(1, 0) * std::conj(Mat(0, 0)) + Mat(1, 1) * std::conj(Mat(0, 1)) + Mat(1, 2) * std::conj(Mat(0, 2))};
         // for (int n = 0; n < 3; ++n)
         // {
-        //     GluonMatrix(1, n) =  GluonMatrix(1, n) - psi * GluonMatrix(0, n);
+        //     Mat(1, n) =  Mat(1, n) - psi * Mat(0, n);
         // }
-        // floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(1, 0) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 1)) + GluonMatrix(1, 2) * std::conj(GluonMatrix(1, 2))))};
+        // floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(1, 0) * std::conj(Mat(1, 0)) + Mat(1, 1) * std::conj(Mat(1, 1)) + Mat(1, 2) * std::conj(Mat(1, 2))))};
         // for (int n = 0; n < 3; ++n)
         // {
-        //     GluonMatrix(1, n) = norm1 * GluonMatrix(1, n);
+        //     Mat(1, n) = norm1 * Mat(1, n);
         // }
-        // GluonMatrix(2, 0) = std::conj(GluonMatrix(0, 1) * GluonMatrix(1, 2) - GluonMatrix(0, 2) * GluonMatrix(1, 1));
-        // GluonMatrix(2, 1) = std::conj(GluonMatrix(0, 2) * GluonMatrix(1, 0) - GluonMatrix(0, 0) * GluonMatrix(1, 2));
-        // GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(0, 1) * GluonMatrix(1, 0));
+        // Mat(2, 0) = std::conj(Mat(0, 1) * Mat(1, 2) - Mat(0, 2) * Mat(1, 1));
+        // Mat(2, 1) = std::conj(Mat(0, 2) * Mat(1, 0) - Mat(0, 0) * Mat(1, 2));
+        // Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(0, 1) * Mat(1, 0));
         // Per default, Eigen uses a column-major storage order, so the first index is the inner index in terms of the memory layout
-        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 0) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 0) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(2, 0) * std::conj(GluonMatrix(2, 0))))};
+        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 0) * std::conj(Mat(0, 0)) + Mat(1, 0) * std::conj(Mat(1, 0)) + Mat(2, 0) * std::conj(Mat(2, 0))))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(n, 0) = norm0 * GluonMatrix(n, 0);
+            Mat(n, 0) = norm0 * Mat(n, 0);
         }
-        std::complex<floatT> psi {GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 0)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 0)) + GluonMatrix(2, 1) * std::conj(GluonMatrix(2, 0))};
+        std::complex<floatT> psi {Mat(0, 1) * std::conj(Mat(0, 0)) + Mat(1, 1) * std::conj(Mat(1, 0)) + Mat(2, 1) * std::conj(Mat(2, 0))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(n, 1) = GluonMatrix(n, 1) - psi * GluonMatrix(n, 0);
+            Mat(n, 1) = Mat(n, 1) - psi * Mat(n, 0);
         }
-        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(GluonMatrix(0, 1) * std::conj(GluonMatrix(0, 1)) + GluonMatrix(1, 1) * std::conj(GluonMatrix(1, 1)) + GluonMatrix(2, 1) * std::conj(GluonMatrix(2, 1))))};
+        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 1) * std::conj(Mat(0, 1)) + Mat(1, 1) * std::conj(Mat(1, 1)) + Mat(2, 1) * std::conj(Mat(2, 1))))};
         for (int n = 0; n < 3; ++n)
         {
-            GluonMatrix(n, 1) = norm1 * GluonMatrix(n, 1);
+            Mat(n, 1) = norm1 * Mat(n, 1);
         }
-        GluonMatrix(0, 2) = std::conj(GluonMatrix(1, 0) * GluonMatrix(2, 1) - GluonMatrix(2, 0) * GluonMatrix(1, 1));
-        GluonMatrix(1, 2) = std::conj(GluonMatrix(2, 0) * GluonMatrix(0, 1) - GluonMatrix(0, 0) * GluonMatrix(2, 1));
-        GluonMatrix(2, 2) = std::conj(GluonMatrix(0, 0) * GluonMatrix(1, 1) - GluonMatrix(1, 0) * GluonMatrix(0, 1));
+        Mat(0, 2) = std::conj(Mat(1, 0) * Mat(2, 1) - Mat(2, 0) * Mat(1, 1));
+        Mat(1, 2) = std::conj(Mat(2, 0) * Mat(0, 1) - Mat(0, 0) * Mat(2, 1));
+        Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(1, 0) * Mat(0, 1));
         // TODO: If RestoreLastColumn() is declared as an inline function, we get the same results as using the lines above,
         //       but if it is not declared as inline, we get different results. Huhh???
-        // RestoreLastColumn(GluonMatrix);
+        // RestoreLastColumn(Mat);
     }
 
     //-----
     // Projects a single link back on SU(3) via Kenney-Laub iteration (used for direct SU(N) overrelaxation updates)
 
-    void KenneyLaub(Matrix_SU3& GluonMatrix) noexcept
+    void KenneyLaub(Matrix_SU3& Mat) noexcept
     {
         // Based on section 3 in arXiv:1701.00726
         // Use Kenney-Laub iteration to get the unitary part of the polar decomposition of the matrix
@@ -510,35 +510,38 @@ namespace SU3::Projection
         Matrix_SU3 X;
         do
         {
-            X = GluonMatrix.adjoint() * GluonMatrix;
-            GluonMatrix = GluonMatrix/static_cast<floatT>(3.0) * (Matrix_SU3::Identity() + static_cast<floatT>(8.0/3.0) * (GluonMatrix.adjoint() * GluonMatrix + static_cast<floatT>(1.0/3.0) * Matrix_SU3::Identity()).inverse());
+            X = Mat.adjoint() * Mat;
+            Mat = Mat/static_cast<floatT>(3.0) * (Matrix_SU3::Identity() + static_cast<floatT>(8.0/3.0) * (Mat.adjoint() * Mat + static_cast<floatT>(1.0/3.0) * Matrix_SU3::Identity()).inverse());
         }
-        // Iterate as long as the Frobenius norm of the difference between the unit matrix and X = GluonMatrix.adjoint() * GluonMatrix is greater than 1e-6
+        // Iterate as long as the Frobenius norm of the difference between the unit matrix and X = Mat.adjoint() * Mat is greater than 1e-6
         while ((Matrix_SU3::Identity() - X).norm() > static_cast<floatT>(1e-6));
         // Then normalize to set determinant equal to 1
-        GluonMatrix = GluonMatrix * (static_cast<floatT>(1.0)/std::pow(GluonMatrix.determinant(), static_cast<floatT>(1.0/3.0)));
+        Mat = Mat * (static_cast<floatT>(1.0)/std::pow(Mat.determinant(), static_cast<floatT>(1.0/3.0)));
         // TODO: Use std::cbrt instead of std::pow? std::cbrt doesn't seem to work on std::complex<T>...
-        // GluonMatrix = GluonMatrix * (1.f/std::cbrt(GluonMatrix.determinant()));
+        // Mat = Mat * (1.f/std::cbrt(Mat.determinant()));
     }
 
     //-----
     // Projects a single element onto su(3) algebra (traceless antihermitian)
 
-    Matrix_3x3 Algebra(const Matrix_3x3& mat) noexcept
+    [[nodiscard]]
+    Matrix_3x3 Algebra(const Matrix_3x3& Mat) noexcept
     {
-        return static_cast<floatT>(0.5) * (mat - mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat - mat.adjoint()).trace() * Matrix_3x3::Identity();
+        return static_cast<floatT>(0.5) * (Mat - Mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (Mat - Mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
 
-    Matrix_3x3 TracelessAntihermitian(const Matrix_3x3& mat) noexcept
+    [[nodiscard]]
+    Matrix_3x3 TracelessAntihermitian(const Matrix_3x3& Mat) noexcept
     {
-        return static_cast<floatT>(0.5) * (mat - mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat - mat.adjoint()).trace() * Matrix_3x3::Identity();
+        return static_cast<floatT>(0.5) * (Mat - Mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (Mat - Mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
 
     // Projects a single element onto traceless hermitian matrix
 
-    Matrix_3x3 TracelessHermitian(const Matrix_3x3& mat) noexcept
+    [[nodiscard]]
+    Matrix_3x3 TracelessHermitian(const Matrix_3x3& Mat) noexcept
     {
-        return static_cast<floatT>(0.5) * (mat + mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (mat + mat.adjoint()).trace() * Matrix_3x3::Identity();
+        return static_cast<floatT>(0.5) * (Mat + Mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (Mat + Mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
 } // namespace SU3::Projection
 
@@ -562,7 +565,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool UnitarityAll(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
+    bool UnitarityAll(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
         bool IsUnitary {true};
         for (int t = 0; t < Nt; ++t)
@@ -571,7 +574,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Unitarity(Gluon({t, x, y, z, mu}), prec))
+            if (not Unitarity(U({t, x, y, z, mu}), prec))
             {
                 IsUnitary = false;
                 return IsUnitary;
@@ -597,7 +600,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool SpecialAll(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
+    bool SpecialAll(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
         bool IsSpecial {true};
         for (int t = 0; t < Nt; ++t)
@@ -606,7 +609,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Special(Gluon({t, x, y, z, mu}), prec))
+            if (not Special(U({t, x, y, z, mu}), prec))
             {
                 IsSpecial = false;
                 return IsSpecial;
@@ -632,7 +635,7 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool TestSU3All(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
+    bool TestSU3All(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
         bool InGroup {true};
         for (int t = 0; t < Nt; ++t)
@@ -641,7 +644,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not TestSU3(Gluon({t, x, y, z, mu}), prec))
+            if (not TestSU3(U({t, x, y, z, mu}), prec))
             {
                 InGroup = false;
                 return InGroup;
@@ -670,7 +673,7 @@ namespace SU3::Tests
     // NOTE: Technically this checks if a matrix is traceless and hermitian, while su(3) matrices are anti-hermitian
 
     [[nodiscard]]
-    bool Testsu3All(const GaugeField& Gluon, const floatT prec = 1e-6) noexcept
+    bool Testsu3All(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
         bool InAlgebra {true};
         for (int t = 0; t < Nt; ++t)
@@ -679,7 +682,7 @@ namespace SU3::Tests
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Testsu3(Gluon({t, x, y, z, mu}), prec))
+            if (not Testsu3(U({t, x, y, z, mu}), prec))
             {
                 InAlgebra = false;
                 return InAlgebra;

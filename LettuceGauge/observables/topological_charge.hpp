@@ -23,7 +23,7 @@
 // Calculate field-theoretic topological charge using field-strength tensor
 
 [[nodiscard]]
-double TopChargeGluonic(const GaugeField& Gluon) noexcept
+double TopChargeGluonic(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -45,42 +45,42 @@ double TopChargeGluonic(const GaugeField& Gluon) noexcept
         // Calculate clover term
         // TODO: Rewrite using plaquette function?
         Clov[0][0].setZero();
-        Clov[0][1] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() * Gluon({t, x, y, z, 1}).adjoint()
-                   + Gluon({t, x, y, z, 1}) * Gluon({tm, xp, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}).adjoint() * Gluon({tm, x, y, z, 0})
-                   + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, xm, y, z, 1}).adjoint() * Gluon({tm, xm, y, z, 0}) * Gluon({t, xm, y, z, 1})
-                   + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1}) * Gluon({t, x, y, z, 0}).adjoint();
+        Clov[0][1] = U({t, x, y, z, 0})            * U({tp, x, y, z, 1})            * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint()
+                   + U({t, x, y, z, 1})            * U({tm, xp, y, z, 0}).adjoint() * U({tm, x, y, z, 1}).adjoint() * U({tm, x, y, z, 0})
+                   + U({tm, x, y, z, 0}).adjoint() * U({tm, xm, y, z, 1}).adjoint() * U({tm, xm, y, z, 0})          * U({t, xm, y, z, 1})
+                   + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0})            * U({tp, xm, y, z, 1})          * U({t, x, y, z, 0}).adjoint();
         Clov[1][0] = Clov[0][1].adjoint();
 
-        Clov[0][2] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                   + Gluon({t, x, y, z, 2}) * Gluon({tm, x, yp, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}).adjoint() * Gluon({tm, x, y, z, 0})
-                   + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, ym, z, 2}).adjoint() * Gluon({tm, x, ym, z, 0}) * Gluon({t, x, ym, z, 2})
-                   + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2}) * Gluon({t, x, y, z, 0}).adjoint();
+        Clov[0][2] = U({t, x, y, z, 0})            * U({tp, x, y, z, 2})            * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                   + U({t, x, y, z, 2})            * U({tm, x, yp, z, 0}).adjoint() * U({tm, x, y, z, 2}).adjoint() * U({tm, x, y, z, 0})
+                   + U({tm, x, y, z, 0}).adjoint() * U({tm, x, ym, z, 2}).adjoint() * U({tm, x, ym, z, 0})          * U({t, x, ym, z, 2})
+                   + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0})            * U({tp, x, ym, z, 2})          * U({t, x, y, z, 0}).adjoint();
         Clov[2][0] = Clov[0][2].adjoint();
 
-        Clov[0][3] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                   + Gluon({t, x, y, z, 3}) * Gluon({tm, x, y, zp, 0}).adjoint() * Gluon({tm, x, y, z, 3}).adjoint() * Gluon({tm, x, y, z, 0})
-                   + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, zm, 3}).adjoint() * Gluon({tm, x, y, zm, 0}) * Gluon({t, x, y, zm, 3})
-                   + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3}) * Gluon({t, x, y, z, 0}).adjoint();
+        Clov[0][3] = U({t, x, y, z, 0})            * U({tp, x, y, z, 3})            * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                   + U({t, x, y, z, 3})            * U({tm, x, y, zp, 0}).adjoint() * U({tm, x, y, z, 3}).adjoint() * U({tm, x, y, z, 0})
+                   + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, zm, 3}).adjoint() * U({tm, x, y, zm, 0})          * U({t, x, y, zm, 3})
+                   + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0})            * U({tp, x, y, zm, 3})          * U({t, x, y, z, 0}).adjoint();
         Clov[3][0] = Clov[0][3].adjoint();
 
         Clov[1][1].setZero();
-        Clov[1][2] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                   + Gluon({t, x, y, z, 2}) * Gluon({t, xm, yp, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}).adjoint() * Gluon({t, xm, y, z, 1})
-                   + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, ym, z, 2}).adjoint() * Gluon({t, xm, ym, z, 1}) * Gluon({t, x, ym, z, 2})
-                   + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2}) * Gluon({t, x, y, z, 1}).adjoint();
+        Clov[1][2] = U({t, x, y, z, 1})            * U({t, xp, y, z, 2})            * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                   + U({t, x, y, z, 2})            * U({t, xm, yp, z, 1}).adjoint() * U({t, xm, y, z, 2}).adjoint() * U({t, xm, y, z, 1})
+                   + U({t, xm, y, z, 1}).adjoint() * U({t, xm, ym, z, 2}).adjoint() * U({t, xm, ym, z, 1})          * U({t, x, ym, z, 2})
+                   + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1})            * U({t, xp, ym, z, 2})          * U({t, x, y, z, 1}).adjoint();
         Clov[2][1] = Clov[1][2].adjoint();
 
-        Clov[1][3] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                   + Gluon({t, x, y, z, 3}) * Gluon({t, xm, y, zp, 1}).adjoint() * Gluon({t, xm, y, z, 3}).adjoint() * Gluon({t, xm, y, z, 1})
-                   + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, zm, 3}).adjoint() * Gluon({t, xm, y, zm, 1}) * Gluon({t, x, y, zm, 3})
-                   + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3}) * Gluon({t, x, y, z, 1}).adjoint();
+        Clov[1][3] = U({t, x, y, z, 1})            * U({t, xp, y, z, 3})            * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                   + U({t, x, y, z, 3})            * U({t, xm, y, zp, 1}).adjoint() * U({t, xm, y, z, 3}).adjoint() * U({t, xm, y, z, 1})
+                   + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, zm, 3}).adjoint() * U({t, xm, y, zm, 1})          * U({t, x, y, zm, 3})
+                   + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1})            * U({t, xp, y, zm, 3})          * U({t, x, y, z, 1}).adjoint();
         Clov[3][1] = Clov[1][3].adjoint();
 
         Clov[2][2].setZero();
-        Clov[2][3] = Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                   + Gluon({t, x, y, z, 3}) * Gluon({t, x, ym, zp, 2}).adjoint() * Gluon({t, x, ym, z, 3}).adjoint() * Gluon({t, x, ym, z, 2})
-                   + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, zm, 3}).adjoint() * Gluon({t, x, ym, zm, 2}) * Gluon({t, x, y, zm, 3})
-                   + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3}) * Gluon({t, x, y, z, 2}).adjoint();
+        Clov[2][3] = U({t, x, y, z, 2})            * U({t, x, yp, z, 3})            * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                   + U({t, x, y, z, 3})            * U({t, x, ym, zp, 2}).adjoint() * U({t, x, ym, z, 3}).adjoint() * U({t, x, ym, z, 2})
+                   + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, zm, 3}).adjoint() * U({t, x, ym, zm, 2})          * U({t, x, y, zm, 3})
+                   + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
         Clov[3][2] = Clov[2][3].adjoint();
         Clov[3][3].setZero();
         // TODO: Use symmetry of F_mu,nu
@@ -95,7 +95,7 @@ double TopChargeGluonic(const GaugeField& Gluon) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
+double TopChargeGluonicSymm(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -119,48 +119,48 @@ double TopChargeGluonicSymm(const GaugeField& Gluon) noexcept
         // Calculate clover term using Q_mu,nu = Q_nu,mu^{dagger}
         // TODO: Rewrite using plaquette function?
         // Clov[0][0].setZero();
-        Clov[0] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() * Gluon({t, x, y, z, 1}).adjoint()
-                + Gluon({t, x, y, z, 1}) * Gluon({tm, xp, y, z, 0}).adjoint() * Gluon({tm, x, y, z, 1}).adjoint() * Gluon({tm, x, y, z, 0})
-                + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, xm, y, z, 1}).adjoint() * Gluon({tm, xm, y, z, 0}) * Gluon({t, xm, y, z, 1})
-                + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, z, 0}) * Gluon({tp, xm, y, z, 1}) * Gluon({t, x, y, z, 0}).adjoint();
-        // Clov[0] = PlaquetteI(Gluon, current_site, 0, 1) + PlaquetteII(Gluon, current_site, 0, 1) + PlaquetteIII(Gluon, current_site, 0, 1) + PlaquetteIV(Gluon, current_site, 0, 1);
+        Clov[0] = U({t, x, y, z, 0})            * U({tp, x, y, z, 1})            * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint()
+                + U({t, x, y, z, 1})            * U({tm, xp, y, z, 0}).adjoint() * U({tm, x, y, z, 1}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, xm, y, z, 1}).adjoint() * U({tm, xm, y, z, 0})          * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0})            * U({tp, xm, y, z, 1})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[0] = PlaquetteI(U, current_site, 0, 1) + PlaquetteII(U, current_site, 0, 1) + PlaquetteIII(U, current_site, 0, 1) + PlaquetteIV(U, current_site, 0, 1);
         // Clov[1][0] = Clov[0][1].adjoint();
 
-        Clov[1] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                + Gluon({t, x, y, z, 2}) * Gluon({tm, x, yp, z, 0}).adjoint() * Gluon({tm, x, y, z, 2}).adjoint() * Gluon({tm, x, y, z, 0})
-                + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, ym, z, 2}).adjoint() * Gluon({tm, x, ym, z, 0}) * Gluon({t, x, ym, z, 2})
-                + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 0}) * Gluon({tp, x, ym, z, 2}) * Gluon({t, x, y, z, 0}).adjoint();
-        // Clov[1] = PlaquetteI(Gluon, current_site, 0, 2) + PlaquetteII(Gluon, current_site, 0, 2) + PlaquetteIII(Gluon, current_site, 0, 2) + PlaquetteIV(Gluon, current_site, 0, 2);
+        Clov[1] = U({t, x, y, z, 0})            * U({tp, x, y, z, 2})            * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                + U({t, x, y, z, 2})            * U({tm, x, yp, z, 0}).adjoint() * U({tm, x, y, z, 2}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, x, ym, z, 2}).adjoint() * U({tm, x, ym, z, 0})          * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0})            * U({tp, x, ym, z, 2})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[1] = PlaquetteI(U, current_site, 0, 2) + PlaquetteII(U, current_site, 0, 2) + PlaquetteIII(U, current_site, 0, 2) + PlaquetteIV(U, current_site, 0, 2);
         // Clov[2][0] = Clov[0][2].adjoint();
 
-        Clov[2] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                + Gluon({t, x, y, z, 3}) * Gluon({tm, x, y, zp, 0}).adjoint() * Gluon({tm, x, y, z, 3}).adjoint() * Gluon({tm, x, y, z, 0})
-                + Gluon({tm, x, y, z, 0}).adjoint() * Gluon({tm, x, y, zm, 3}).adjoint() * Gluon({tm, x, y, zm, 0}) * Gluon({t, x, y, zm, 3})
-                + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 0}) * Gluon({tp, x, y, zm, 3}) * Gluon({t, x, y, z, 0}).adjoint();
-        // Clov[2] = PlaquetteI(Gluon, current_site, 0, 3) + PlaquetteII(Gluon, current_site, 0, 3) + PlaquetteIII(Gluon, current_site, 0, 3) + PlaquetteIV(Gluon, current_site, 0, 3);
+        Clov[2] = U({t, x, y, z, 0})            * U({tp, x, y, z, 3})            * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({tm, x, y, zp, 0}).adjoint() * U({tm, x, y, z, 3}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, zm, 3}).adjoint() * U({tm, x, y, zm, 0})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0})            * U({tp, x, y, zm, 3})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[2] = PlaquetteI(U, current_site, 0, 3) + PlaquetteII(U, current_site, 0, 3) + PlaquetteIII(U, current_site, 0, 3) + PlaquetteIV(U, current_site, 0, 3);
         // Clov[3][0] = Clov[0][3].adjoint();
 
         // Clov[1]1.setZero();
-        Clov[3] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() * Gluon({t, x, y, z, 2}).adjoint()
-                + Gluon({t, x, y, z, 2}) * Gluon({t, xm, yp, z, 1}).adjoint() * Gluon({t, xm, y, z, 2}).adjoint() * Gluon({t, xm, y, z, 1})
-                + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, ym, z, 2}).adjoint() * Gluon({t, xm, ym, z, 1}) * Gluon({t, x, ym, z, 2})
-                + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, z, 1}) * Gluon({t, xp, ym, z, 2}) * Gluon({t, x, y, z, 1}).adjoint();
-        // Clov[3] = PlaquetteI(Gluon, current_site, 1, 2) + PlaquetteII(Gluon, current_site, 1, 2) + PlaquetteIII(Gluon, current_site, 1, 2) + PlaquetteIV(Gluon, current_site, 1, 2);
+        Clov[3] = U({t, x, y, z, 1})            * U({t, xp, y, z, 2})            * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                + U({t, x, y, z, 2})            * U({t, xm, yp, z, 1}).adjoint() * U({t, xm, y, z, 2}).adjoint() * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, ym, z, 2}).adjoint() * U({t, xm, ym, z, 1})          * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1})            * U({t, xp, ym, z, 2})          * U({t, x, y, z, 1}).adjoint();
+        // Clov[3] = PlaquetteI(U, current_site, 1, 2) + PlaquetteII(U, current_site, 1, 2) + PlaquetteIII(U, current_site, 1, 2) + PlaquetteIV(U, current_site, 1, 2);
         // Clov[2][1] = Clov[1][2].adjoint();
 
-        Clov[4] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                + Gluon({t, x, y, z, 3}) * Gluon({t, xm, y, zp, 1}).adjoint() * Gluon({t, xm, y, z, 3}).adjoint() * Gluon({t, xm, y, z, 1})
-                + Gluon({t, xm, y, z, 1}).adjoint() * Gluon({t, xm, y, zm, 3}).adjoint() * Gluon({t, xm, y, zm, 1}) * Gluon({t, x, y, zm, 3})
-                + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 1}) * Gluon({t, xp, y, zm, 3}) * Gluon({t, x, y, z, 1}).adjoint();
-        // Clov[4] = PlaquetteI(Gluon, current_site, 1, 3) + PlaquetteII(Gluon, current_site, 1, 3) + PlaquetteIII(Gluon, current_site, 1, 3) + PlaquetteIV(Gluon, current_site, 1, 3);
+        Clov[4] = U({t, x, y, z, 1})            * U({t, xp, y, z, 3})            * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({t, xm, y, zp, 1}).adjoint() * U({t, xm, y, z, 3}).adjoint() * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, zm, 3}).adjoint() * U({t, xm, y, zm, 1})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1})            * U({t, xp, y, zm, 3})          * U({t, x, y, z, 1}).adjoint();
+        // Clov[4] = PlaquetteI(U, current_site, 1, 3) + PlaquetteII(U, current_site, 1, 3) + PlaquetteIII(U, current_site, 1, 3) + PlaquetteIV(U, current_site, 1, 3);
         // Clov[3][1] = Clov[1][3].adjoint();
 
         // Clov[2][2].setZero();
-        Clov[5] = Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() * Gluon({t, x, y, z, 3}).adjoint()
-                + Gluon({t, x, y, z, 3}) * Gluon({t, x, ym, zp, 2}).adjoint() * Gluon({t, x, ym, z, 3}).adjoint() * Gluon({t, x, ym, z, 2})
-                + Gluon({t, x, ym, z, 2}).adjoint() * Gluon({t, x, ym, zm, 3}).adjoint() * Gluon({t, x, ym, zm, 2}) * Gluon({t, x, y, zm, 3})
-                + Gluon({t, x, y, zm, 3}).adjoint() * Gluon({t, x, y, zm, 2}) * Gluon({t, x, yp, zm, 3}) * Gluon({t, x, y, z, 2}).adjoint();
-        // Clov[5] = PlaquetteI(Gluon, current_site, 2, 3) + PlaquetteII(Gluon, current_site, 2, 3) + PlaquetteIII(Gluon, current_site, 2, 3) + PlaquetteIV(Gluon, current_site, 2, 3);
+        Clov[5] = U({t, x, y, z, 2})            * U({t, x, yp, z, 3})            * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({t, x, ym, zp, 2}).adjoint() * U({t, x, ym, z, 3}).adjoint() * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, zm, 3}).adjoint() * U({t, x, ym, zm, 2})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
+        // Clov[5] = PlaquetteI(U, current_site, 2, 3) + PlaquetteII(U, current_site, 2, 3) + PlaquetteIII(U, current_site, 2, 3) + PlaquetteIV(U, current_site, 2, 3);
         // Clov[3][2] = Clov[2][3].adjoint();
         // Clov[3][3].setZero();
         // Version that uses the symmetry of F_mu,nu
@@ -231,7 +231,7 @@ double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
+double TopChargeGluonicUnimproved(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -249,24 +249,24 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
         // Calculate clover term
         // TODO: Rewrite using plaquette function?
         Clov[0][0].setZero();
-        Clov[0][1] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 1}) * Gluon({t, xp, y, z, 0}).adjoint() * Gluon({t, x, y, z, 1}).adjoint();
+        Clov[0][1] = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint();
         Clov[1][0] = Clov[0][1].adjoint();
 
-        Clov[0][2] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 2}) * Gluon({t, x, yp, z, 0}).adjoint() * Gluon({t, x, y, z, 2}).adjoint();
+        Clov[0][2] = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint();
         Clov[2][0] = Clov[0][2].adjoint();
 
-        Clov[0][3] = Gluon({t, x, y, z, 0}) * Gluon({tp, x, y, z, 3}) * Gluon({t, x, y, zp, 0}).adjoint() * Gluon({t, x, y, z, 3}).adjoint();
+        Clov[0][3] = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint();
         Clov[3][0] = Clov[0][3].adjoint();
 
         Clov[1][1].setZero();
-        Clov[1][2] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 2}) * Gluon({t, x, yp, z, 1}).adjoint() * Gluon({t, x, y, z, 2}).adjoint();
+        Clov[1][2] = U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint();
         Clov[2][1] = Clov[1][2].adjoint();
 
-        Clov[1][3] = Gluon({t, x, y, z, 1}) * Gluon({t, xp, y, z, 3}) * Gluon({t, x, y, zp, 1}).adjoint() * Gluon({t, x, y, z, 3}).adjoint();
+        Clov[1][3] = U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint();
         Clov[3][1] = Clov[1][3].adjoint();
 
         Clov[2][2].setZero();
-        Clov[2][3] = Gluon({t, x, y, z, 2}) * Gluon({t, x, yp, z, 3}) * Gluon({t, x, y, zp, 2}).adjoint() * Gluon({t, x, y, z, 3}).adjoint();
+        Clov[2][3] = U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint();
         Clov[3][2] = Clov[2][3].adjoint();
         Clov[3][3].setZero();
         for (int mu = 0; mu < 4; ++mu)
@@ -288,7 +288,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 // {
 
 //     [[nodiscard]]
-//     double PlaquetteChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     double PlaquetteChargeFromGaugeField(const GaugeField& U) noexcept
 //     {
 //         //
 //     }
@@ -300,7 +300,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 //     }
 
 //     [[nodiscard]]
-//     double CloverChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     double CloverChargeFromGaugeField(const GaugeField& U) noexcept
 //     {
 //         //
 //     }
@@ -318,7 +318,7 @@ double TopChargeGluonicUnimproved(const GaugeField& Gluon) noexcept
 //     }
 
 //     [[nodiscard]]
-//     double ImprovedCloverChargeFromGaugeField(const GaugeField& Gluon) noexcept
+//     double ImprovedCloverChargeFromGaugeField(const GaugeField& U) noexcept
 //     {
 //         //
 //     }

@@ -31,7 +31,7 @@ template<typename floatT, typename ActionT>
 struct HeatbathKernel
 {
     private:
-        GaugeField&                             Gluon;
+        GaugeField&                             U;
         // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
         ActionT&                                Action;
         std::uniform_real_distribution<floatT>& distribution_uniform;
@@ -103,29 +103,29 @@ struct HeatbathKernel
             return {SU2_comp<floatT> {std::complex<floatT> (x0, x1), std::complex<floatT> (x2, x3)} * V.adjoint()};
         }
     public:
-        explicit HeatbathKernel(GaugeField& Gluon_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
-        Gluon(Gluon_in), Action(Action_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
+        explicit HeatbathKernel(GaugeField& U_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_uniform_in, const int max_iteration_in = 10) noexcept :
+        U(U_in), Action(Action_in), distribution_uniform(distribution_uniform_in), max_iteration(max_iteration_in)
         {}
 
         void operator()(const link_coord& current_link) const noexcept
         {
             SU2_comp<floatT> subblock;
             // Note: Our staple definition corresponds to the daggered staple in Gattringer & Lang, therefore use adjoint
-            Matrix_3x3       st_adj {(Action.Staple(Gluon, current_link)).adjoint()};
+            Matrix_3x3       st_adj {(Action.Staple(U, current_link)).adjoint()};
             //-----
             // Update (0, 1) subgroup
-            subblock            = Extract01<floatT>(Gluon(current_link) * st_adj);
-            Gluon(current_link) = Embed01(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(current_link);
+            subblock        = Extract01<floatT>(U(current_link) * st_adj);
+            U(current_link) = Embed01(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * U(current_link);
             //-----
             // Update (0, 2) subgroup
-            subblock            = Extract02<floatT>(Gluon(current_link) * st_adj);
-            Gluon(current_link) = Embed02(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(current_link);
+            subblock        = Extract02<floatT>(U(current_link) * st_adj);
+            U(current_link) = Embed02(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * U(current_link);
             //-----
             // Update (1, 2) subgroup
-            subblock            = Extract12<floatT>(Gluon(current_link) * st_adj);
-            Gluon(current_link) = Embed12(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * Gluon(current_link);
+            subblock        = Extract12<floatT>(U(current_link) * st_adj);
+            U(current_link) = Embed12(HeatbathSU2(subblock, prefactor, distribution_uniform, max_iteration)) * U(current_link);
             //-----
-            SU3::Projection::GramSchmidt(Gluon(current_link));
+            SU3::Projection::GramSchmidt(U(current_link));
         }
 };
 
@@ -134,11 +134,11 @@ struct HeatbathKernel
 // struct HeatbathPietarinenKernel
 // {
 //     private:
-//         GaugeField& Gluon;
+//         GaugeField& U;
 //         std::uniform_real_distribution<floatT>& distribution_uniform;
 //     public:
-//         explicit HeatbathPietarinenKernel(GaugeField& Gluon_in, std::uniform_real_distribution<floatT>& distribution_uniform_in) noexcept :
-//         Gluon(Gluon_in), distribution_uniform(distribution_uniform_in)
+//         explicit HeatbathPietarinenKernel(GaugeField& U_in, std::uniform_real_distribution<floatT>& distribution_uniform_in) noexcept :
+//         U(U_in), distribution_uniform(distribution_uniform_in)
 //         {}
 
 //         void operator()(const link_coord& current_link) const noexcept

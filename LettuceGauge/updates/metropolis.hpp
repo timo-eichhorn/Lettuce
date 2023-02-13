@@ -28,7 +28,7 @@ template<typename ActionT>
 struct MetropolisKernel
 {
     private:
-        GaugeField&                             Gluon;
+        GaugeField&                             U;
         // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
         ActionT&                                Action;
         int                                     n_hit;
@@ -39,14 +39,14 @@ struct MetropolisKernel
         // TODO: Should we track the acceptance rates in the functors? Might be annoying to deal with when changing parameters/creating new instances of functors...
         //       Also unclear how to combine with parallelization
     public:
-        explicit MetropolisKernel(GaugeField& Gluon_in, ActionT& Action_in, const int n_hit_in, std::uniform_real_distribution<floatT>& distribution_prob_in, std::uniform_real_distribution<floatT>& distribution_unitary_in, std::uniform_int_distribution<int>& distribution_choice_in) noexcept :
-        Gluon(Gluon_in), Action(Action_in), n_hit(n_hit_in), distribution_prob(distribution_prob_in), distribution_unitary(distribution_unitary_in), distribution_choice(distribution_choice_in)
+        explicit MetropolisKernel(GaugeField& U_in, ActionT& Action_in, const int n_hit_in, std::uniform_real_distribution<floatT>& distribution_prob_in, std::uniform_real_distribution<floatT>& distribution_unitary_in, std::uniform_int_distribution<int>& distribution_choice_in) noexcept :
+        U(U_in), Action(Action_in), n_hit(n_hit_in), distribution_prob(distribution_prob_in), distribution_unitary(distribution_unitary_in), distribution_choice(distribution_choice_in)
         {}
 
         int operator()(const link_coord& current_link) const noexcept
         {
-            Matrix_3x3 st           {Action.Staple(Gluon, current_link)};
-            Matrix_SU3 old_link     {Gluon(current_link)};
+            Matrix_3x3 st           {Action.Staple(U, current_link)};
+            Matrix_SU3 old_link     {U(current_link)};
             double     S_old        {Action.Local(old_link, st)};
             int        accept_count {0};
 
@@ -81,13 +81,13 @@ struct MetropolisKernel
                 // CAUTION: We would want to check if q <= p, since for beta = 0 everything should be accepted
                 // Unfortunately signbit(0) returns false... Is there way to fix this?
                 // bool accept {std::signbit(q - p)};
-                // Gluon[t][x][y][z][mu] = accept * new_link + (!accept) * old_link;
+                // U[t][x][y][z][mu] = accept * new_link + (!accept) * old_link;
                 // old_link = accept * new_link + (!accept) * old_link;
                 // s = accept * sprime + (!accept) * s;
                 // accept_count += accept;
                 if (q <= p)
                 {
-                    Gluon(current_link) = new_link;
+                    U(current_link) = new_link;
                     old_link = new_link;
                     S_old = S_new;
                     accept_count += 1;
@@ -95,7 +95,7 @@ struct MetropolisKernel
                 // auto end_accept_reject = std::chrono::high_resolution_clock::now();
                 // accept_reject_time += end_accept_reject - start_accept_reject;
             }
-            SU3::Projection::GramSchmidt(Gluon(current_link));
+            SU3::Projection::GramSchmidt(U(current_link));
             // TODO: Since we currently count how many of the individual hits are accepted, accept_count can generally exceed 1 and thus can't be a bool
             //       This is inconsistent compared to the other update functors. Is this okay, or should we rather only track if at least one out of the
             //       n_hit hits is accepted?
@@ -122,7 +122,7 @@ struct MetropolisKernel
 //-----
 // Metropolis update routine (original version)
 
-// void MetropolisUpdate(GaugeField& Gluon, const int n_sweep, uint_fast64_t& acceptance_count, floatT& epsilon, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
+// void MetropolisUpdate(GaugeField& U, const int n_sweep, uint_fast64_t& acceptance_count, floatT& epsilon, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
 // {
 //     acceptance_count = 0;
 
@@ -144,12 +144,12 @@ struct MetropolisKernel
 //             for (int z = offset; z < Nz; z+=2)
 //             {
 //                 // auto start_staple = std::chrono::high_resolution_clock::now();
-//                 Matrix_3x3 st {WilsonAction::Staple(Gluon, {t, x, y, z}, mu)};
+//                 Matrix_3x3 st {WilsonAction::Staple(U, {t, x, y, z}, mu)};
 //                 // auto end_staple = std::chrono::high_resolution_clock::now();
 //                 // staple_time += end_staple - start_staple;
 
 //                 // auto start_local = std::chrono::high_resolution_clock::now();
-//                 Matrix_SU3 old_link {Gluon({t, x, y, z, mu})};
+//                 Matrix_SU3 old_link {U({t, x, y, z, mu})};
 //                 double s {WilsonAction::Local(old_link, st)};
 //                 // auto end_local = std::chrono::high_resolution_clock::now();
 //                 // local_time += end_local - start_local;
@@ -195,13 +195,13 @@ struct MetropolisKernel
 //                     // CAUTION: We would want to check if q <= p, since for beta = 0 everything should be accepted
 //                     // Unfortunately signbit(0) returns false... Is there way to fix this?
 //                     // bool accept {std::signbit(q - p)};
-//                     // Gluon[t][x][y][z][mu] = accept * new_link + (!accept) * old_link;
+//                     // U[t][x][y][z][mu] = accept * new_link + (!accept) * old_link;
 //                     // old_link = accept * new_link + (!accept) * old_link;
 //                     // s = accept * sprime + (!accept) * s;
 //                     // acceptance_count += accept;
 //                     if (q <= p)
 //                     {
-//                         Gluon({t, x, y, z, mu}) = new_link;
+//                         U({t, x, y, z, mu}) = new_link;
 //                         old_link = new_link;
 //                         s = sprime;
 //                         acceptance_count += 1;
@@ -209,7 +209,7 @@ struct MetropolisKernel
 //                     // auto end_accept_reject = std::chrono::high_resolution_clock::now();
 //                     // accept_reject_time += end_accept_reject - start_accept_reject;
 //                 }
-//                 SU3::Projection::GramSchmidt(Gluon({t, x, y, z, mu}));
+//                 SU3::Projection::GramSchmidt(U({t, x, y, z, mu}));
 //             }
 //         }
 //     }
