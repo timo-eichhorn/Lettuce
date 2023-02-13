@@ -2,7 +2,8 @@
 #define LETTUCE_DEFINES_HPP
 
 // Non-standard library headers
-#include "math/random/pcg/pcg_random.hpp"
+// #include "math/random/pcg/pcg_random.hpp"
+#include "../PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Dense>
 //----------------------------------------
