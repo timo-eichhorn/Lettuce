@@ -31,6 +31,8 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
+#include "LettuceGauge/updates/overrelaxation.hpp" 
+#include "LettuceGauge/updates/tempering.hpp" // NEW //
 //-----
 #include "PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
@@ -162,6 +164,7 @@ void Configuration()
     std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
+    std::cout << "tempering_enabled is "           << tempering_enabled << " and tempering_period is " << tempering period << ".\n"; \\ NEW \\
 }
 
 //-----
@@ -201,6 +204,8 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
     datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
     datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
+    datalog << "tempering_enabled = "       << tempering_enabled       << "\n"; \\ NEW \\
+    datalog << "tempering_period = "        << tempering_period        << "\n"; \\ NEW \\
     datalog << "END_PARAMS\n"               << std::endl;
     datalog.close();
     datalog.clear();
@@ -259,7 +264,7 @@ void CreateFiles()
 // Print final parameters to a specified ostream
 
 template<typename floatT>
-void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const uint_fast64_t acceptance_count_metadynamics_hmc, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
+void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const uint_fast64_t acceptance_count_metadynamics_hmc, const uint_fast64_t acceptance_count_tempering, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
 {
     double or_norm        {1.0};
     if constexpr(n_orelax != 0)
@@ -282,6 +287,7 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "HMC acceptance: "          << acceptance_count_hmc * hmc_norm              << "\n";
     log << "MetaD-HMC acceptance: "    << acceptance_count_metadynamics_hmc * hmc_norm << "\n";
     log << "Instanton acceptance: "    << acceptance_count_instanton * instanton_norm  << "\n";
+    log << "Tempering acceptance: "    << acceptance_count_tempering                   << "\n"; // NEW //
     log << "epsilon: "                 << epsilon                                      << "\n";
     log << std::ctime(&end_time)                                                       << "\n";
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
@@ -442,6 +448,9 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
     // WilsonFlowForward(Gluon_copy, epsilon, n_flow);
     // return TopChargeGluonicSymm(Gluon_copy);
 }
+
+
+
 
 //-----
 // Calculates and writes observables to logfile
@@ -652,6 +661,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     if constexpr(n_instanton_update != 0)
     {
         datalog << "DeltaSInstanton: " << DeltaSInstanton << "\n";
+    }
+    if constexpr(tempering_enabled)
+    {
+        datalog << "DeltaV: " << DeltaV << "\n";
     }
     //-----
     datalog << "Wilson_Action: ";
@@ -906,7 +919,7 @@ int main()
     }
 
     // Updates with Metadynamics
-    if constexpr(metadynamics_enabled)
+    if constexpr(metadynamics_enabled) && constexpr(~tempering_enabled) 
     {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
@@ -949,6 +962,86 @@ int main()
         }
     }
 
+    // Updates with Metadynamics enabled Parallel Tempering
+    if constexpr(metadynamics_enabled) && constexpr(tempering_enabled) 
+    {   
+        GaugeField                   GluonTemper;
+        GaugeField                   GluonsmearedTemper1;
+        GaugeField                   GluonsmearedTemper2;
+        GaugeField                   GluonchainTemper;
+        // CV_min, CV_max, bin_number, weight, threshold_weight
+        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        // TopBiasPotential.LoadPotential("SU(3)_N=16x16x16x16_beta=1.220000/metapotential.txt");
+        // TopBiasPotential.LoadPotential("metapotential.txt");
+        // TopBiasPotential.SymmetrizePotential();
+        // TopBiasPotential.SymmetrizePotentialMaximum();
+        // TopBiasPotential.Setweight(0.005);
+        TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
+        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        GaugeUpdates::HMCMetaDKernel HMCMetaD(GluonTemper, GluonsmearedTemper1, GluonsmearedTemper2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+
+        // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
+        datalog << "[Start thermalization]\n";
+        for (int i = 0; i < 20; ++i)
+        {
+            // Thermalize MetaD Stream with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
+            HMC(10, false);
+            // Thermalize Regular Stream
+            if constexpr(n_hmc != 0)
+            {
+                HMC(10, false);
+            }
+            else
+            {
+                Iterator::Checkerboard4(Heatbath, n_heatbath);
+                Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
+            }
+        }
+        datalog << "[End thermalization]\n" << std::endl;
+
+        for (int n_count = 0; n_count < n_run; ++n_count)
+        {
+
+            HMCMetaD(n_hmc, true);
+
+            if constexpr(n_metro != 0 and multi_hit != 0)
+            {
+                std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
+                MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
+                Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
+                epsilon = Metropolis.AdjustedEpsilon(epsilon, acceptance_count);
+                acceptance_count = 0;
+            }
+            if constexpr(n_heatbath != 0)
+            {
+                Iterator::Checkerboard4(Heatbath, n_heatbath);
+            }
+            if constexpr(n_hmc != 0)
+            {
+                HMC(n_hmc, true);
+            }
+            if constexpr(n_orelax != 0)
+            {
+                Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
+            }
+
+            if (n_count % expectation_period == 0)
+            {
+                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
+                Observables(GluonTemper, GluonchainTemper, TopBiasPotential, wilsonlog, n_count, n_smear);
+                if constexpr(metapotential_updated)
+                {
+                    TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+                }
+            }
+
+            if (n_count % tempering_period == 0)
+            {
+                MetadynamicsTempering(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, GluonTemper, acceptance_count_tempering, true, distribution_prob, distribution_uniform)
+            }
+        }
+    }
+
     auto end {std::chrono::system_clock::now()};
     std::chrono::duration<double> elapsed_seconds {end - startcalc};
     std::time_t end_time {std::chrono::system_clock::to_time_t(end)};
@@ -957,18 +1050,18 @@ int main()
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 
     std::cout << "\n";
-    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, epsilon, end_time, elapsed_seconds);
+    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
 
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
 
     datalog.open(parameterfilepath, std::fstream::out | std::fstream::app);
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
 
-    PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, epsilon, end_time, elapsed_seconds);
+    PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
     wilsonlog.close();
     wilsonlog.clear();
 }
