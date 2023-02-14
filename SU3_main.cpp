@@ -446,7 +446,7 @@ double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& 
 //-----
 // Calculates and writes observables to logfile
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const bool print_newline = true)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& datalog, const int n_count, const int n_smear, const bool print_newline = true)
 {
     vector<double>               Action(n_smear + 1);
     vector<double>               ActionImproved(n_smear + 1);
@@ -721,10 +721,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& datalog, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, false);
+    Observables(Gluon, Gluonchain, datalog, n_count, n_smear, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
     datalog << "CV_MetaD: " << CV_current << "\n";
@@ -873,34 +873,34 @@ int main()
             if (n_count % expectation_period == 0)
             {
                 // auto start_observable = std::chrono::system_clock::now();
-                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
                 // auto end_observable = std::chrono::system_clock::now();
                 // std::chrono::duration<double> observable_time {end_observable - start_observable};
                 // std::cout << "Time for calculating observables: " << observable_time.count() << std::endl;
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.12);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.12);
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.08);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.08);
 
                 // n_smear = 300;
                 // n_smear_skip = 2;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.04);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.04);
 
                 // n_smear = 300;
                 // n_smear_skip = 4;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.02);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.02);
 
                 // n_smear = 300;
                 // n_smear_skip = 8;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.01);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.01);
 
                 // n_smear = 300;
                 // n_smear_skip = 16;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.005);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.005);
             }
         }
     }
@@ -939,7 +939,7 @@ int main()
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear);
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
