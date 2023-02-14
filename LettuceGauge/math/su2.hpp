@@ -24,7 +24,8 @@ class SU2_comp
     public:
         std::complex<floatT> e11, e12;
 
-        SU2_comp() noexcept {};
+        // SU2_comp() noexcept {};
+        SU2_comp() noexcept = default;
 
         SU2_comp(std::complex<floatT> e11_in, std::complex<floatT> e12_in) noexcept : e11(e11_in), e12(e12_in) {}
 
