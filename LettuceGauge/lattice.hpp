@@ -125,7 +125,7 @@ class GaugeField4D
         //     }
         // Copy assignment
         // We don't need assignment chaining, so return void instead of GaugeField4D&
-        // TODO: Is this okay? Correctness, performance?
+        // TODO: Is this okay performance wise?
         void operator=(const GaugeField4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
@@ -224,6 +224,11 @@ class GaugeField4D
                 default:
                     return 0;
             }
+        }
+        // TODO: Use site_coord or something different?
+        site_coord Shape() const noexcept
+        {
+            return {Nt, Nx, Ny, Nz};
         }
         friend std::ostream& operator<<(std::ostream& stream, const GaugeField4D& field)
         {
