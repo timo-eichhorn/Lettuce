@@ -67,6 +67,8 @@ inline constexpr int n_instanton_update {0};                // Number of instant
 inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not
 inline constexpr bool metapotential_updated {true};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr int n_smear_meta {4};                      // Number of smearing steps for topological charge used in Metadynamics
+inline constexpr bool tempering_enabled {false};             // Enable tempering updates or not
+inline constexpr int tempering_period{1};                                       // Number of updates between parallel tempering swap attempts
 inline double metro_norm {1.0};                             // Norm for Metropolis update. CAUTION: Needs to be set to correct value inside Configuration() function
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
 // inline constexpr double metro_norm {1.0 / (Nt * Nx * Ny * Nz * 4.0 * multi_hit)};
@@ -75,6 +77,7 @@ inline constexpr double full_norm {1.0 / (Nt * Nx * Ny * Nz)};
 inline constexpr double spatial_norm {1.0 / (Nx * Ny * Nz)};
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
+double DeltaV;                                              // Metapotential change of Tempering Swap proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
 int append;                                                 // Directory name appendix
 std::string appendString;                                   // Directory name appendix (string)
@@ -103,6 +106,7 @@ uint_fast64_t acceptance_count_or                {0};       // Overrelaxation ac
 uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
 uint_fast64_t acceptance_count_metadynamics_hmc  {0};       // MetaD-HMC acceptance rate
 uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
+uint_fast64_t acceptance_count_tempering         {0};       // Parallel Tempering swap acceptance rate
 
 //-----
 
