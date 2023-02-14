@@ -164,7 +164,7 @@ void Configuration()
     std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
-    std::cout << "tempering_enabled is "           << tempering_enabled << " and tempering_period is " << tempering period << ".\n"; \\ NEW \\
+    std::cout << "tempering_enabled is "           << tempering_enabled << " and tempering_period is " << tempering period << ".\n"; 
 }
 
 //-----
@@ -204,8 +204,8 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
     datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
     datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
-    datalog << "tempering_enabled = "       << tempering_enabled       << "\n"; \\ NEW \\
-    datalog << "tempering_period = "        << tempering_period        << "\n"; \\ NEW \\
+    datalog << "tempering_enabled = "       << tempering_enabled       << "\n"; 
+    datalog << "tempering_period = "        << tempering_period        << "\n"; 
     datalog << "END_PARAMS\n"               << std::endl;
     datalog.close();
     datalog.clear();
