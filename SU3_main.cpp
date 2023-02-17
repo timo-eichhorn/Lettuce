@@ -31,8 +31,7 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
-#include "LettuceGauge/updates/overrelaxation.hpp" 
-#include "LettuceGauge/updates/tempering.hpp" // NEW //
+#include "LettuceGauge/updates/tempering.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
@@ -164,7 +163,7 @@ void Configuration()
     std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
-    std::cout << "tempering_enabled is "           << tempering_enabled << " and tempering_period is " << tempering period << ".\n"; 
+    std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
 }
 
 //-----
@@ -183,30 +182,31 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     #endif
     datalog << starttimestring << "\n";
     datalog << "START_PARAMS\n";
-    datalog << "Gauge field precision = "   << typeid(floatT).name()   << "\n";
-    datalog << "Nt = "                      << Nt                      << "\n";
-    datalog << "Nx = "                      << Nx                      << "\n";
-    datalog << "Ny = "                      << Ny                      << "\n";
-    datalog << "Nz = "                      << Nz                      << "\n";
-    datalog << "beta = "                    << beta                    << "\n";
-    datalog << "n_run = "                   << n_run                   << "\n";
-    datalog << "expectation_period = "      << expectation_period      << "\n";
-    datalog << "n_smear = "                 << n_smear                 << "\n";
-    datalog << "n_smear_skip = "            << n_smear_skip            << "\n";
-    datalog << "rho_stout = "               << rho_stout               << "\n";
-    datalog << "n_metro = "                 << n_metro                 << "\n";
-    datalog << "multi_hit = "               << multi_hit               << "\n";
-    datalog << "metro_target_acceptance = " << metro_target_acceptance << "\n";
-    datalog << "n_heatbath = "              << n_heatbath              << "\n";
-    datalog << "n_hmc = "                   << n_hmc                   << "\n";
-    datalog << "n_orelax = "                << n_orelax                << "\n";
-    datalog << "n_instanton_update = "      << n_instanton_update      << "\n";
-    datalog << "metadynamics_enabled = "    << metadynamics_enabled    << "\n";
-    datalog << "metapotential_updated = "   << metapotential_updated   << "\n";
-    datalog << "n_smear_meta = "            << n_smear_meta            << "\n";
-    datalog << "tempering_enabled = "       << tempering_enabled       << "\n"; 
-    datalog << "tempering_period = "        << tempering_period        << "\n"; 
-    datalog << "END_PARAMS\n"               << std::endl;
+    datalog << "Gauge field precision = "        << typeid(floatT).name()        << "\n";
+    datalog << "Nt = "                           << Nt                           << "\n";
+    datalog << "Nx = "                           << Nx                           << "\n";
+    datalog << "Ny = "                           << Ny                           << "\n";
+    datalog << "Nz = "                           << Nz                           << "\n";
+    datalog << "beta = "                         << beta                         << "\n";
+    datalog << "n_run = "                        << n_run                        << "\n";
+    datalog << "expectation_period = "           << expectation_period           << "\n";
+    datalog << "n_smear = "                      << n_smear                      << "\n";
+    datalog << "n_smear_skip = "                 << n_smear_skip                 << "\n";
+    datalog << "rho_stout = "                    << rho_stout                    << "\n";
+    datalog << "n_metro = "                      << n_metro                      << "\n";
+    datalog << "multi_hit = "                    << multi_hit                    << "\n";
+    datalog << "metro_target_acceptance = "      << metro_target_acceptance      << "\n";
+    datalog << "n_heatbath = "                   << n_heatbath                   << "\n";
+    datalog << "n_hmc = "                        << n_hmc                        << "\n";
+    datalog << "n_orelax = "                     << n_orelax                     << "\n";
+    datalog << "n_instanton_update = "           << n_instanton_update           << "\n";
+    datalog << "metadynamics_enabled = "         << metadynamics_enabled         << "\n";
+    datalog << "metapotential_updated = "        << metapotential_updated        << "\n";
+    datalog << "n_smear_meta = "                 << n_smear_meta                 << "\n";
+    datalog << "tempering_enabled = "            << tempering_enabled            << "\n";
+    datalog << "tempering_metadynamics_ratio = " << tempering_metadynamics_ratio << "\n";
+    datalog << "tempering_swap_period = "        << tempering_swap_period        << "\n";
+    datalog << "END_PARAMS\n"                    << std::endl;
     datalog.close();
     datalog.clear();
 }
@@ -276,6 +276,11 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     {
         hmc_norm       = 1.0 / n_run;
     }
+    double tempering_norm {1.0};
+    if constexpr(tempering_enabled)
+    {
+        tempering_norm = tempering_swap_period / n_run;
+    }
     double instanton_norm {1.0};
     if constexpr(n_instanton_update != 0)
     {
@@ -286,8 +291,8 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "OR acceptance: "           << acceptance_count_or * or_norm                << "\n";
     log << "HMC acceptance: "          << acceptance_count_hmc * hmc_norm              << "\n";
     log << "MetaD-HMC acceptance: "    << acceptance_count_metadynamics_hmc * hmc_norm << "\n";
+    log << "Tempering acceptance: "    << acceptance_count_tempering * tempering_norm  << "\n";
     log << "Instanton acceptance: "    << acceptance_count_instanton * instanton_norm  << "\n";
-    log << "Tempering acceptance: "    << acceptance_count_tempering                   << "\n"; // NEW //
     log << "epsilon: "                 << epsilon                                      << "\n";
     log << std::ctime(&end_time)                                                       << "\n";
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
@@ -427,35 +432,33 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
     }
 }
 
-double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& Gluon_copy2, const int n_smear, const double smear_param)
-{
-    /*StoutSmearing4D(Gluon, Gluon1);*/
-    Gluon_copy1 = Gluon;
-    StoutSmearingN(Gluon_copy1, Gluon_copy2, n_smear, smear_param);
-    // TODO: Probably need to rewrite StoutSmearingN so we don't have to manually keep track
-    // For even n_smear, we need to use Gluon1, for odd n_smear we need to use Gluon2!
-    // See description of StoutSmearingN()
-    if (n_smear % 2 == 0)
-    {
-        return TopChargeGluonicSymm(Gluon_copy1);
-    }
-    else
-    {
-        return TopChargeGluonicSymm(Gluon_copy2);
-    }
-    // Old version
-    // Gluon_copy = Gluon;
-    // WilsonFlowForward(Gluon_copy, epsilon, n_flow);
-    // return TopChargeGluonicSymm(Gluon_copy);
-}
-
-
-
+// TODO: Old version, can probably delete this
+// double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& Gluon_copy2, const int n_smear, const double smear_param)
+// {
+//     /*StoutSmearing4D(Gluon, Gluon1);*/
+//     Gluon_copy1 = Gluon;
+//     StoutSmearingN(Gluon_copy1, Gluon_copy2, n_smear, smear_param);
+//     // TODO: Probably need to rewrite StoutSmearingN so we don't have to manually keep track
+//     // For even n_smear, we need to use Gluon1, for odd n_smear we need to use Gluon2!
+//     // See description of StoutSmearingN()
+//     if (n_smear % 2 == 0)
+//     {
+//         return TopChargeGluonicSymm(Gluon_copy1);
+//     }
+//     else
+//     {
+//         return TopChargeGluonicSymm(Gluon_copy2);
+//     }
+//     // Old version
+//     // Gluon_copy = Gluon;
+//     // WilsonFlowForward(Gluon_copy, epsilon, n_flow);
+//     // return TopChargeGluonicSymm(Gluon_copy);
+// }
 
 //-----
 // Calculates and writes observables to logfile
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& wilsonlog, const int n_count, const int n_smear, const bool print_newline = true)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const bool print_newline = true)
 {
     vector<double>               Action(n_smear + 1);
     vector<double>               ActionImproved(n_smear + 1);
@@ -651,97 +654,97 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //-----
     // Write to logfile
     std::time_t log_time {std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())};
-    datalog << "[Step " << n_count << "] -" << std::put_time(std::localtime(&log_time), "%c") << "-\n";
-    datalog << "Smoothing method: " << Flow.ReturnIntegratorName() << "\n";
+    logstream << "[Step " << n_count << "] -" << std::put_time(std::localtime(&log_time), "%c") << "-\n";
+    logstream << "Smoothing method: " << Flow.ReturnIntegratorName() << "\n";
     //-----
     if constexpr(n_hmc != 0)
     {
-        datalog << "DeltaH: " << DeltaH << "\n";
+        logstream << "DeltaH: " << DeltaH << "\n";
+    }
+    if constexpr(metadynamics_enabled and tempering_enabled)
+    {
+        logstream << "DeltaVTempering: " << DeltaVTempering << "\n";
     }
     if constexpr(n_instanton_update != 0)
     {
-        datalog << "DeltaSInstanton: " << DeltaSInstanton << "\n";
-    }
-    if constexpr(tempering_enabled)
-    {
-        datalog << "DeltaV: " << DeltaV << "\n";
+        logstream << "DeltaSInstanton: " << DeltaSInstanton << "\n";
     }
     //-----
-    datalog << "Wilson_Action: ";
-    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(datalog, " "));
-    datalog << Action.back() << "\n";
+    logstream << "Wilson_Action: ";
+    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(Action), std::prev(std::cend(Action)), std::ostream_iterator<double>(logstream, " "));
+    logstream << Action.back() << "\n";
     //-----
-    datalog << "Improved_Action: ";
-    // std::copy(ActionImproved.cbegin(), std::prev(ActionImproved.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(ActionImproved), std::prev(std::cend(ActionImproved)), std::ostream_iterator<double>(datalog, " "));
-    datalog << ActionImproved.back() << "\n";
+    logstream << "Improved_Action: ";
+    // std::copy(ActionImproved.cbegin(), std::prev(ActionImproved.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(ActionImproved), std::prev(std::cend(ActionImproved)), std::ostream_iterator<double>(logstream, " "));
+    logstream << ActionImproved.back() << "\n";
     //-----
-    datalog << "Plaquette: ";
-    // std::copy(Plaquette.cbegin(), std::prev(Plaquette.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(Plaquette), std::prev(std::cend(Plaquette)), std::ostream_iterator<double>(datalog, " "));
-    datalog << Plaquette.back() << "\n";
+    logstream << "Plaquette: ";
+    // std::copy(Plaquette.cbegin(), std::prev(Plaquette.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(Plaquette), std::prev(std::cend(Plaquette)), std::ostream_iterator<double>(logstream, " "));
+    logstream << Plaquette.back() << "\n";
     //-----
-    datalog << "E_plaq: ";
-    // std::copy(EPlaqutte.cbegin(), std::prev(EPlaqutte.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(EPlaqutte), std::prev(std::cend(EPlaqutte)), std::ostream_iterator<double>(datalog, " "));
-    datalog << EPlaqutte.back() << "\n";
+    logstream << "E_plaq: ";
+    // std::copy(EPlaqutte.cbegin(), std::prev(EPlaqutte.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(EPlaqutte), std::prev(std::cend(EPlaqutte)), std::ostream_iterator<double>(logstream, " "));
+    logstream << EPlaqutte.back() << "\n";
     //-----
-    datalog << "E_clov: ";
-    // std::copy(EClover.cbegin(), std::prev(EClover.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(EClover), std::prev(std::cend(EClover)), std::ostream_iterator<double>(datalog, " "));
-    datalog << EClover.back() << "\n";
+    logstream << "E_clov: ";
+    // std::copy(EClover.cbegin(), std::prev(EClover.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(EClover), std::prev(std::cend(EClover)), std::ostream_iterator<double>(logstream, " "));
+    logstream << EClover.back() << "\n";
     //-----
-    datalog << "Wilson_Action(unnormalized): ";
-    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(ActionUnnormalized), std::prev(std::cend(ActionUnnormalized)), std::ostream_iterator<double>(datalog, " "));
-    datalog << ActionUnnormalized.back() << "\n";
+    logstream << "Wilson_Action(unnormalized): ";
+    // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(ActionUnnormalized), std::prev(std::cend(ActionUnnormalized)), std::ostream_iterator<double>(logstream, " "));
+    logstream << ActionUnnormalized.back() << "\n";
     //-----
-    datalog << "Wilson_loop(L=2): ";
-    // std::copy(WLoop2.cbegin(), std::prev(WLoop2.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(WLoop2), std::prev(std::cend(WLoop2)), std::ostream_iterator<double>(datalog, " "));
-    datalog << WLoop2.back() << "\n";
+    logstream << "Wilson_loop(L=2): ";
+    // std::copy(WLoop2.cbegin(), std::prev(WLoop2.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(WLoop2), std::prev(std::cend(WLoop2)), std::ostream_iterator<double>(logstream, " "));
+    logstream << WLoop2.back() << "\n";
     //-----
-    datalog << "Wilson_loop(L=4): ";
-    // std::copy(WLoop4.cbegin(), std::prev(WLoop4.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(WLoop4), std::prev(std::cend(WLoop4)), std::ostream_iterator<double>(datalog, " "));
-    datalog << WLoop4.back() << "\n";
+    logstream << "Wilson_loop(L=4): ";
+    // std::copy(WLoop4.cbegin(), std::prev(WLoop4.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(WLoop4), std::prev(std::cend(WLoop4)), std::ostream_iterator<double>(logstream, " "));
+    logstream << WLoop4.back() << "\n";
     //-----
-    datalog << "Wilson_loop(L=8): ";
-    // std::copy(WLoop8.cbegin(), std::prev(WLoop8.cend()), std::ostream_iterator<double>(datalog, " "));
-    std::copy(std::cbegin(WLoop8), std::prev(std::cend(WLoop8)), std::ostream_iterator<double>(datalog, " "));
-    datalog << WLoop8.back() << "\n";
+    logstream << "Wilson_loop(L=8): ";
+    // std::copy(WLoop8.cbegin(), std::prev(WLoop8.cend()), std::ostream_iterator<double>(logstream, " "));
+    std::copy(std::cbegin(WLoop8), std::prev(std::cend(WLoop8)), std::ostream_iterator<double>(logstream, " "));
+    logstream << WLoop8.back() << "\n";
     //-----
-    datalog << "Polyakov_loop(Re): ";
-    std::copy(std::cbegin(PLoopRe), std::prev(std::cend(PLoopRe)), std::ostream_iterator<double>(datalog, " "));
-    datalog << PLoopRe.back() << "\n";
+    logstream << "Polyakov_loop(Re): ";
+    std::copy(std::cbegin(PLoopRe), std::prev(std::cend(PLoopRe)), std::ostream_iterator<double>(logstream, " "));
+    logstream << PLoopRe.back() << "\n";
     //-----
-    datalog << "Polyakov_loop(Im): ";
-    std::copy(std::cbegin(PLoopIm), std::prev(std::cend(PLoopIm)), std::ostream_iterator<double>(datalog, " "));
-    datalog << PLoopIm.back() << "\n";
+    logstream << "Polyakov_loop(Im): ";
+    std::copy(std::cbegin(PLoopIm), std::prev(std::cend(PLoopIm)), std::ostream_iterator<double>(logstream, " "));
+    logstream << PLoopIm.back() << "\n";
     //-----
-    datalog << "TopChargeClov: ";
-    std::copy(std::cbegin(TopologicalChargeSymm), std::prev(std::cend(TopologicalChargeSymm)), std::ostream_iterator<double>(datalog, " "));
-    datalog << TopologicalChargeSymm.back() << "\n";
+    logstream << "TopChargeClov: ";
+    std::copy(std::cbegin(TopologicalChargeSymm), std::prev(std::cend(TopologicalChargeSymm)), std::ostream_iterator<double>(logstream, " "));
+    logstream << TopologicalChargeSymm.back() << "\n";
     //-----
-    datalog << "TopChargePlaq: ";
-    std::copy(std::cbegin(TopologicalChargeUnimproved), std::prev(std::cend(TopologicalChargeUnimproved)), std::ostream_iterator<double>(datalog, " "));
-    datalog << TopologicalChargeUnimproved.back() << "\n";
+    logstream << "TopChargePlaq: ";
+    std::copy(std::cbegin(TopologicalChargeUnimproved), std::prev(std::cend(TopologicalChargeUnimproved)), std::ostream_iterator<double>(logstream, " "));
+    logstream << TopologicalChargeUnimproved.back() << "\n";
     //-----
     if (print_newline)
     {
-        datalog << std::endl;
+        logstream << std::endl;
     }
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, const MetaBiasPotential& Metapotential, std::ofstream& wilsonlog, const int n_count, const int n_smear)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, false);
+    Observables(Gluon, Gluonchain, logstream, n_count, n_smear, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
-    datalog << "CV_MetaD: " << CV_current << "\n";
-    datalog << "Metapotential: " << Metapotential.ReturnPotential(CV_current) << "\n" << std::endl;
+    logstream << "CV_MetaD: " << CV_current << "\n";
+    logstream << "Metapotential: " << Metapotential.ReturnPotential(CV_current) << "\n" << std::endl;
 }
 
 //-----
@@ -786,8 +789,8 @@ int main()
     // OverrelaxationDirectKernel       OverrelaxationDirect(Gluon, distribution_prob);
     OverrelaxationSubgroupKernel     OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
     Integrators::HMC::OMF_4          OMF_4_Integrator;
-    Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
-    Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
+    // Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
+    // Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
     GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
     // ReadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
@@ -886,53 +889,56 @@ int main()
             if (n_count % expectation_period == 0)
             {
                 // auto start_observable = std::chrono::system_clock::now();
-                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
                 // auto end_observable = std::chrono::system_clock::now();
                 // std::chrono::duration<double> observable_time {end_observable - start_observable};
                 // std::cout << "Time for calculating observables: " << observable_time.count() << std::endl;
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.12);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.12);
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.08);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.08);
 
                 // n_smear = 300;
                 // n_smear_skip = 2;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.04);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.04);
 
                 // n_smear = 300;
                 // n_smear_skip = 4;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.02);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.02);
 
                 // n_smear = 300;
                 // n_smear_skip = 8;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.01);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.01);
 
                 // n_smear = 300;
                 // n_smear_skip = 16;
-                // Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear, 0.005);
+                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.005);
             }
         }
     }
 
     // Updates with Metadynamics
-    if constexpr(metadynamics_enabled) && constexpr(~tempering_enabled) 
+    if constexpr(metadynamics_enabled and !tempering_enabled)
     {
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
-        // TopBiasPotential.LoadPotential("SU(3)_N=16x16x16x16_beta=1.220000/metapotential.txt");
+        TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.LoadPotential("metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
-        // TopBiasPotential.SymmetrizePotentialMaximum();
+        TopBiasPotential.SymmetrizePotentialMaximum();
         // TopBiasPotential.Setweight(0.005);
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
-        GaugeUpdates::HMCMetaDKernel HMCMetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
 
-        // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
+        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+
+        // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
         for (int i = 0; i < 20; ++i)
         {
@@ -945,14 +951,14 @@ int main()
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
             // auto start_update_meta = std::chrono::system_clock::now();
-            HMCMetaD(n_hmc, true);
+            HMC_MetaD(n_hmc, true);
             // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, n_heatbath, n_orelax, distribution_prob, distribution_uniform);
             // auto end_update_meta = std::chrono::system_clock::now();
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, TopBiasPotential, wilsonlog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear);
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
@@ -962,84 +968,77 @@ int main()
         }
     }
 
-    // Updates with Metadynamics enabled Parallel Tempering
-    if constexpr(metadynamics_enabled) && constexpr(tempering_enabled) 
-    {   
-        GaugeField                   GluonTemper;
-        GaugeField                   GluonsmearedTemper1;
-        GaugeField                   GluonsmearedTemper2;
-        GaugeField                   GluonchainTemper;
+    // Updates with Metadynamics and parallel tempering
+    if constexpr(metadynamics_enabled and tempering_enabled)
+    {
+        // For now limit ourselves to tempering between two streams, so we only need one additional gaugefield Gluon_temper:
+        //     Gluon:        Regular local updates
+        //     Gluon_temper: MetaD-HMC updates
+        GaugeField                   Gluon_temper;
+        // Need to set all links to identity, otherwise the links are zero matrices, which leads to NaNs during the HMC
+        Gluon_temper.SetToIdentity();
+
+        // Setup second ofstream for Gluon_temper (Gluon uses the default stream datalog)
+        std::ofstream datalog_temper;
+        datalog_temper << std::setprecision(12) << std::fixed;
+        std::string logfilepath_temper = directoryname + "/log_temper.txt";
+        datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
+
+        GaugeUpdates::HMCKernel      HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+
         // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
-        // TopBiasPotential.LoadPotential("SU(3)_N=16x16x16x16_beta=1.220000/metapotential.txt");
-        // TopBiasPotential.LoadPotential("metapotential.txt");
-        // TopBiasPotential.SymmetrizePotential();
-        // TopBiasPotential.SymmetrizePotentialMaximum();
-        // TopBiasPotential.Setweight(0.005);
+        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
-        GaugeUpdates::HMCMetaDKernel HMCMetaD(GluonTemper, GluonsmearedTemper1, GluonsmearedTemper2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        // GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
-        // Thermalize with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
-        datalog << "[Start thermalization]\n";
-        for (int i = 0; i < 20; ++i)
+        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, distribution_prob);
+
+        // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
+        datalog << "[HMC start thermalization]\n";
+        for (int i = 0; i < 5; ++i)
         {
-            // Thermalize MetaD Stream with normal HMC (smearing a trivial gauge configuration leads to to NaNs!)
-            HMC(10, false);
-            // Thermalize Regular Stream
-            if constexpr(n_hmc != 0)
-            {
-                HMC(10, false);
-            }
-            else
-            {
-                Iterator::Checkerboard4(Heatbath, n_heatbath);
-                Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
-            }
+            Iterator::Checkerboard(Heatbath, 1);
+            Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+            // HMC(10, false);
+            HMC_temper(10, false);
         }
-        datalog << "[End thermalization]\n" << std::endl;
+        datalog << "[HMC end thermalization]\n" << std::endl;
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
+            // Perform updates on Gluon (for every MetaD-HMC update perform tempering_metadynamics_ratio updates on the config without Metadynamics)
+            for (int n_count_nometa = 0; n_count_nometa < tempering_metadynamics_ratio; ++n_count_nometa)
+            {
+                Iterator::Checkerboard(Heatbath, 1);
+                Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+            }
 
-            HMCMetaD(n_hmc, true);
+            // Perform updates on Gluon_temper
+            HMC_MetaD(n_hmc, true);
 
-            if constexpr(n_metro != 0 and multi_hit != 0)
+            // Propose tempering swap
+            if (n_count % tempering_swap_period == 0)
             {
-                std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
-                MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
-                Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
-                epsilon = Metropolis.AdjustedEpsilon(epsilon, acceptance_count);
-                acceptance_count = 0;
-            }
-            if constexpr(n_heatbath != 0)
-            {
-                Iterator::Checkerboard4(Heatbath, n_heatbath);
-            }
-            if constexpr(n_hmc != 0)
-            {
-                HMC(n_hmc, true);
-            }
-            if constexpr(n_orelax != 0)
-            {
-                Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
+                // std::cout << "Tempering swap accepted? " << MetadynamicsTemperingSwap(Gluon, Gluon_temper, TopBiasPotential, distribution_prob) << std::endl;
+                datalog_temper << "Tempering swap accepted: " << ParallelTemperingSwap() << std::endl;
             }
 
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, wilsonlog, n_count, n_smear);
-                Observables(GluonTemper, GluonchainTemper, TopBiasPotential, wilsonlog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
+                Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear);
                 if constexpr(metapotential_updated)
                 {
+                    if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
                 }
             }
-
-            if (n_count % tempering_period == 0)
-            {
-                MetadynamicsTempering(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, GluonTemper, acceptance_count_tempering, true, distribution_prob, distribution_uniform)
-            }
         }
+        datalog_temper.close();
+        datalog_temper.clear();
     }
 
     auto end {std::chrono::system_clock::now()};

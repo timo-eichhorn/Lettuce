@@ -61,8 +61,19 @@ struct site_coord
     }
     friend std::ostream& operator<<(std::ostream& stream, const site_coord& site)
     {
-        stream << "Site(" << site.t << ", " << site.x << ", " << site.y << ", " << site.z << ")\n";
+        // stream << "Site(" << site.t << ", " << site.x << ", " << site.y << ", " << site.z << ")\n";
+        stream << "(" << site.t << ", " << site.x << ", " << site.y << ", " << site.z << ")";
         return stream;
+    }
+    [[nodiscard]]
+    friend bool operator==(const site_coord& site1, const site_coord& site2) noexcept
+    {
+        return (site1.t == site2.t and site1.x == site2.x and site1.y == site2.y and site1.z == site2.z);
+    }
+    [[nodiscard]]
+    friend bool operator!=(const site_coord& site1, const site_coord& site2) noexcept
+    {
+        return !(site1 == site2);
     }
 };
 
@@ -118,8 +129,19 @@ struct link_coord
     }
     friend std::ostream& operator<<(std::ostream& stream, const link_coord& link)
     {
-        stream << "Link(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")\n";
+        // stream << "Link(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")\n";
+        stream << "(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")";
         return stream;
+    }
+    [[nodiscard]]
+    friend bool operator==(const link_coord& link1, const link_coord& link2) noexcept
+    {
+        return (link1.t == link2.t and link1.x == link2.x and link1.y == link2.y and link1.z == link2.z and link1.mu == link2.mu);
+    }
+    [[nodiscard]]
+    friend bool operator!=(const link_coord& link1, const link_coord& link2) noexcept
+    {
+        return !(link1 == link2);
     }
 };
 

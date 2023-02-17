@@ -47,6 +47,7 @@ class GaugeFieldRaw
         // Copy constructor
         GaugeFieldRaw(const GaugeFieldRaw& field_in) noexcept
         {
+            // std::cout << "Copy constructor of GaugeFieldRaw used!" << std::endl;
             // TODO: static_assert complains about non-integral constant expression
             // TODO: Check if this is faster than the OpenMP version, also check if it is somehow possible to use std::execution::par_unseq (compiler complained last time)
             // static_assert(size == field_in.size, "Can't construct GaugeFieldRaw from another instance with different size!");
@@ -61,6 +62,7 @@ class GaugeFieldRaw
         // We don't need assignment chaining, so return void instead of GaugeFieldRaw&
         void operator=(const GaugeFieldRaw& field_in) noexcept
         {
+            // std::cout << "Copy assignment of GaugeFieldRaw used!" << std::endl;
             // static_assert(size == field_in.size, "Can't copy GaugeFieldRaw from another instance with different size!");
             #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
@@ -77,6 +79,15 @@ class GaugeFieldRaw
         gaugeT operator[](const std::size_t ind) const noexcept
         {
             return gaugefield_raw[ind];
+        }
+        // Implement swap by swapping the underlying pointers
+        friend void Swap(GaugeFieldRaw& field1, GaugeFieldRaw& field2) noexcept
+        {
+            field1.gaugefield_raw.swap(field2.gaugefield_raw);
+            // std::swap(field1.gaugefield_raw, field2.gaugefield_raw);
+            // auto tmp = std::move(field1.gaugefield_raw);
+            // field1.gaugefield_raw = std::move(field2.gaugefield_raw);
+            // field2.gaugefield_raw = std::move(tmp);
         }
 };
 
@@ -110,6 +121,7 @@ class GaugeField4D
             std::cout << "Deleting GaugeField4D with volume: " << V << std::endl;
         }
         // Copy constructor
+        // GaugeField4D(const GaugeField4D& field_in) noexcept = default;
         // GaugeField4D(const GaugeField4D& field_in) noexcept :
         //     Nt(field_in.Nt), Nx(field_in.Nx), Ny(field_in.Ny), Nz(field_in.Nz), V(field_in.Nt * field_in.Nx * field_in.Ny * field_in.Nz * field_in.Nmu)
         //     {
@@ -125,7 +137,7 @@ class GaugeField4D
         //     }
         // Copy assignment
         // We don't need assignment chaining, so return void instead of GaugeField4D&
-        // TODO: Is this okay? Correctness, performance?
+        // TODO: Is this okay performance wise?
         void operator=(const GaugeField4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
@@ -139,16 +151,16 @@ class GaugeField4D
                     std::cerr << "Warning: Trying to use copy assignment operator on two arrays with different sizes!" << std::endl;
                 }
                 // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
-                #pragma omp parallel for
-                for (int t = 0; t < Nt; ++t)
-                for (int x = 0; x < Nx; ++x)
-                for (int y = 0; y < Ny; ++y)
-                for (int z = 0; z < Nz; ++z)
-                for (int mu = 0; mu < Nmu; ++mu)
-                {
-                    gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
-                }
-                // gaugefield = field_in.gaugefield;
+                // #pragma omp parallel for
+                // for (int t = 0; t < Nt; ++t)
+                // for (int x = 0; x < Nx; ++x)
+                // for (int y = 0; y < Ny; ++y)
+                // for (int z = 0; z < Nz; ++z)
+                // for (int mu = 0; mu < Nmu; ++mu)
+                // {
+                //     gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
+                // }
+                gaugefield = field_in.gaugefield;
             }
         }
         //-----
@@ -225,6 +237,11 @@ class GaugeField4D
                     return 0;
             }
         }
+        // TODO: Use site_coord or something different?
+        site_coord Shape() const noexcept
+        {
+            return {Nt, Nx, Ny, Nz};
+        }
         friend std::ostream& operator<<(std::ostream& stream, const GaugeField4D& field)
         {
             for (int t = 0; t < Nt; ++t)
@@ -236,6 +253,15 @@ class GaugeField4D
                 stream << field.gaugefield[field.LinearCoordinate(t, x, y, z, mu)] << ", ";
             }
             return stream;
+        }
+        // We only need to swap the raw gaugefields
+        friend void Swap(GaugeField4D& U1, GaugeField4D& U2) noexcept
+        {
+            if (U1.Shape() != U2.Shape())
+            {
+                std::cerr << "Warning: Trying to swap two arrays with different sizes!" << std::endl;
+            }
+            Swap(U1.gaugefield, U2.gaugefield);
         }
     private:
         // -----
