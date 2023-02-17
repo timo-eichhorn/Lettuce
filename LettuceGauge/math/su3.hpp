@@ -536,12 +536,28 @@ namespace SU3::Projection
         return static_cast<floatT>(0.5) * (Mat - Mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (Mat - Mat.adjoint()).trace() * Matrix_3x3::Identity();
     }
 
+    // Projects a single element onto an antihermitian matrix (NOT traceless!)
+
+    [[nodiscard]]
+    Matrix_3x3 Antihermitian(const Matrix_3x3& Mat) noexcept
+    {
+        return static_cast<floatT>(0.5) * (Mat - Mat.adjoint());
+    }
+
     // Projects a single element onto traceless hermitian matrix
 
     [[nodiscard]]
     Matrix_3x3 TracelessHermitian(const Matrix_3x3& Mat) noexcept
     {
         return static_cast<floatT>(0.5) * (Mat + Mat.adjoint()) - static_cast<floatT>(1.0/6.0) * (Mat + Mat.adjoint()).trace() * Matrix_3x3::Identity();
+    }
+
+    // Projects a single element onto a hermitian matrix (NOT traceless!)
+
+    [[nodiscard]]
+    Matrix_3x3 Hermitian(const Matrix_3x3& Mat) noexcept
+    {
+        return static_cast<floatT>(0.5) * (Mat + Mat.adjoint());
     }
 } // namespace SU3::Projection
 
