@@ -14,6 +14,7 @@
 //----------------------------------------
 // Standard C++ headers
 #include <complex>
+#include <random>
 //----------------------------------------
 // Standard C headers
 // ...
@@ -237,6 +238,19 @@ namespace Integrators::HMC
 
 namespace GaugeUpdates
 {
+    struct HMCMetaDData
+    {
+        FullTensor                                             Clover;
+        GaugeFieldSmeared                                      SmearedFields;
+        GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
+        GaugeField                                             ForceFatLink;
+
+        HMCMetaDData(int n_smear_meta) noexcept : Clover(), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta), ForceFatLink()
+        {}
+    };
+
+    // TODO: Currently the kernel uses the global parameter n_smear_meta
+    //       Should probably create a paramter either in HMCMetaDData or the kernel itself
     template<typename IntegratorT, typename ActionT>
     struct HMCMetaDKernel
     {
@@ -251,34 +265,35 @@ namespace GaugeUpdates
             // double n_smear_meta;
             // double rho_stout_meta;
             MetaBiasPotential&                                     Metapotential;
-            FullTensor                                             Clover;
-            GaugeFieldSmeared                                      SmearedFields;
-            GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
-            GaugeField                                             ForceFatLink;
+            // FullTensor                                             Clover;
+            // GaugeFieldSmeared                                      SmearedFields;
+            // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
+            // GaugeField                                             ForceFatLink;
+            HMCMetaDData&                           MetadynamicsData;
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
 
             double MetaCharge() noexcept
             {
-                SmearedFields[0] = U;
+                MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], rho_stout);
+                    StoutSmearing4D(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], rho_stout);
                 }
-                return TopChargeGluonicSymm(SmearedFields[n_smear_meta]);
+                return TopChargeGluonicSymm(MetadynamicsData.SmearedFields[n_smear_meta]);
             }
 
             double MetaChargeWithConstants() noexcept
             {
-                SmearedFields[0] = U;
+                MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4DWithConstants(SmearedFields[smear_count], SmearedFields[smear_count + 1], Exp_consts[smear_count], rho_stout);
+                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout);
                 }
                 // Calculate clover term and topological charge (we usually need the clover term later during the update, so better this way than directly calculating the charge)
-                CalculateClover(SmearedFields[n_smear_meta], Clover);
-                return TopChargeGluonicSymm(Clover);
+                CalculateClover(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
+                return TopChargeGluonicSymm(MetadynamicsData.Clover);
             }
 
             void RandomMomentum() const noexcept
@@ -342,18 +357,18 @@ namespace GaugeUpdates
             {
                 // This is the Metadynamics/fat-link contribution to the momenta
                 // First we need to smear the fields n_smear_meta times and store all intermediate fields
-                SmearedFields[0] = U;
+                MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4DWithConstants(SmearedFields[smear_count], SmearedFields[smear_count + 1], Exp_consts[smear_count], rho_stout);
+                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout);
                 }
                 // Now we need the derivative of the metapotential and the contribution of the clover term
                 // Calculate clover term on field that was smeared the most
-                CalculateClover(SmearedFields[n_smear_meta], Clover);
+                CalculateClover(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
                 // Calculate derivative of metapotential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
-                double CV_old {TopChargeGluonicSymm(Clover)};
+                double CV_old {TopChargeGluonicSymm(MetadynamicsData.Clover)};
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
                 // Calculate clover derivative
                 #pragma omp parallel for
@@ -366,7 +381,7 @@ namespace GaugeUpdates
                     site_coord current_site {t, x, y, z};
                     // TODO: This should be a negative sign, since the force is given by the negative derivative of the potential?
                     //       There is another minus later on in the momentum update
-                    ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(SmearedFields[n_smear_meta], Clover, current_site, mu);
+                    MetadynamicsData.ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover, current_site, mu);
                 }
                 // std::cout << "Clover derivative:\n" << ForceFatLink({4,2,6,7,1}) << std::endl;
                 // std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
@@ -375,7 +390,7 @@ namespace GaugeUpdates
                 for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
                 {
                     // TODO: Replace global variable rho_stout with parameter?
-                    StoutForceRecursion(SmearedFields[smear_count - 1], SmearedFields[smear_count], ForceFatLink, Exp_consts[smear_count - 1], rho_stout);
+                    StoutForceRecursion(MetadynamicsData.SmearedFields[smear_count - 1], MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.ForceFatLink, MetadynamicsData.Exp_consts[smear_count - 1], rho_stout);
                     // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
                 }
             }
@@ -399,7 +414,7 @@ namespace GaugeUpdates
                     // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Momentum(current_link) -= epsilon * i<floatT> * (beta / static_cast<floatT>(6.0) * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
                     // TODO: This is the new version where the momenta are algebra elements
-                    Momentum(current_link) += epsilon * (beta / 6.0 * SU3::Projection::Algebra(tmp) + ForceFatLink(current_link));
+                    Momentum(current_link) += epsilon * (beta / 6.0 * SU3::Projection::Algebra(tmp) + MetadynamicsData.ForceFatLink(current_link));
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
@@ -439,7 +454,7 @@ namespace GaugeUpdates
                     // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Momentum(current_link) -= epsilon * i<floatT> * ForceFatLink(current_link);
                     // TODO: This is the new version where the momenta are algebra elements
-                    Momentum(current_link) += epsilon * ForceFatLink(current_link);
+                    Momentum(current_link) += epsilon * MetadynamicsData.ForceFatLink(current_link);
                 }
             }
 
@@ -492,8 +507,9 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, IntegratorT& Integrator_in, ActionT& Action_in, const int n_smear_meta , std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+            // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
             {}
 
 
