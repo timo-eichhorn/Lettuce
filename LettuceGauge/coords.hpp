@@ -26,7 +26,7 @@ struct site_coord
         {}
     inline int& operator[](const int i) noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 0:
                 return t;
@@ -41,7 +41,7 @@ struct site_coord
     }
     inline int operator[](const int i) const noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 0:
                 return t;
@@ -90,7 +90,7 @@ struct link_coord
         {}
     inline int& operator[](const int i) noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 0:
                 return t;
@@ -107,7 +107,7 @@ struct link_coord
     }
     inline int operator[](const int i) const noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 0:
                 return t;
@@ -160,7 +160,7 @@ site_coord Move(const site_coord& site, const int direction) noexcept
     {
         // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
         //       Pass the lattice as an additional argument?
-        switch(direction)
+        switch (direction)
         {
             case 0:
                 return site_coord((site.t + dist) % Nt, site.x              , site.y              , site.z              );
@@ -179,7 +179,7 @@ site_coord Move(const site_coord& site, const int direction) noexcept
         // TODO: Perhaps replace with safer (potentially less efficient) verion?
         static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
         // Alternative: Use negative indices (how to deal with 0 then?)
-        switch(direction)
+        switch (direction)
         {
             case 0:
                 return site_coord((site.t + Nt + dist) % Nt, site.x                   , site.y                   , site.z                   );
@@ -210,7 +210,7 @@ link_coord Move(const link_coord& link, const int direction) noexcept
     {
         // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
         //       Pass the lattice as an additional argument?
-        switch(direction)
+        switch (direction)
         {
             case 0:
                 return link_coord((link.t + dist) % Nt, link.x              , link.y              , link.z              , link.mu);
@@ -229,7 +229,7 @@ link_coord Move(const link_coord& link, const int direction) noexcept
         // TODO: Perhaps replace with safer (potentially less efficient) verion?
         static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
         // Alternative: Use negative indices (how to deal with 0 then?)
-        switch(direction)
+        switch (direction)
         {
             case 0:
                 return link_coord((link.t + Nt + dist) % Nt, link.x                   , link.y                   , link.z                   , link.mu);
@@ -249,7 +249,7 @@ link_coord Move(const link_coord& link, const int direction) noexcept
 // {
 //     // link_coord new_link = link;
 //     // new_link[dir] = (new_link[dir] + dist) % N[dir];
-//     switch(dir)
+//     switch (dir)
 //     {
 //         case 0:
 //             return link_coord((link.t + Nt + dist)%Nt, link.x                 , link.y                 , link.z                 , link.mu);

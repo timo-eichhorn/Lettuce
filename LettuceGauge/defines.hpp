@@ -74,8 +74,6 @@ inline double metro_norm {1.0};                             // Norm for Metropol
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
 // inline constexpr double metro_norm {1.0 / (Nt * Nx * Ny * Nz * 4.0 * multi_hit)};
 // inline constexpr double or_norm {1.0/(Nt * Nx * Ny * Nz * 4.0 * n_run)};
-inline constexpr double full_norm {1.0 / (Nt * Nx * Ny * Nz)};
-inline constexpr double spatial_norm {1.0 / (Nx * Ny * Nz)};
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
 double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)

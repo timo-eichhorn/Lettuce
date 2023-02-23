@@ -106,7 +106,7 @@ namespace GaugeAction
                 Matrix_3x3 st;
                 auto [t, x, y, z, mu] = current_link;
 
-                switch(mu)
+                switch (mu)
                 {
                     case 0:
                     {

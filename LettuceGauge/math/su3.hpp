@@ -110,7 +110,7 @@ namespace SU3::Generators
     [[nodiscard]]
     Matrix_3x3 lambda(const int i) noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 1:
                 return lambda1();
@@ -239,7 +239,7 @@ namespace SU3::Generators
     [[nodiscard]]
     Matrix_3x3 Exp_lambda(const int i, const floatT alpha_i) noexcept
     {
-        switch(i)
+        switch (i)
         {
             case 1:
                 return Exp_lambda1(alpha_i);
@@ -273,7 +273,7 @@ namespace SU3
         int choice {distribution_choice(generator_rand)};
         floatT phi {distribution_unitary(generator_rand)};
 
-        switch(choice)
+        switch (choice)
         {
             case 1:
             {
@@ -356,7 +356,7 @@ namespace SU3
     {
         Matrix_SU3 tmp;
 
-        switch(choice)
+        switch (choice)
         {
             case 1:
             {

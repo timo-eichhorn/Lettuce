@@ -227,7 +227,7 @@ class GaugeField4D
         }
         constexpr std::size_t Length(const int direction) const noexcept
         {
-            switch(direction)
+            switch (direction)
             {
                 case 0:
                     return Nt;
@@ -471,7 +471,7 @@ class FullTensor4D
         }
         constexpr std::size_t Length(const int direction) const noexcept
         {
-            switch(direction)
+            switch (direction)
             {
                 case 0:
                     return Nt;

@@ -187,7 +187,7 @@ Matrix_3x3 CloverDerivative(const GaugeField& U, const FullTensor& Clover, const
 {
     Matrix_3x3 derivative_component {Matrix_3x3::Zero()};
     // This is basically epsilon_{mu, nu, rho, sigma} manually worked out (not sure if writing a function makes sense?)
-    switch(mu)
+    switch (mu)
     {
         case 0:
         {

@@ -70,7 +70,7 @@ void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool posit
         //         tmp +=
         //     }
         // }
-        switch(mu)
+        switch (mu)
         {
             case 0:
             {
