@@ -221,6 +221,10 @@ class GaugeField4D
         {
             return V;
         }
+        constexpr std::size_t SpatialVolume() const noexcept
+        {
+            return Volume() / Nt;
+        }
         constexpr std::size_t Length(const int direction) const noexcept
         {
             switch(direction)
@@ -460,6 +464,10 @@ class FullTensor4D
         constexpr std::size_t Volume() const noexcept
         {
             return V;
+        }
+        constexpr std::size_t SpatialVolume() const noexcept
+        {
+            return Volume() / Nt;
         }
         constexpr std::size_t Length(const int direction) const noexcept
         {

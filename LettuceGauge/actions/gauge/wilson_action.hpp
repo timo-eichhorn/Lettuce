@@ -67,8 +67,7 @@ namespace WilsonAction
             }
         }
         // S = S/(6 * Nt * Nx * Ny * Nz);
-        // return 1.0 - std::real(pl.trace())/18.0 * full_norm;
-        return 1.0 - S/18.0 * full_norm;
+        return 1.0 - S/(18.0 * U.Volume());
     }
 
     //-----

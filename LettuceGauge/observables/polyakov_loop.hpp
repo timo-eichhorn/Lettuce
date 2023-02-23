@@ -42,7 +42,7 @@ std::complex<double> PolyakovLoop(const GaugeField& U) noexcept
         }
         P += tmp.trace();
     }
-    return P * spatial_norm;
+    return P / U.SpatialVolume();
 }
 
 #endif // LETTUCE_POLYAKOV_LOOP_HPP

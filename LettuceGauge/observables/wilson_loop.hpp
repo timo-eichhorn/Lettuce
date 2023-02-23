@@ -88,7 +88,7 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
             }
         }
     }
-    return 1.0 - W/18.0 * full_norm;
+    return 1.0 - W/(18.0 * U.Volume());
 }
 
 // TODO: Perhaps this should be moved out of wilson_loop.hpp, as the function can be used much more generically
