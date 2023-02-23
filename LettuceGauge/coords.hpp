@@ -21,7 +21,7 @@ struct site_coord
     int x;
     int y;
     int z;
-    site_coord(const int t_in, const int x_in, const int y_in, const int z_in) noexcept :
+    constexpr site_coord(const int t_in, const int x_in, const int y_in, const int z_in) noexcept :
         t(t_in), x(x_in), y(y_in), z(z_in)
         {}
     inline int& operator[](const int i) noexcept
@@ -85,7 +85,7 @@ struct link_coord
     int y;
     int z;
     int mu;
-    link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const int mu_in) noexcept :
+    constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const int mu_in) noexcept :
         t(t_in), x(x_in), y(y_in), z(z_in), mu(mu_in)
         {}
     inline int& operator[](const int i) noexcept

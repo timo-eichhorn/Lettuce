@@ -217,11 +217,11 @@ class GaugeField4D
             }
             std::cout << "Gauge Fields set to identity!" << std::endl;
         }
-        std::size_t Volume() const noexcept
+        constexpr std::size_t Volume() const noexcept
         {
             return V;
         }
-        std::size_t Length(const int direction) const noexcept
+        constexpr std::size_t Length(const int direction) const noexcept
         {
             switch(direction)
             {
@@ -238,7 +238,7 @@ class GaugeField4D
             }
         }
         // TODO: Use site_coord or something different?
-        site_coord Shape() const noexcept
+        constexpr site_coord Shape() const noexcept
         {
             return {Nt, Nx, Ny, Nz};
         }
@@ -457,11 +457,11 @@ class FullTensor4D
         {
             return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
         }
-        std::size_t Volume() const noexcept
+        constexpr std::size_t Volume() const noexcept
         {
             return V;
         }
-        std::size_t Length(const int direction) const noexcept
+        constexpr std::size_t Length(const int direction) const noexcept
         {
             switch(direction)
             {
@@ -477,6 +477,7 @@ class FullTensor4D
                     return 0;
             }
         }
+        // TODO: Should we add a Shape() function here like for GaugeField4D?
     private:
         // -----
         // TODO: Do we need modulo here? Also, it is probably preferable to make the layout/coordinate function a (template) parameter of the class
