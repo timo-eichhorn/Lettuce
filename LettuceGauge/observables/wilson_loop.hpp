@@ -14,12 +14,15 @@
 // Standard C headers
 // ...
 
-//-----
-// Square Wilson loops of length Nmu
+//+---------------------------------------------------------------------------------+
+//| This file provides several function templates that allow the calculation of     |
+//| single square and rectangular Wilson loops.                                     |
+//+---------------------------------------------------------------------------------+
+
+
 // TODO: Does it make sense to precompute U_chain, or is it more efficient to locally calculate the terms?
 //       For instance, we could left multiply with the adjoint/inverse and right multiply with a new link, which
 //       might be computationally advantageous for larger chain lengths (only 2 multiplications instead of N)
-
 // TODO: The naming might be misleading, since this function doesn't calculate a single Wilson loop, but rather the expectation value of all loops on a config
 //       In the future, we might want a function to compute single loops...
 template<int N_mu_start, int N_mu_end, bool reset>
@@ -85,11 +88,10 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
             }
         }
     }
-    // return 1.0 - std::real(W.trace())/18.0 * full_norm;
     return 1.0 - W/18.0 * full_norm;
 }
 
-
+// TODO: Perhaps this should be moved out of wilson_loop.hpp, as the function can be used much more generically
 // Computes the product of N_mu links along a straight path in direction mu (a negative N_mu corresponds to moving backwards), starting from current_site
 template<int N_mu>
 [[nodiscard]]
@@ -126,6 +128,7 @@ Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, cons
     }
 }
 
+// TODO: Does this work with negative N_mu and N_nu?
 template<int N_mu, int N_nu>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
@@ -138,7 +141,6 @@ Matrix_SU3 RectangularLoop(const GaugeField& U, const site_coord& current_site, 
 }
 
 // Template specializations for 1x2 and 2x1 loops used in rectangular gauge actions
-
 template<>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop<1, 2>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
@@ -160,6 +162,5 @@ Matrix_SU3 RectangularLoop<2, 1>(const GaugeField& U, const site_coord& current_
     site_coord site_nup     {Move<1>(current_site, nu)};
     return U(current_site, mu) * U(site_mup, mu) * U(site_mupp, nu) * U(site_mup_nup, mu).adjoint() * U(site_nup, mu).adjoint() * U(current_site, nu).adjoint();
 }
-
 
 #endif // LETTUCE_WILSON_LOOP_HPP

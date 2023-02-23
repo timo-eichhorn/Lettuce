@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
+#include "../math/su3.hpp"
 #include "clover.hpp"
 #include "plaquette.hpp"
 //----------------------------------------
@@ -14,6 +15,12 @@
 //----------------------------------------
 // Standard C headers
 // ...
+
+//+---------------------------------------------------------------------------------+
+//| This file provides implementations of the plaquette-based and clover-based      |
+//| field strength tensor, as well as functions calculating the action/energy       |
+//| density based on these definitions.                                             |
+//+---------------------------------------------------------------------------------+
 
 namespace FieldStrengthTensor
 {
@@ -27,43 +34,31 @@ namespace FieldStrengthTensor
         {
             site_coord current_site {t, x, y, z};
             Matrix_3x3 Clover;
-
+            // TODO: Do we want F to be traceless or not? It seems like often F is not made traceless, only antihermitian
             F(current_site, 0, 0).setZero();
-            Clover              = CalculateCloverComponent(U, current_site, 0, 1);
-            // F(current_site, 0, 1) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 0, 1) -= 1.0 / 3.0 * F(current_site, 0, 1).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 1);
             F(current_site, 0, 1) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 1, 0) = -F(t, x, y, z, 0, 1).adjoint();
 
-            Clover              = CalculateCloverComponent(U, current_site, 0, 2);
-            // F(current_site, 0, 2) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 0, 2) -= 1.0 / 3.0 * F(current_site, 0, 2).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 2);
             F(current_site, 0, 2) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 2, 0) = -F(t, x, y, z, 0, 2).adjoint();
 
-            Clover              = CalculateCloverComponent(U, current_site, 0, 3);
-            // F(current_site, 0, 3) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 0, 3) -= 1.0 / 3.0 * F(current_site, 0, 3).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 3);
             F(current_site, 0, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 3, 0) = -F(t, x, y, z, 0, 3).adjoint();
 
             F(current_site, 1, 1).setZero();
-            Clover              = CalculateCloverComponent(U, current_site, 1, 2);
-            // F(current_site, 1, 2) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 1, 2) -= 1.0 / 3.0 * F(current_site, 1, 2).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 2);
             F(current_site, 1, 2) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 2, 1) = -F(t, x, y, z, 1, 2).adjoint();
 
-            Clover              = CalculateCloverComponent(U, current_site, 1, 3);
-            // F(current_site, 1, 3) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 1, 3) -= 1.0 / 3.0 * F(current_site, 1, 3).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 3);
             F(current_site, 1, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 3, 1) = -F(t, x, y, z, 1, 3).adjoint();
 
             F(current_site, 2, 2).setZero();
-            Clover              = CalculateCloverComponent(U, current_site, 2, 3);
-            // F(current_site, 2, 3) = -i<floatT> / 8.0 * (Clover - Clover.adjoint());
-            // F(current_site, 2, 3) -= 1.0 / 3.0 * F(current_site, 2, 3).trace() * Matrix_3x3::Identity();
+            Clover                = CalculateCloverComponent<1>(U, current_site, 2, 3);
             F(current_site, 2, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
             F(current_site, 3, 2) = -F(t, x, y, z, 2, 3).adjoint();
             F(current_site, 3, 3).setZero();

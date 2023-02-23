@@ -4,6 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 #include "plaquette.hpp"
+#include "wilson_loop.hpp"
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
@@ -15,11 +16,34 @@
 // Standard C headers
 // ...
 
-//-----
-// Calculates clover term
+//+---------------------------------------------------------------------------------+
+//| This file provides a function template that allows the calculation of generic   |
+//| N_mu x N_nu clover term components (where component refers to the clover term   |
+//| for a fixed set of Lorentz indices).                                            |
+//| In addition, a function to calculate the plaquette-based clover term for all    |
+//| lattice sites, as well as a function to calculate the derivative of the         |
+//| plaquette-based clover term with respect to a single link are provided.         |
+//+---------------------------------------------------------------------------------+
 
+template<int N_mu, int N_nu = N_mu>
 [[nodiscard]]
 Matrix_3x3 CalculateCloverComponent(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
+{
+    static_assert(N_mu != 0 and N_nu != 0, "The template parameters of CalculateCloverComponent are not allowed to be 0!");
+    if (mu == nu)
+    {
+        return Matrix_3x3::Zero();
+    }
+    else
+    {
+        return RectangularLoop<N_mu, N_nu>(U, current_site, mu, nu) + RectangularLoop<N_nu, -N_mu>(U, current_site, nu, mu) + RectangularLoop<-N_mu, -N_nu>(U, current_site, mu, nu) + RectangularLoop<-N_nu, N_mu>(U, current_site, nu, mu);
+    }
+}
+
+// Template specialization for plaquette-based clover term
+template<>
+[[nodiscard]]
+Matrix_3x3 CalculateCloverComponent<1, 1>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     if (mu == nu)
     {
@@ -31,6 +55,7 @@ Matrix_3x3 CalculateCloverComponent(const GaugeField& U, const site_coord& curre
     }
 }
 
+// TODO: Might want to rewrite this as template too, but how do we generalize the CloverDerivative function below?
 void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
 {
     #pragma omp parallel for
