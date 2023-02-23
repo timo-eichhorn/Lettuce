@@ -55,8 +55,44 @@ Matrix_3x3 CalculateCloverComponent<1, 1>(const GaugeField& U, const site_coord&
     }
 }
 
-// TODO: Might want to rewrite this as template too, but how do we generalize the CloverDerivative function below?
+template<int N_mu, int N_nu = N_mu>
 void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
+{
+    static_assert(N_mu != 0 and N_nu != 0, "The template parameters of CalculateClover are not allowed to be 0!");
+    #pragma omp parallel for
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        site_coord current_site {t, x, y, z};
+        Clov(current_site, 0, 0).setZero();
+        Clov(current_site, 0, 1) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 1);
+        Clov(current_site, 1, 0) = Clov(current_site, 0, 1).adjoint();
+
+        Clov(current_site, 0, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 2);
+        Clov(current_site, 2, 0) = Clov(current_site, 0, 2).adjoint();
+
+        Clov(current_site, 0, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 3);
+        Clov(current_site, 3, 0) = Clov(current_site, 0, 3).adjoint();
+
+        Clov(current_site, 1, 1).setZero();
+        Clov(current_site, 1, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 2);
+        Clov(current_site, 2, 1) = Clov(current_site, 1, 2).adjoint();
+
+        Clov(current_site, 1, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 3);
+        Clov(current_site, 3, 1) = Clov(current_site, 1, 3).adjoint();
+
+        Clov(current_site, 2, 2).setZero();
+        Clov(current_site, 2, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 2, 3);
+        Clov(current_site, 3, 2) = Clov(current_site, 2, 3).adjoint();
+        Clov(current_site, 3, 3).setZero();
+    }
+}
+
+// Template specialization for plaquette-based clover term
+template<>
+void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
 {
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
@@ -115,6 +151,7 @@ void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
     }
 }
 
+// TODO: How do we generalize the function for abritrary clover sizes?
 [[nodiscard]]
 Matrix_3x3 CloverDerivativeComponent(const GaugeField& U, const FullTensor& Clover, const site_coord& current_site, const int mu, const int nu, const int rho, const int sigma) noexcept
 {
@@ -144,6 +181,7 @@ Matrix_3x3 CloverDerivativeComponent(const GaugeField& U, const FullTensor& Clov
           - Clover(site_mup, rho, sigma)  * U(site_mup_nud, nu).adjoint()    * U(site_nud, mu).adjoint()     * U(site_nud, nu));
 }
 
+// TODO: How do we generalize the function for abritrary clover sizes?
 [[nodiscard]]
 Matrix_3x3 CloverDerivative(const GaugeField& U, const FullTensor& Clover, const site_coord& current_site, const int mu) noexcept
 {

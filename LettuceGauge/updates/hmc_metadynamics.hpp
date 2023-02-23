@@ -292,7 +292,7 @@ namespace GaugeUpdates
                     StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout);
                 }
                 // Calculate clover term and topological charge (we usually need the clover term later during the update, so better this way than directly calculating the charge)
-                CalculateClover(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
+                CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
                 return TopChargeGluonicSymm(MetadynamicsData.Clover);
             }
 
@@ -364,7 +364,7 @@ namespace GaugeUpdates
                 }
                 // Now we need the derivative of the metapotential and the contribution of the clover term
                 // Calculate clover term on field that was smeared the most
-                CalculateClover(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
+                CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
                 // Calculate derivative of metapotential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
