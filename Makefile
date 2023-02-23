@@ -1,9 +1,9 @@
 FLG1 := -std=c++20 -O3 -march=native -mtune=native -fiopenmp -DNDEBUG -fno-math-errno -flto -static
 FLG2 := -std=c++20 -O3 -march=broadwell -mtune=broadwell -fiopenmp -DNDEBUG -fno-math-errno -flto -static
-FLGS := 
 OUT  := LettuceSU3
 INC  := ./Eigen_3.4
 CC   := icpx
+override FLGS +=
 
 
 all:
