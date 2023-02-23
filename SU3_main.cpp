@@ -182,31 +182,31 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     #endif
     datalog << starttimestring << "\n";
     datalog << "START_PARAMS\n";
-    datalog << "Gauge field precision = "        << typeid(floatT).name()        << "\n";
-    datalog << "Nt = "                           << Nt                           << "\n";
-    datalog << "Nx = "                           << Nx                           << "\n";
-    datalog << "Ny = "                           << Ny                           << "\n";
-    datalog << "Nz = "                           << Nz                           << "\n";
-    datalog << "beta = "                         << beta                         << "\n";
-    datalog << "n_run = "                        << n_run                        << "\n";
-    datalog << "expectation_period = "           << expectation_period           << "\n";
-    datalog << "n_smear = "                      << n_smear                      << "\n";
-    datalog << "n_smear_skip = "                 << n_smear_skip                 << "\n";
-    datalog << "rho_stout = "                    << rho_stout                    << "\n";
-    datalog << "n_metro = "                      << n_metro                      << "\n";
-    datalog << "multi_hit = "                    << multi_hit                    << "\n";
-    datalog << "metro_target_acceptance = "      << metro_target_acceptance      << "\n";
-    datalog << "n_heatbath = "                   << n_heatbath                   << "\n";
-    datalog << "n_hmc = "                        << n_hmc                        << "\n";
-    datalog << "n_orelax = "                     << n_orelax                     << "\n";
-    datalog << "n_instanton_update = "           << n_instanton_update           << "\n";
-    datalog << "metadynamics_enabled = "         << metadynamics_enabled         << "\n";
-    datalog << "metapotential_updated = "        << metapotential_updated        << "\n";
-    datalog << "n_smear_meta = "                 << n_smear_meta                 << "\n";
-    datalog << "tempering_enabled = "            << tempering_enabled            << "\n";
-    datalog << "tempering_metadynamics_ratio = " << tempering_metadynamics_ratio << "\n";
-    datalog << "tempering_swap_period = "        << tempering_swap_period        << "\n";
-    datalog << "END_PARAMS\n"                    << std::endl;
+    datalog << "Gauge field precision = "            << typeid(floatT).name()            << "\n";
+    datalog << "Nt = "                               << Nt                               << "\n";
+    datalog << "Nx = "                               << Nx                               << "\n";
+    datalog << "Ny = "                               << Ny                               << "\n";
+    datalog << "Nz = "                               << Nz                               << "\n";
+    datalog << "beta = "                             << beta                             << "\n";
+    datalog << "n_run = "                            << n_run                            << "\n";
+    datalog << "expectation_period = "               << expectation_period               << "\n";
+    datalog << "n_smear = "                          << n_smear                          << "\n";
+    datalog << "n_smear_skip = "                     << n_smear_skip                     << "\n";
+    datalog << "rho_stout = "                        << rho_stout                        << "\n";
+    datalog << "n_metro = "                          << n_metro                          << "\n";
+    datalog << "multi_hit = "                        << multi_hit                        << "\n";
+    datalog << "metro_target_acceptance = "          << metro_target_acceptance          << "\n";
+    datalog << "n_heatbath = "                       << n_heatbath                       << "\n";
+    datalog << "n_hmc = "                            << n_hmc                            << "\n";
+    datalog << "n_orelax = "                         << n_orelax                         << "\n";
+    datalog << "n_instanton_update = "               << n_instanton_update               << "\n";
+    datalog << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";
+    datalog << "metapotential_updated = "            << metapotential_updated            << "\n";
+    datalog << "n_smear_meta = "                     << n_smear_meta                     << "\n";
+    datalog << "tempering_enabled = "                << tempering_enabled                << "\n";
+    datalog << "tempering_nonmetadynamics_sweeps = " << tempering_nonmetadynamics_sweeps << "\n";
+    datalog << "tempering_swap_period = "            << tempering_swap_period            << "\n";
+    datalog << "END_PARAMS\n"                        << std::endl;
     datalog.close();
     datalog.clear();
 }
@@ -495,14 +495,14 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // Unsmeared observables
     // auto start_action = std::chrono::system_clock::now();
     Action[0]                      = WilsonAction::ActionNormalized(Gluon);
+    // auto end_action = std::chrono::system_clock::now();
+    // std::chrono::duration<double> action_time = end_action - start_action;
+    // std::cout << "Time for calculating action: " << action_time.count() << std::endl;
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
     EPlaqutte[0]                   = EnergyDensity::Plaquette(Gluon);
     FieldStrengthTensor::Clover(Gluon, F_tensor);
     EClover[0]                     = EnergyDensity::Clover(F_tensor);
-    // auto end_action = std::chrono::system_clock::now();
-    // std::chrono::duration<double> action_time = end_action - start_action;
-    // std::cout << "Time for calculating action: " << action_time.count() << std::endl;
 
     // auto start_wilson = std::chrono::system_clock::now();
     WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
@@ -984,13 +984,15 @@ int main()
         std::string logfilepath_temper = directoryname + "/log_temper.txt";
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
-        GaugeUpdates::HMCKernel      HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+        // Conventional HMC only used during thermalization of Gluon_temper
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
+        TopBiasPotential.SymmetrizePotentialMaximum();
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
-        // GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
         GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
@@ -998,22 +1000,21 @@ int main()
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
         datalog << "[HMC start thermalization]\n";
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < 20; ++i)
         {
-            Iterator::Checkerboard(Heatbath, 1);
-            Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-            // HMC(10, false);
+            Iterator::Checkerboard4(Heatbath, n_heatbath);
+            Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
             HMC_temper(10, false);
         }
         datalog << "[HMC end thermalization]\n" << std::endl;
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            // Perform updates on Gluon (for every MetaD-HMC update perform tempering_metadynamics_ratio updates on the config without Metadynamics)
-            for (int n_count_nometa = 0; n_count_nometa < tempering_metadynamics_ratio; ++n_count_nometa)
+            // Perform updates on Gluon (for every MetaD-HMC update perform tempering_nonmetadynamics_sweeps updates on the config without Metadynamics)
+            for (int n_count_nometa = 0; n_count_nometa < tempering_nonmetadynamics_sweeps; ++n_count_nometa)
             {
-                Iterator::Checkerboard(Heatbath, 1);
-                Iterator::Checkerboard(OverrelaxationSubgroup, 4);
+                Iterator::Checkerboard4(Heatbath, n_heatbath);
+                Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
             }
 
             // Perform updates on Gluon_temper
@@ -1022,7 +1023,6 @@ int main()
             // Propose tempering swap
             if (n_count % tempering_swap_period == 0)
             {
-                // std::cout << "Tempering swap accepted? " << MetadynamicsTemperingSwap(Gluon, Gluon_temper, TopBiasPotential, distribution_prob) << std::endl;
                 datalog_temper << "Tempering swap accepted: " << ParallelTemperingSwap() << std::endl;
             }
 

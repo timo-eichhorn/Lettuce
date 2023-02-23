@@ -68,7 +68,7 @@ inline constexpr bool metadynamics_enabled {true};          // Enable metadynami
 inline constexpr bool metapotential_updated {true};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr int n_smear_meta {4};                      // Number of smearing steps for topological charge used in Metadynamics
 inline constexpr bool tempering_enabled {false};             // Enable metadynamics updates with tempering or not
-inline constexpr int tempering_metadynamics_ratio {1};      // Number of non metadynamics update sweeps for every metadynamics update during tempering
+inline constexpr int tempering_nonmetadynamics_sweeps {1};  // Number of non metadynamics update sweeps for every metadynamics update during tempering
 inline constexpr int tempering_swap_period {1};             // Number of update sweeps between parallel tempering swap attempts
 inline double metro_norm {1.0};                             // Norm for Metropolis update. CAUTION: Needs to be set to correct value inside Configuration() function
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
