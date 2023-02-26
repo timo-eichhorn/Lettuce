@@ -48,7 +48,6 @@ using floatT = double;
 
 //-----
 
-std::string LatticeSizeString;                              // Lattice size (string)
 int n_run;                                                  // Number of runs
 double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
@@ -72,15 +71,10 @@ inline constexpr int tempering_nonmetadynamics_sweeps {1};  // Number of non met
 inline constexpr int tempering_swap_period {1};             // Number of update sweeps between parallel tempering swap attempts
 inline double metro_norm {1.0};                             // Norm for Metropolis update. CAUTION: Needs to be set to correct value inside Configuration() function
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
-// inline constexpr double metro_norm {1.0 / (Nt * Nx * Ny * Nz * 4.0 * multi_hit)};
-// inline constexpr double or_norm {1.0/(Nt * Nx * Ny * Nz * 4.0 * n_run)};
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
 double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
-int append;                                                 // Directory name appendix
-std::string appendString;                                   // Directory name appendix (string)
-std::string directoryname_pre;                              // Directory name (prefix)
 std::string directoryname;                                  // Directory name
 std::string logfilepath;                                    // Filepath (log)
 std::string parameterfilepath;                              // Filepath (parameters)
@@ -88,7 +82,6 @@ std::string wilsonfilepath;                                 // Filepath (Wilson 
 std::string metapotentialfilepath;                          // Filepath (metapotential)
 auto start {std::chrono::system_clock::now()};              // Start time
 floatT beta;                                                // Coupling
-std::string betaString;                                     // Coupling (string)
 std::ofstream datalog;                                      // Output stream to save data
 std::ofstream wilsonlog;                                    // Output stream to save data (Wilson loops)
 //std::random_device randomdevice;                          // Creates random device to seed PRNGs

@@ -216,15 +216,16 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
 
 void CreateFiles()
 {
-    LatticeSizeString = std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt);
-    betaString        = std::to_string(beta);
-    directoryname_pre = "SU(3)_N=" + LatticeSizeString + "_beta=" + betaString;
-    directoryname     = directoryname_pre;
-    append = 1;
-    while (std::filesystem::exists(directoryname) == true)
+    std::string LatticeSizeString    {std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt)};
+    std::string betaString           {std::to_string(beta)};
+    std::string directoryname_prefix {"SU(3)_N=" + LatticeSizeString + "_beta=" + betaString};
+    directoryname = directoryname_prefix;
+    int append = 1;
+    std::string appendString;
+    while (std::filesystem::exists(directoryname))
     {
         appendString  = std::to_string(append);
-        directoryname = directoryname_pre + " (" + appendString + ")";
+        directoryname = directoryname_prefix + " (" + appendString + ")";
         ++append;
     }
     std::filesystem::create_directory(directoryname);
