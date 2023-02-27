@@ -322,6 +322,51 @@ double TopChargeGluonic2x2(const GaugeField& U) noexcept
     return -1.0 / (64.0 * 4.0 * 8.0 * pi<double> * pi<double>) * Q;
 }
 
+// TODO: Not sure if this is correct yet, but the results don't seem completely incorrect at least
+//       Also, does it even make sense to use different coefficients than the LW coefficients here? All other choices do not cancel the O(a^2) contributions (at tree-level)
+double TopChargeGluonicImproved(const GaugeField& U, const double c_plaq = 1.0 + 8.0 * 1.0/12.0/* = 5/3 */, const double c_rect = -1.0/12.0) noexcept
+{
+    double Q {0.0};
+    #pragma omp parallel for reduction(+: Q)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        std::array<Matrix_3x3, 6> F_clover;
+        std::array<Matrix_3x3, 6> F_rectangle;
+        site_coord                current_site {t, x, y, z};
+        //-----
+        // F[0][1]
+        F_clover[0]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 0, 1));
+        F_rectangle[0] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 0, 1)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 0, 1));
+        // F[0][2]
+        F_clover[1]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 0, 2));
+        F_rectangle[1] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 0, 2)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 0, 2));
+        // F[0][3]
+        F_clover[2]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 0, 3));
+        F_rectangle[2] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 0, 3)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 0, 3));
+        // F[1][2]
+        F_clover[3]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 1, 2));
+        F_rectangle[3] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 1, 2)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 1, 2));
+        // F[1][3]
+        F_clover[4]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 1, 3));
+        F_rectangle[4] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 1, 3)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 1, 3));
+        // F[2][3]
+        F_clover[5]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 2, 3));
+        F_rectangle[5] = SU3::Projection::Antihermitian(CalculateCloverComponent<2, 1>(U, current_site, 2, 3)
+                       +                                CalculateCloverComponent<1, 2>(U, current_site, 2, 3));
+        Q += c_plaq * std::real((F_clover[0] * F_clover[5] - F_clover[1] * F_clover[4] + F_clover[2] * F_clover[3]).trace())
+           + 0.5 * c_rect * std::real((F_rectangle[0] * F_rectangle[5] - F_rectangle[1] * F_rectangle[4] + F_rectangle[2] * F_rectangle[3]).trace());
+    }
+    return -1.0 / (16.0 * 4.0 * pi<double> * pi<double>) * Q;
+}
+
 // TODO: WIP, still need to implement and check if all these functions make sense
 namespace TopologicalCharge
 {
