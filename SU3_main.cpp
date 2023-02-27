@@ -280,7 +280,8 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     double tempering_norm {1.0};
     if constexpr(tempering_enabled)
     {
-        tempering_norm = tempering_swap_period / n_run;
+        // Need to cast either numerator or denominator to floating type for the divison to work as we want
+        tempering_norm = static_cast<double>(tempering_swap_period) / n_run;
     }
     double instanton_norm {1.0};
     if constexpr(n_instanton_update != 0)
