@@ -20,15 +20,51 @@
 //+---------------------------------------------------------------------------------+
 
 
+// TODO: Perhaps this should be moved out of wilson_loop.hpp, as the function can be used much more generically
+// Computes the product of N_mu links along a straight path in direction mu (a negative N_mu corresponds to moving backwards), starting from current_site
+template<int N_mu>
+[[nodiscard]]
+Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, const int mu) noexcept
+{
+    static_assert(N_mu != 0, "The template parameter of LineProduct is not allowed to be 0!");
+    // Check sign of N_mu to see if we go forwards or backwards
+    constexpr int          sign_mu  {(N_mu > 0) - (N_mu < 0)};
+    // As of C++20, std::abs is not yet constexpr (coming in C++23), so for now multiply with sign_mu (should be okay since we asserted N_mu != 0)
+    constexpr unsigned int dist_mu  {sign_mu * N_mu};
+    if constexpr(sign_mu > 0)
+    {
+        site_coord tmp_site     {current_site};
+        Matrix_3x3 link_product {U(tmp_site, mu)};
+        // Since we already initialized link_product as U(current_site, mu), the loop starts from 1
+        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
+        {
+            tmp_site = Move<1>(tmp_site, mu);
+            link_product *= U(tmp_site, mu);
+        }
+        return link_product;
+    }
+    else
+    {
+        site_coord tmp_site     {Move<-1>(current_site, mu)};
+        Matrix_3x3 link_product {U(tmp_site, mu).adjoint()};
+        // Since we already initialized link_product as U(current_site - mu, mu), the loop starts from 1
+        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
+        {
+            tmp_site = Move<-1>(tmp_site, mu);
+            link_product *= U(tmp_site, mu).adjoint();
+        }
+        return link_product;
+    }
+}
+
 // TODO: Does it make sense to precompute U_chain, or is it more efficient to locally calculate the terms?
 //       For instance, we could left multiply with the adjoint/inverse and right multiply with a new link, which
 //       might be computationally advantageous for larger chain lengths (only 2 multiplications instead of N)
-// TODO: The naming might be misleading, since this function doesn't calculate a single Wilson loop, but rather the expectation value of all loops on a config
-//       In the future, we might want a function to compute single loops...
 template<int N_mu_start, int N_mu_end, bool reset>
 [[nodiscard]]
 double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
 {
+    static_assert(N_mu_start >= 0 and N_mu_end >= 0, "The template parameters of WilsonLoop are not allowed to be negative!");
     double W {0.0};
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
@@ -91,44 +127,19 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
     return 1.0 - W/(18.0 * U.Volume());
 }
 
-// TODO: Perhaps this should be moved out of wilson_loop.hpp, as the function can be used much more generically
-// Computes the product of N_mu links along a straight path in direction mu (a negative N_mu corresponds to moving backwards), starting from current_site
-template<int N_mu>
-[[nodiscard]]
-Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, const int mu) noexcept
+// Function template to calculate a single (square) Wilson loop of arbitrary length
+template<int N_mu, int N_nu>
+Matrix_SU3 WilsonLoop(const GaugeField& U, const site_coord current_site, const int mu, const int nu) noexcept
 {
-    static_assert(N_mu != 0, "The template parameter of LineProduct is not allowed to be 0!");
-    // Check sign of N_mu to see if we go forwards or backwards
-    constexpr int          sign_mu  {(N_mu > 0) - (N_mu < 0)};
-    // As of C++20, std::abs is not yet constexpr (coming in C++23), so for now multiply with sign_mu (should be okay since we asserted N_mu != 0)
-    constexpr unsigned int dist_mu  {sign_mu * N_mu};
-    if constexpr(sign_mu > 0)
-    {
-        site_coord tmp_site     {current_site};
-        Matrix_3x3 link_product {U(tmp_site, mu)};
-        // Since we already initialized link_product as U(current_site, mu), the loop starts from 1
-        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
-        {
-            tmp_site = Move<1>(tmp_site, mu);
-            link_product *= U(tmp_site, mu);
-        }
-        return link_product;
-    }
-    else
-    {
-        site_coord tmp_site     {Move<-1>(current_site, mu)};
-        Matrix_3x3 link_product {U(tmp_site, mu).adjoint()};
-        // Since we already initialized link_product as U(current_site - mu, mu), the loop starts from 1
-        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
-        {
-            tmp_site = Move<-1>(tmp_site, mu);
-            link_product *= U(tmp_site, mu).adjoint();
-        }
-        return link_product;
-    }
+    static_assert(N_mu != 0 and N_nu != 0, "The template parameters of WilsonLoop are not allowed to be 0!");
+    static_assert((N_mu * N_mu) == (N_nu * N_nu), "The absolute values of the template parameters of WilsonLoop must be the same!");
+    site_coord site_mup     {Move<N_mu>(current_site, mu)};
+    site_coord site_mup_nup {Move<N_nu>(site_mup,     nu)};
+    site_coord site_nup     {Move<N_nu>(current_site, nu)};
+    return LineProduct<N_mu>(U, current_site, mu) * LineProduct<N_nu>(U, site_mup, nu) * LineProduct<-N_mu>(U, site_mup_nup, mu) * LineProduct<-N_nu>(U, site_nup, nu);
 }
 
-// TODO: Does this work with negative N_mu and N_nu?
+// A more general version of the function template above which allows for rectangular loops
 template<int N_mu, int N_nu>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
