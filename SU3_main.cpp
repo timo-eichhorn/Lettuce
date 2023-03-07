@@ -8,7 +8,7 @@
 #include "LettuceGauge/coords.hpp"
 #include "LettuceGauge/defines.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
-#include "LettuceGauge/IO/config_io/read_bmw_format.hpp"
+#include "LettuceGauge/IO/config_io/bmw_format.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -795,7 +795,7 @@ int main()
     // Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
     GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
 
-    // ReadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
+    // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
     // Regular updates without Metadynamics
     if constexpr(!metadynamics_enabled)
