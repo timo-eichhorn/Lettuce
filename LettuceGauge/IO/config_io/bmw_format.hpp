@@ -21,20 +21,22 @@
 //+---------------------------------------------------------------------------------+
 //| This file provides functions to load and save configurations stored in the BMW  |
 //| format, which is structured as follows:                                         |
-//| i)   4096 bytes header in ASCII format, where unused bytes are "\n"
-//| ii)  First header line:
-//|      #BMW <Nx> <Ny> <Nz> <Nt> <HEX checksum>
-//| iii) Links are stored in the following order:
-//|      t, z, y, x (from slowest to fastest)
-//|      Directions are stored in the following order:
-//|      x, y, z, t
-//|      Each link is stored as the first two rows in double precision (so 96
-//|      bytes in total) in the following fashion:
-//|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))
-//|      Re(U(2, 1)) Im(U(2, 1)) Re(U(2, 2)) Im(U(2, 2)) Re(U(2, 3)) Im(U(2, 3))
-//|
-//|
-//|
+//|- All data is encoded in ASCII                                                   |
+//|- All configuration files begin with a header of length 4096 bytes               |
+//|    - The first header line reads: #BMW <Nx> <Ny> <Nz> <Nt> <HEX checksum>       |
+//|    - The rest of the header may be used freely (e.g. name of the code used to   |
+//|      generate the configuration, other parameters, average plaquette, ...), but |
+//|      by default empty characters are filled with "\n"                           |
+//|    - The checksum is a 64-bit Adler checksum calculated from the links/non-     |
+//|      header part of the file                                                    |
+//|- After the header, the links follow                                             |
+//|    - Storage order is: t, z, y, x (from slowest to fastest)                     |
+//|    - The directions are ordered as: x, y, z, t (from slowest to fastest)        |
+//|    - Each link takes up 96 bytes (first two rows in double precision), and the  |
+//|      order of entries is:                                                       |
+//|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
+//|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
+//|    - The entries are stored in big-endian format                                |
 //+---------------------------------------------------------------------------------+
 
 // TODO: Lot's of cleanup still left to do here...
