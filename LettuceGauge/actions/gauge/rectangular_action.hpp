@@ -235,7 +235,8 @@ namespace GaugeAction
             [[nodiscard]]
             double Local(const Matrix_SU3& U, const Matrix_3x3& st) noexcept
             {
-                return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * std::real((U * st.adjoint()).trace()));
+                // return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * std::real((U * st.adjoint()).trace()));
+                return -beta/3.0 * std::real((U * st.adjoint()).trace());
             }
     };
 

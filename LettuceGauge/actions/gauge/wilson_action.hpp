@@ -291,22 +291,13 @@ namespace WilsonAction
 
     //-----
 
-    // TODO: Does __restrict__ help in any way?
-    // floatT SLocal(const Matrix_SU3&__restrict__ U, const Matrix_SU3&__restrict__ st)
-
     [[nodiscard]]
     double Local(const Matrix_SU3& U, const Matrix_3x3& st) noexcept
     {
         // return beta/3.0 * std::real((Matrix_SU3::Identity() - U * st.adjoint()).trace());
-        return beta/static_cast<floatT>(3.0) * (static_cast<floatT>(3.0) - std::real((U * st.adjoint()).trace()));
+        // return beta/3.0 * (3.0 - std::real((U * st.adjoint()).trace()));
+        return -beta/3.0 * std::real((U * st.adjoint()).trace());
     }
-
-    // TODO: Does this help in any way?
-    // [[nodiscard]]
-    // floatT SLocalDiff(const Matrix_3x3& Udiff, const Matrix_3x3& st)
-    // {
-    //     return -beta/static_cast<floatT>(3.0) * std::real((Udiff * st.adjoint()).trace());
-    // }
 } // namespace WilsonAction
 
 #endif // WILSON_ACTION_HPP

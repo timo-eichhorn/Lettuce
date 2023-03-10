@@ -49,9 +49,11 @@ struct OverrelaxationDirectKernel
             Matrix_SU3 old_link  {U(current_link)};
             Matrix_SU3 new_link  {or_matrix * old_link.adjoint() * or_matrix};
             // Calculate action difference
-            double     S_old     {Action.Local(old_link, st)};
-            double     S_new     {Action.Local(new_link, st)};
-            double     p         {std::exp(-S_new + S_old)};
+            // double     S_old     {Action.Local(old_link, st)};
+            // double     S_new     {Action.Local(new_link, st)};
+            // double     p         {std::exp(-S_new + S_old)};
+            double     Delta_S   {Action.Local(new_link - old_link, st)};
+            double     p         {std::exp(-Delta_S)};
             #if defined(_OPENMP)
             double     q         {distribution_prob(prng_vector[omp_get_thread_num()])};
             #else
@@ -99,22 +101,22 @@ struct OverrelaxationSubgroupKernel
             Matrix_3x3       st_adj {(Action.Staple(U, current_link)).adjoint()};
             //-----
             // Update (0, 1) subgroup
-            // std::cout << "Action before: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action before: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             subblock        = Extract01<floatT>(U(current_link) * st_adj);
             U(current_link) = Embed01(OverrelaxationSU2(subblock)) * U(current_link);
-            // std::cout << "Action after: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action after: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (0, 2) subgroup
-            // std::cout << "Action before: " << Action::Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action before: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             subblock        = Extract02<floatT>(U(current_link) * st_adj);
             U(current_link) = Embed02(OverrelaxationSU2(subblock)) * U(current_link);
-            // std::cout << "Action after: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action after: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             //-----
             // Update (1, 2) subgroup
-            // std::cout << "Action before: " << Action::Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action before: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             subblock        = Extract12<floatT>(U(current_link) * st_adj);
             U(current_link) = Embed12(OverrelaxationSU2(subblock)) * U(current_link);
-            // std::cout << "Action after: " << Action::Local(U(current_link), st_adj.adjoint()) << endl;
+            // std::cout << "Local Action after: " << Action.Local(U(current_link), st_adj.adjoint()) << endl;
             //-----
             SU3::Projection::GramSchmidt(U(current_link));
         }
