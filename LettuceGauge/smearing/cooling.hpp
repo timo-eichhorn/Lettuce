@@ -30,12 +30,13 @@
 //| comparisons in arXiv:1401.2441, arXiv:1509.04259, and arXiv:1708.00696.         |
 //+---------------------------------------------------------------------------------+
 
-// template<typename floatT>
+template<typename ActionT>
 struct CoolingKernel
 {
     private:
-        // TODO: Change parameter to be action, so we can cool with respect to different actions
         GaugeField& U;
+        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+        ActionT&    Action;
         // Cooling for SU(2) (this function just normalizes the staple)
         template<typename floatT>
         SU2_comp<floatT> CoolingSU2(const SU2_comp<floatT>& A) const noexcept
@@ -44,8 +45,8 @@ struct CoolingKernel
             return a_norm * A.adjoint();
         }
     public:
-        explicit CoolingKernel(GaugeField& U_in) noexcept :
-        U(U_in)
+        explicit CoolingKernel(GaugeField& U_in, ActionT& Action_in) noexcept :
+        U(U_in), Action(Action_in)
         {}
 
         // TODO: Should this be rewritten to be applicable to a general GaugeField?
@@ -55,7 +56,7 @@ struct CoolingKernel
             Matrix_3x3 W;
             SU2_comp<floatT> subblock;
             // Get the staple
-            Matrix_3x3 st_adj {WilsonAction::Staple(U, current_link).adjoint()};
+            Matrix_3x3 st_adj {(Action.Staple(U, current_link)).adjoint()};
             //-----
             // Cool (0, 1) subgroup
             subblock        = Extract01<floatT>(U(current_link) * st_adj);
