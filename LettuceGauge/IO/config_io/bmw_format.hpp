@@ -256,7 +256,7 @@ bool LoadConfigBMW(GaugeField& U, const std::string& filename)
     std::cout << indent_whitespace << "Time for reading header: " << read_time_header.count() << "\n";
     std::cout << indent_whitespace << "Time for reading config: " << read_time_config.count() << std::endl;
 
-    bool InGroup {SU3::Tests::TestSU3All(U)};
+    bool InGroup {SU3::Tests::IsGroupElement(U)};
     if (InGroup)
     {
         std::cout << Lettuce::Color::BoldGreen << indent_whitespace << "All elements are in SU(3)!" << Lettuce::Color::Reset << std::endl;

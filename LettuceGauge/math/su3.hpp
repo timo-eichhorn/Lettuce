@@ -567,7 +567,7 @@ namespace SU3::Tests
     // Test unitarity of a matrix (up to a certain precision)
 
     [[nodiscard]]
-    bool Unitarity(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    bool IsUnitary(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
         // By default .norm() uses the Frobenius norm, i.e., the square root of the sum of all squared matrix entries
         if ((Matrix_SU3::Identity() - Mat.adjoint() * Mat).norm() > prec)
@@ -581,29 +581,27 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool UnitarityAll(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    bool IsUnitary(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
-        bool IsUnitary {true};
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Unitarity(U({t, x, y, z, mu}), prec))
+            if (not IsUnitary(U({t, x, y, z, mu}), prec))
             {
-                IsUnitary = false;
-                return IsUnitary;
+                return false;
             }
         }
-        return IsUnitary;
+        return true;
     }
 
     //-----
-    // Test how close the determinant of a matrix is to 1 (up to a certain precision)
+    // Test if the determinant of a matrix is 1 (up to a certain precision)
 
     [[nodiscard]]
-    bool Special(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    bool IsSpecial(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
         if (std::abs(Mat.determinant() - static_cast<floatT>(1.0)) > prec)
         {
@@ -616,29 +614,27 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool SpecialAll(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    bool IsSpecial(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
-        bool IsSpecial {true};
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Special(U({t, x, y, z, mu}), prec))
+            if (not IsSpecial(U({t, x, y, z, mu}), prec))
             {
-                IsSpecial = false;
-                return IsSpecial;
+                return false;
             }
         }
-        return IsSpecial;
+        return true;
     }
 
     //-----
     // Test if a matrix is a SU(3) group element (up to a certain precision)
 
     [[nodiscard]]
-    bool TestSU3(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    bool IsSU3Element(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
         if ((Matrix_SU3::Identity() - Mat.adjoint() * Mat).norm() > prec or std::abs(Mat.determinant() - static_cast<floatT>(1.0)) > prec)
         {
@@ -651,32 +647,26 @@ namespace SU3::Tests
     }
 
     [[nodiscard]]
-    bool TestSU3All(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    bool IsSU3Element(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
-        bool InGroup {true};
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not TestSU3(U({t, x, y, z, mu}), prec))
+            if (not IsSU3Element(U({t, x, y, z, mu}), prec))
             {
-                InGroup = false;
-                return InGroup;
+                return false;
             }
         }
-        return InGroup;
+        return true;
     }
 
-    //-----
-    // Test if a matrix is a su(3) algebra element (up to a certain precision)
-    // NOTE: Technically this checks if a matrix is traceless and hermitian, while su(3) matrices are anti-hermitian
-
     [[nodiscard]]
-    bool Testsu3(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    bool IsGroupElement(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
     {
-        if ((Mat - Mat.adjoint()).norm() > prec or std::abs(Mat.trace()) > prec)
+        if ((Matrix_SU3::Identity() - Mat.adjoint() * Mat).norm() > prec or std::abs(Mat.determinant() - static_cast<floatT>(1.0)) > prec)
         {
             return false;
         }
@@ -686,25 +676,54 @@ namespace SU3::Tests
         }
     }
 
-    // NOTE: Technically this checks if a matrix is traceless and hermitian, while su(3) matrices are anti-hermitian
-
     [[nodiscard]]
-    bool Testsu3All(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    bool IsGroupElement(const GaugeField& U, const floatT prec = 1e-6) noexcept
     {
-        bool InAlgebra {true};
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         for (int mu = 0; mu < 4; ++mu)
         {
-            if (not Testsu3(U({t, x, y, z, mu}), prec))
+            if (not IsGroupElement(U({t, x, y, z, mu}), prec))
             {
-                InAlgebra = false;
-                return InAlgebra;
+                return false;
             }
         }
-        return InAlgebra;
+        return true;
+    }
+
+    //-----
+    // Test if a matrix is a su(3) algebra element (up to a certain precision)
+
+    [[nodiscard]]
+    bool Issu3Element(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    {
+        if ((Mat + Mat.adjoint()).norm() > prec or std::abs(Mat.trace()) > prec)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    [[nodiscard]]
+    bool Issu3Element(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    {
+        for (int t = 0; t < Nt; ++t)
+        for (int x = 0; x < Nx; ++x)
+        for (int y = 0; y < Ny; ++y)
+        for (int z = 0; z < Nz; ++z)
+        for (int mu = 0; mu < 4; ++mu)
+        {
+            if (not Issu3Element(U({t, x, y, z, mu}), prec))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 } // namespace SU3::Tests
 
