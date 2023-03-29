@@ -280,7 +280,7 @@ class GaugeField4D
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
         {
-            return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu;
+            return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.dir;
         }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
@@ -499,7 +499,7 @@ class FullTensor4D
         // [[nodiscard]]
         // inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
         // {
-        //     return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu;
+        //     return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.dir;
         // }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept

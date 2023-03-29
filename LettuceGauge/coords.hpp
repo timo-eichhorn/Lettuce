@@ -14,6 +14,22 @@
 // Standard C headers
 // ...
 
+struct direction
+{
+    // TODO: Use char, short, or int?
+    int  dir;
+    bool forwards;
+    // TODO: Perhaps it might be better to make NOT mark this constructor as explicit, so we can implicitly convert integral types to direction structs?
+    explicit constexpr direction(const int dir_in, bool forwards_in = true) noexcept :
+    dir(dir_in), forwards(forwards_in)
+    {}
+    [[nodiscard]]
+    friend bool operator==(const direction& dir1, const direction& dir2) noexcept
+    {
+        return (dir1.dir == dir2.dir and dir1.forwards == dir2.forwards);
+    }
+};
+
 struct site_coord
 {
     // TODO: Replace with array instead of ints?
@@ -84,8 +100,12 @@ struct link_coord
     int x;
     int y;
     int z;
-    int mu;
+    // int mu;
+    direction mu;
     constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const int mu_in) noexcept :
+        t(t_in), x(x_in), y(y_in), z(z_in), mu(mu_in)
+        {}
+    constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const direction mu_in) noexcept :
         t(t_in), x(x_in), y(y_in), z(z_in), mu(mu_in)
         {}
     inline int& operator[](const int i) noexcept
@@ -101,7 +121,7 @@ struct link_coord
             case 3:
                 return z;
             case 4:
-                return mu;
+                return mu.dir;
             // TODO: Compiler will probably complain that we have no default case?
         }
     }
@@ -118,7 +138,7 @@ struct link_coord
             case 3:
                 return z;
             case 4:
-                return mu;
+                return mu.dir;
             // TODO: Compiler will probably complain that we have no default case?
         }
     }
@@ -130,7 +150,7 @@ struct link_coord
     friend std::ostream& operator<<(std::ostream& stream, const link_coord& link)
     {
         // stream << "Link(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")\n";
-        stream << "(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")";
+        stream << "(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << (link.mu.forwards ? "+" : "-") << link.mu.dir << ")";
         return stream;
     }
     [[nodiscard]]
