@@ -40,8 +40,8 @@ class GaugeFieldRaw
 
         std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
         static constexpr std::size_t size {size_};
-        // Default constructor (apparantly not allowed to be marked as noexcept, compiler will complain)
-        GaugeFieldRaw() = default;
+        // Default constructor
+        GaugeFieldRaw() noexcept = default;
         // Default destructor
         ~GaugeFieldRaw() = default;
         // Copy constructor
