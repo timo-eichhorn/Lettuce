@@ -48,7 +48,7 @@ namespace Integrators::GradientFlow
             }
         }
 
-        std::string ReturnName() const
+        static std::string ReturnName()
         {
             return "Euler/StoutSmearing";
         }
@@ -78,7 +78,7 @@ namespace Integrators::GradientFlow
     //         }
     //     }
 
-    //     std::string ReturnName() const
+    //     static std::string ReturnName()
     //     {
     //         return "Midpoint";
     //     }
@@ -110,7 +110,7 @@ namespace Integrators::GradientFlow
             }
         }
 
-        std::string ReturnName() const
+        static std::string ReturnName()
         {
             return "RK2";
         }
@@ -145,7 +145,7 @@ namespace Integrators::GradientFlow
             }
         }
 
-        std::string ReturnName() const
+        static std::string ReturnName()
         {
             return "RK3";
         }
@@ -175,7 +175,7 @@ namespace Integrators::GradientFlow
     //         }
     //     }
 
-    //     std::string ReturnName() const
+    //     static std::string ReturnName()
     //     {
     //         return "RK3_adaptive";
     //     }
