@@ -12,9 +12,55 @@
 //----------------------------------------
 // Standard C headers
 #include <cmath>
+#include <cstddef>
 
 namespace Lettuce
 {
+    // libc++ implementation of log2 at compile time (see below in generate_canonical for usage)
+    // template <unsigned long long _Xp, size_t _Rp>
+    // struct __log2_imp
+    // {
+    //     static const size_t value = _Xp & ((unsigned long long)(1) << _Rp) ? _Rp
+    //                                            : __log2_imp<_Xp, _Rp - 1>::value;
+    // };
+
+    // template <unsigned long long _Xp>
+    // struct __log2_imp<_Xp, 0>
+    // {
+    //     static const size_t value = 0;
+    // };
+
+    // template <size_t _Rp>
+    // struct __log2_imp<0, _Rp>
+    // {
+    //     static const size_t value = _Rp + 1;
+    // };
+
+    // template <class _UIntType, _UIntType _Xp>
+    // struct __log2
+    // {
+    //     static const size_t value = __log2_imp<_Xp,
+    //                                          sizeof(_UIntType) * __CHAR_BIT__ - 1>::value;
+    // };
+    // Basically copied from libc++
+    template<typename RealType, std::size_t bits, typename URNG>
+    RealType generate_canonical(URNG& g)
+    {
+        const std::size_t Dt = std::numeric_limits<RealType>::digits;
+        const std::size_t b  = Dt < bits ? Dt : bits;
+        // TODO: libc++ uses a recursive function template to compute log2 at compile time
+        const std::size_t logR = std::log2(URNG::max() - URNG::min() + std::uint64_t(1));
+        const std::size_t k = b / logR + (b % logR != 0) + (b == 0);
+        const RealType Rp = static_cast<RealType>(URNG::max() - URNG::min()) + RealType(1);
+        RealType base = Rp;
+        RealType Sp = g() - URNG::min();
+        for (std::size_t i = 1; i < k; ++i, base *= Rp)
+        {
+            Sp += (g() - URNG::min()) * base;
+        }
+        return Sp / base;
+    }
+
     template<typename RealType = double>
     class NormalDistribution
     {
