@@ -439,7 +439,7 @@ namespace GaugeUpdates
                     // TODO: This is the new version where the momenta are algebra elements
                     Momentum(current_link) += epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp);
                 }
-            }            
+            }
 
             void UpdateMetadynamicsMomenta(const floatT epsilon) noexcept
             {
@@ -545,6 +545,7 @@ namespace GaugeUpdates
                         if constexpr(metapotential_updated)
                         {
                             Metapotential.UpdatePotential(CV_new);
+                            Metapotential.UpdatePotential(-CV_new);
                         }
                         acceptance_count_metadynamics_hmc += 1;
                         return true;
@@ -562,6 +563,7 @@ namespace GaugeUpdates
                     if constexpr(metapotential_updated)
                     {
                         Metapotential.UpdatePotential(CV_new);
+                        Metapotential.UpdatePotential(-CV_new);
                     }
                     datalog << "DeltaH: " << DeltaH << std::endl;
                     return true;
