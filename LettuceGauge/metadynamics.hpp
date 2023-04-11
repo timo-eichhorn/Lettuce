@@ -2,13 +2,14 @@
 #define METADYNAMICS_HPP
 
 // Non-standard library headers
-// ... 
+#include "IO/ansi_colors.hpp"
 //----------------------------------------
 // Standard library headers
 // ...
 //----------------------------------------
 // Standard C++ headers
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -353,8 +354,13 @@ public:
     // TODO: This seem to be quite slow: https://stackoverflow.com/questions/2602013/read-whole-ascii-file-into-c-stdstring#comment5920160_2602060
     //       Better use stringstreams?
 
-    void LoadPotential(const std::string& filename)
+    bool LoadPotential(const std::string& filename)
     {
+        if (!std::filesystem::exists(filename))
+        {
+            std::cout << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
+            return false;
+        }
         binload.open(filename, std::fstream::in);
         std::string current_line;
         // Count the total linenumber using std::count (add one to the final result since we only counted the number of '\n' characters)
@@ -364,6 +370,7 @@ public:
         binload.seekg(0, binload.beg);
         // Start reading parameters
         std::getline(binload, current_line);
+        // TODO: This seems incorrect...
         // if (current_line == program_version)
         if (true)
         {
@@ -435,15 +442,19 @@ public:
             std::cout << "  weight: " << weight << "\n";
             std::cout << "  threshold_weight: " << threshold_weight << "\n";
             std::cout << "  exceeded_count: " << exceeded_count << "\n" << std::endl;
+            binload.close();
+            binload.clear();
+            return true;
         }
         else
         {
             std::cout << "Metadynamics potential file comes from an incompatible program version!\n";
             std::cout << "Current version: " << program_version << "\n";
             std::cout << "File version: " << current_line << "\n";
+            binload.close();
+            binload.clear();
+            return false;
         }
-        binload.close();
-        binload.clear();
     }
 };
 
