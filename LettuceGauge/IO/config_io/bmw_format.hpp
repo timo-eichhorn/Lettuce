@@ -30,12 +30,12 @@
 //|    - The checksum is a 64-bit Adler checksum calculated from the links/non-     |
 //|      header part of the file                                                    |
 //|- After the header, the links follow                                             |
-//|    - Storage order is: t, z, y, x (from slowest to fastest)                     |
+//|    - Storage order is: t, z, y, x, mu (from slowest to fastest)                 |
 //|    - The directions are ordered as: x, y, z, t (from slowest to fastest)        |
 //|    - Each link takes up 96 bytes (first two rows in double precision), and the  |
 //|      order of entries is:                                                       |
 //|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
-//|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
+//|      Re(U(2, 1)) Im(U(2, 1)) Re(U(2, 2)) Im(U(2, 2)) Re(U(2, 3)) Im(U(2, 3))    |
 //|    - The entries are stored in big-endian format                                |
 //+---------------------------------------------------------------------------------+
 
