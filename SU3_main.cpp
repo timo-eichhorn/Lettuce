@@ -9,6 +9,7 @@
 #include "LettuceGauge/defines.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
+#include "LettuceGauge/IO/config_io/bridge_text_format.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
