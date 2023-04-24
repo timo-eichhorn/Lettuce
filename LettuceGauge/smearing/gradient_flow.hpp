@@ -18,9 +18,11 @@
 
 //+---------------------------------------------------------------------------------+
 //| This file provides a functor implementing the gradient flow for SU(3) gauge     |
-//| theory, supporting generic integrators and actions. In addition, three integra- |
-//| tors (Euler, RK2, RK3) are provided.                                            |
-//| For more details see arXiv:0907.5491 and arXiv:1006.4518.                       |
+//| theory, supporting generic integrators and actions. In addition, multiple       |
+//| integrators (Euler, RK2, RK3, RK3W7) are provided.                              |
+//| For more details on the gradient flow see arXiv:0907.5491 and arXiv:1006.4518.  |
+//| The RK3 integrator originates from arXiv:1006.4518, and the RK3W7 integrator    |
+//| can be found in arXiv:2101.05320 under the name LSCFRK3W7.                      |
 //| TODO: Implement adaptive stepsize integrator (see arXiv:1301.4388).             |
 //+---------------------------------------------------------------------------------+
 
@@ -128,10 +130,25 @@ namespace Integrators::GradientFlow
         void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
         {
             // W_0             = V_t
-            // W_1             = exp(1/4 * Z_0)                           * W_0
-            // W_2             = exp(8/9 * Z_1 - 17/36 * Z_0)             * W_1
-            // V_{t + epsilon} = exp(3/4 * Z_2 - 8/9 * Z_1 + 17/36 * Z_0) * W_2
+            // W_1             = exp(1/4 * Z_0)                             * W_0
+            // W_2             = exp(8/9 * Z_1 - 17/36 * Z_0)               * W_1
+            // V_{t + epsilon} = exp(3/4 * Z_2 - 8/9   * Z_1 + 17/36 * Z_0) * W_2
             // Z_i = epsilon * Z(W_i)
+
+            // In the notation of arXiv:2101.05320:
+            // Delta Y_1 = 0 * Delta Y_0 + h * F(Y_0)
+            // Y_1 = exp(1/4 * Delta Y_1) * Y_0
+            // ----
+            // Delta Y_2 = -17/32 * Delta Y_1 + h * F(Y_1)
+            //           = -17/32 * h * F(Y_0) + h * F(Y_1)
+            // Y_2 = exp(8/9 * Delta Y_2) * Y_1
+            //     = exp(-17/36 * h * F(Y_0) + 8/9 * h * F(Y_1)) * Y_1
+            // -----
+            // Delta Y_3 = -32/27 * Delta Y_2 + h * F(Y_2)
+            //           = -32/27 * (-17/32 * h * F(Y_0) + h * F(Y_1)) + h * F(Y_2)
+            //           = 17/27 * h * F(Y_0) - 32/27 * h * F(Y_1) + h * F(Y_2)
+            // Y_3 = exp(3/4 * Delta Y_3) * Y_2
+            //     = exp(17/36 h * F(Y_0) - 8/9 * h * F(Y_1) + 3/4 * F(Y_2))
             for (int step_count = 0; step_count < n_step; ++step_count)
             {
                 GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
@@ -148,6 +165,56 @@ namespace Integrators::GradientFlow
         static std::string ReturnName()
         {
             return "RK3";
+        }
+    };
+
+    struct RK3W7
+    {
+        GaugeField& Force;
+
+        explicit RK3W7(GaugeField& Force_in) noexcept :
+        Force(Force_in)
+        {}
+
+        template<typename GradientFlowFunctor>
+        void operator()(GradientFlowFunctor& GradientFlow, const int n_step) const noexcept
+        {
+            // W_0             = V_t
+            // W_1             = exp(1/3   * Z_0)                             * W_0
+            // W_2             = exp(15/16 * Z_1 - 25/48 * Z_0)               * W_1
+            // V_{t + epsilon} = exp(8/15  * Z_2 - 51/80 * Z_1 + 17/48 * Z_0) * W_2
+            // Z_i = epsilon * Z(W_i)
+
+            // In the notation of arXiv:2101.05320:
+            // Delta Y_1 = 0 * Delta Y_0 + h * F(Y_0)
+            // Y_1 = exp(1/3 * Delta Y_1) * Y_0
+            // -----
+            // Delta Y_2 = -5/9 * Delta Y_1 + h * F(Y_1)
+            //           = -5/9 * h * F(Y_0) + h * F(Y_1)
+            // Y_2 = exp(15/16 * Delta Y_2) * Y_1
+            //     = exp(-25/48 * h * F(Y_0) + 15/16 * h * F(Y_1)) * Y_1
+            // -----
+            // Delta Y_3 = -153/128 * Delta Y_2 + h * F(Y_2)
+            //           = -153/128 * (-5/9 * h * F(Y_0) + h * F(Y_1)) + h * F(Y_2)
+            //           = 85/128 * h * F(Y_0) - 153/128 * h * F(Y_1) + h * F(Y_2)
+            // Y_3 = exp(8/15 * Delta Y_3) * Y_2
+            //     = exp(17/48 h * F(Y_0) - 51/80 * h * F(Y_1) + 8/15 * F(Y_2))
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                GradientFlow.CalculateZ(GradientFlow.U_flowed, Force, GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0/3.0);
+
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, Force, -25.0/48.0, 15.0/16.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
+
+                GradientFlow.UpdateZ(GradientFlow.U_flowed, Force, -17.0/25.0, 8.0/15.0 * GradientFlow.epsilon);
+                GradientFlow.UpdateFields(GradientFlow.U_flowed, Force, 1.0);
+            }
+        }
+
+        static std::string ReturnName()
+        {
+            return "RK3W7";
         }
     };
 
