@@ -14,19 +14,24 @@
 // Standard C headers
 // ...
 
-struct direction
+enum class link_orientation : bool {backwards = false, forwards = true};
+
+struct lorentz_index
 {
     // TODO: Use char, short, or int?
-    int  dir;
-    bool forwards;
+    int              direction;
+    link_orientation orientation;
     // TODO: Perhaps it might be better to make NOT mark this constructor as explicit, so we can implicitly convert integral types to direction structs?
-    explicit constexpr direction(const int dir_in, bool forwards_in = true) noexcept :
-    dir(dir_in), forwards(forwards_in)
+    explicit constexpr lorentz_index(const int direction_in, link_orientation orientation_in) noexcept :
+    direction(direction_in), orientation(orientation_in)
+    {}
+    explicit constexpr lorentz_index(const int direction_in, bool orientation_forwards = true) noexcept :
+    direction(direction_in), orientation(orientation_forwards ? link_orientation::forwards : link_orientation::backwards)
     {}
     [[nodiscard]]
-    friend bool operator==(const direction& dir1, const direction& dir2) noexcept
+    friend bool operator==(const lorentz_index& dir1, const lorentz_index& dir2) noexcept
     {
-        return (dir1.dir == dir2.dir and dir1.forwards == dir2.forwards);
+        return (dir1.direction == dir2.direction and dir1.orientation == dir2.orientation);
     }
 };
 
@@ -96,16 +101,15 @@ struct site_coord
 struct link_coord
 {
     // TODO: Replace with array instead of ints?
-    int t;
-    int x;
-    int y;
-    int z;
-    // int mu;
-    direction mu;
+    int           t;
+    int           x;
+    int           y;
+    int           z;
+    lorentz_index mu;
     constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const int mu_in) noexcept :
         t(t_in), x(x_in), y(y_in), z(z_in), mu(mu_in)
         {}
-    constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const direction mu_in) noexcept :
+    constexpr link_coord(const int t_in, const int x_in, const int y_in, const int z_in, const lorentz_index mu_in) noexcept :
         t(t_in), x(x_in), y(y_in), z(z_in), mu(mu_in)
         {}
     inline int& operator[](const int i) noexcept
@@ -121,7 +125,7 @@ struct link_coord
             case 3:
                 return z;
             case 4:
-                return mu.dir;
+                return mu.direction;
             // TODO: Compiler will probably complain that we have no default case?
         }
     }
@@ -138,7 +142,7 @@ struct link_coord
             case 3:
                 return z;
             case 4:
-                return mu.dir;
+                return mu.direction;
             // TODO: Compiler will probably complain that we have no default case?
         }
     }
@@ -150,7 +154,7 @@ struct link_coord
     friend std::ostream& operator<<(std::ostream& stream, const link_coord& link)
     {
         // stream << "Link(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << link.mu << ")\n";
-        stream << "(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << (link.mu.forwards ? "+" : "-") << link.mu.dir << ")";
+        stream << "(" << link.t << ", " << link.x << ", " << link.y << ", " << link.z << ", " << (static_cast<bool>(link.mu.orientation) ? "+" : "-") << link.mu.direction << ")";
         return stream;
     }
     [[nodiscard]]

@@ -106,7 +106,7 @@ namespace GaugeAction
                 Matrix_3x3 st;
                 auto [t, x, y, z, mu] = current_link;
 
-                switch (mu.dir)
+                switch (mu.direction)
                 {
                     case 0:
                     {
@@ -216,7 +216,7 @@ namespace GaugeAction
             Matrix_3x3 StapleRect(const GaugeField& U, const link_coord& current_link) const noexcept
             {
                 auto [t, x, y, z, mu] = current_link;
-                return StapleRect(U, {t, x, y, z}, mu.dir);
+                return StapleRect(U, {t, x, y, z}, mu.direction);
             }
 
             [[nodiscard]]
