@@ -56,30 +56,6 @@ void StoutSmearing4D(const GaugeField& U_unsmeared, GaugeField& U_smeared, const
     }
 }
 
-// [[nodiscard]]
-// SmearedFieldTuple StoutSmearingN(GaugeField& U1, GaugeField& U2, const int n_smear, const floatT smear_param = 0.12)
-// {
-//     for (int smear_count = 0; smear_count < n_smear; ++smear_count)
-//     {
-//         if (smear_count % 2 == 0)
-//         {
-//             StoutSmearing4D(U1, U2, smear_param);
-//         }
-//         else
-//         {
-//             StoutSmearing4D(U2, U1, smear_param);
-//         }
-//     }
-//     if (n_smear % 2 == 0)
-//     {
-//         return {U1, U2};
-//     }
-//     else
-//     {
-//         return {U2, U1};
-//     }
-// }
-
 // TODO: This is potentially dangerous, since we need to make sure we use the correct U array afterwards,
 //       which depends on n_smear. For even n_smear, we need to use U1, for odd n_smear we need to use U2!
 
@@ -98,28 +74,20 @@ void StoutSmearingN(GaugeField& U1, GaugeField& U2, const int N, const floatT sm
     }
 }
 
-// void StoutSmearingN(GaugeFieldSmeared& SmearedFields, const int offset, const int n_smear, const floatT smear_param = 0.12)
+// void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const floatT smear_param = 0.12) noexcept
 // {
-//     for (int smear_count = 0; smear_count < n_smear; ++smear_count)
+//     if (SmearedFields.ReturnNsmear() > 1)
 //     {
-//         StoutSmearing4D(SmearedFields[(offset + smear_count) % 2], SmearedFields[(offset + smear_count + 1) % 2], smear_param);
+//         for (int smear_count = 0; smear_count < SmearedFields.ReturnNsmear() - 1; ++smear_count)
+//         {
+//             StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], smear_param);
+//         }
+//     }
+//     else
+//     {
+//         std::cerr << "Can't smear field with NSmear <= 1!" << std::endl;
 //     }
 // }
-
-void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const floatT smear_param = 0.12) noexcept
-{
-    if (SmearedFields.ReturnNsmear() > 1)
-    {
-        for (int smear_count = 0; smear_count < SmearedFields.ReturnNsmear() - 1; ++smear_count)
-        {
-            StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], smear_param);
-        }
-    }
-    else
-    {
-        std::cerr << "Can't smear field with NSmear <= 1!" << std::endl;
-    }
-}
 
 void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_smeared, GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const floatT smear_param = 0.12) noexcept
 {
@@ -261,35 +229,100 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
     // std::cout << "Sigma lies in group:   " << SU3::Tests::TestSU3All(Sigma) << std::endl;
 }
 
-// TODO: Implement smearing as functor
-// TODO: Make the action a template parameter
-// template<typename GaugeActionT>
-// struct StoutSmearingKernel
-// {
-//     private:
-//         floatT smear_param;
-//     public:
-//         explicit StoutSmearingKernel(const floatT smear_param_in) noexcept :
-//         smear_param(smear_param_in)
-//         {}
+// template<typename ActionT>
+struct StoutSmearingKernel
+{
+    private:
+        // TODO: Possible parameter ExpFunction?
+        // TODO: In contrast to the gradient flow, do we want to support different integrators and actions here?
+        //       If yes, correctly implementing the smearing force recursion (without some kind of automatic differentiation) will most likely be very painful
+        const GaugeField&  U_unsmeared;
+              GaugeField&  U_smeared;
+              GaugeField&  Force;
+              // IntegratorT& Integrator;
+              // ActionT&     Action;
+              floatT       epsilon;
 
-//         void operator()(const GaugeField& U_unsmeared, GaugeField& U_smeared, const link_coord& current_link) const noexcept
-//         {
-//             Matrix_3x3 st {WilsonAction::Staple(U_unsmeared, current_link)};
-//             Matrix_3x3 A {st * U_unsmeared(current_link).adjoint()};
-//             Matrix_3x3 B {A - A.adjoint()};
-//             Matrix_3x3 C {static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity()};
-//             // Cayley-Hamilton exponential
-//             U_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * U_unsmeared(current_link);
-//             // Eigen exponential (Scaling and squaring)
-//             // U_smeared(current_link) = (smear_param * C).exp() * U_unsmeared(current_link);
-//             SU3::Projection::GramSchmidt(U_smeared(current_link));
-//         }
+        // The epsilon is only included here, not in CalculateForce, in contrast to the GradientFlowKernel
+        // where we need parameters in both functions for the higher order integrators
+        void UpdateFields(GaugeField& U, const GaugeField& Z) const noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            for (int mu = 0; mu < 4; ++mu)
+            {
+                link_coord current_link {t, x, y, z, mu};
+                U(current_link) = SU3::exp(-i<floatT> * epsilon * Z(current_link)) * U(current_link);
+                // Eigen exponential (Scaling and squaring)
+                // U(current_link) = (epsilon * Z(current_link)).exp() * U(current_link);
+                // Projection to SU(3) (necessary?)
+                SU3::Projection::GramSchmidt(U(current_link));
+            }
+        }
 
-//         void SetSmearParam(const floatT smear_param_in) noexcept
-//         {
-//             smear_param = smear_param_in;
-//         }
-// };
+        void CalculateForce(const GaugeField& U, GaugeField& Z) const noexcept
+        {
+            #pragma omp parallel for
+            for (int t = 0; t < Nt; ++t)
+            for (int x = 0; x < Nx; ++x)
+            for (int y = 0; y < Ny; ++y)
+            for (int z = 0; z < Nz; ++z)
+            {
+                for (int mu = 0; mu < 4; ++mu)
+                {
+                    link_coord current_link {t, x, y, z, mu};
+                    // Matrix_3x3 st {Action.Staple(U, current_link)};
+                    Matrix_3x3 st {WilsonAction::Staple(U, current_link)};
+                    Matrix_3x3 A  {st * U(current_link).adjoint()};
+                    Z(current_link) = SU3::Projection::Algebra(A);
+                }
+            }
+        }
+    public:
+        // explicit StoutSmearingKernel(const GaugeField& U_unsmeared_in, GaugeField& U_smeared_in, ActionT& Action_in, const floatT epsilon_in) noexcept :
+        // U_unsmeared(U_unsmeared_in), U_smeared(U_smeared_in), Action(Action_in), epsilon(epsilon_in)
+        // {}
+        explicit StoutSmearingKernel(const GaugeField& U_unsmeared_in, GaugeField& U_smeared_in, GaugeField& Force_in, const floatT epsilon_in) noexcept :
+        U_unsmeared(U_unsmeared_in), U_smeared(U_smeared_in), Force(Force_in), epsilon(epsilon_in)
+        {}
+
+        void operator()(const int n_step) const noexcept
+        {
+            U_smeared = U_unsmeared;
+            // From now on only work with U_smeared and Force
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                CalculateForce(U_smeared, Force);
+                UpdateFields(U_smeared, Force);
+            }
+        }
+
+        void Resume(const int n_step) const noexcept
+        {
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                CalculateForce(U_smeared, Force);
+                UpdateFields(U_smeared, Force);
+            }
+        }
+
+        void SetEpsilon(const floatT epsilon_in) noexcept
+        {
+            epsilon = epsilon_in;
+        }
+
+        floatT GetEpsilon() const noexcept
+        {
+            return epsilon;
+        }
+
+        static std::string ReturnIntegratorName()
+        {
+            return "StoutSmearing";
+        }
+};
 
 #endif // LETTUCE_STOUT_SMEARING_HPP

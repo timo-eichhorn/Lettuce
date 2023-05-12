@@ -555,7 +555,6 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     {
         // Apply smearing
         // auto start_smearing = std::chrono::system_clock::now();
-        // StoutSmearing4D(Gluon, Gluonsmeared1, rho_stout);
         Flow(n_smear_skip);
         // Gluonsmeared1 = Gluon;
         // Iterator::Checkerboard(Cooling, 1);
@@ -589,8 +588,6 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         if (smear_count % 2 == 0)
         {
             // Apply smearing
-            // StoutSmearing4D(*Gluonsmeared1, *Gluonsmeared2, rho_stout);
-            // StoutSmearingN(Gluonsmeared1, Gluonsmeared2, n_smear_skip, rho_stout);
             Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
@@ -624,8 +621,6 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         else
         {
             // Apply smearing
-            // StoutSmearing4D(*Gluonsmeared2, *Gluonsmeared1, rho_stout);
-            // StoutSmearingN(Gluonsmeared2, Gluonsmeared1, n_smear_skip, rho_stout);
             Flow.Resume(n_smear_skip);
             // Iterator::Checkerboard(Cooling, n_smear_skip);
             // WilsonFlowForward(Gluonsmeared1, 0.12, n_smear_skip);
