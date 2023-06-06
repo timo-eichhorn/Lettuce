@@ -725,6 +725,36 @@ namespace SU3::Tests
         }
         return true;
     }
+
+    [[nodiscard]]
+    bool IsAlgebraElement(const Matrix_SU3& Mat, const floatT prec = 1e-6) noexcept
+    {
+        if ((Mat + Mat.adjoint()).norm() > prec or std::abs(Mat.trace()) > prec)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    [[nodiscard]]
+    bool IsAlgebraElement(const GaugeField& U, const floatT prec = 1e-6) noexcept
+    {
+        for (int t = 0; t < Nt; ++t)
+        for (int x = 0; x < Nx; ++x)
+        for (int y = 0; y < Ny; ++y)
+        for (int z = 0; z < Nz; ++z)
+        for (int mu = 0; mu < 4; ++mu)
+        {
+            if (not IsAlgebraElement(U({t, x, y, z, mu}), prec))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 } // namespace SU3::Tests
 
 #endif // LETTUCE_SU3_HPP
