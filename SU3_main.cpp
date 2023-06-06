@@ -504,7 +504,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
     EPlaqutte[0]                   = EnergyDensity::Plaquette(Gluon);
-    FieldStrengthTensor::Clover(Gluon, F_tensor);
+    FieldStrengthTensor::CloverTraceless(Gluon, F_tensor);
     EClover[0]                     = EnergyDensity::Clover(F_tensor);
 
     // auto start_wilson = std::chrono::system_clock::now();
@@ -567,7 +567,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         Plaquette[1]                   = PlaquetteSum(Gluonsmeared1);
         EPlaqutte[1]                   = EnergyDensity::Plaquette(Gluonsmeared1);
-        FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
+        FieldStrengthTensor::CloverTraceless(Gluonsmeared1, F_tensor);
         EClover[1]                     = EnergyDensity::Clover(F_tensor);
         WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
@@ -605,7 +605,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
             Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
             EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared1);
-            FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
+            FieldStrengthTensor::CloverTraceless(Gluonsmeared1, F_tensor);
             EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
@@ -629,7 +629,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
             ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
             Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
             EPlaqutte[smear_count]                   = EnergyDensity::Plaquette(Gluonsmeared1);
-            FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
+            FieldStrengthTensor::CloverTraceless(Gluonsmeared1, F_tensor);
             EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
             WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
             WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
