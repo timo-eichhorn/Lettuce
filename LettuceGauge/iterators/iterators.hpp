@@ -182,6 +182,28 @@ namespace Iterator
             }
         }
     }
+    //-----
+    // Random sequential iterator through the lattice
+    template<typename funcT>
+    void Random(funcT&& function, const int n_sweep = 1)
+    {
+        std::uniform_int_distribution<> dist_t(0, Nt - 1);
+        std::uniform_int_distribution<> dist_x(0, Nx - 1);
+        std::uniform_int_distribution<> dist_y(0, Ny - 1);
+        std::uniform_int_distribution<> dist_z(0, Nz - 1);
+        std::uniform_int_distribution<> dist_mu(0, 4 - 1);
+        // #pragma omp parallel
+        for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
+        {
+            // #pragma omp parallel for
+            // #pragma omp parallel
+            for (std::size_t i = 0; i < Nt * Nx * Ny * Nz; ++i)
+            {
+                link_coord current_link {dist_t(generator_rand), dist_x(generator_rand), dist_y(generator_rand), dist_z(generator_rand), dist_mu(generator_rand)};
+                function(current_link);
+            }
+        }
+    }
 } // namespace Iterator
 
 #endif // LETTUCE_ITERATORS_HPP
