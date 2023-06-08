@@ -22,10 +22,10 @@
 // Standard C headers
 #include <cmath>
 
-// The return value of this function may be negative, as it simply calculates the difference between two coordinates while taking periodic boundaries into account
+// The return value of this function may be negative, as it calculates the difference between two coordinates while taking periodic boundaries into account
 double DifferenceMu(const int lattice_length, const double coord1, const double coord2) noexcept
 {
-    // Backwards and forwards are measured with respect to the large of the two coordinates coord1 and coord2
+    // Backwards and forwards are measured with respect to the larger of the two coordinates coord1 and coord2
     double backwards_distance {std::abs(coord1 - coord2)};
     double forwards_distance  {lattice_length - backwards_distance};
     // Get a signed(!) distance with respect to coord1
@@ -44,11 +44,10 @@ double DistanceMu(const int lattice_length, const double coord1, const double co
 
 double SquaredDistanceToCenter(const site_coord& lattice_shape, const site_coord& center, const site_coord& site) noexcept
 {
-    // Since we count from 0, coord_max is actually the maximum possible value + 1
-    // Also, since we want to avoid gauge singularities, we shift all components of center by 0.5 into the positive direction
     double squared_distance {0.0};
     for (int mu = 0; mu < 4; ++mu)
     {
+        // Since we want to avoid gauge singularities, we shift all components of center by 0.5 into the positive direction
         double distance_mu {DistanceMu(lattice_shape[mu], center[mu] + 0.5, site[mu])};
         squared_distance += distance_mu * distance_mu;
     }
@@ -88,10 +87,8 @@ void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool posit
     {
         sign = 1.0;
     }
-    // TODO: Overload +/- operators on site_coord to calculate distances?
     // To avoid gauge singularities on the lattice, we actually do not place the instanton around the site_coord center, but rather shift all coordinates by 0.5 into the positive direction
     // This way, the gauge singularity at the center of the instanton never actually coincides with a lattice point
-    // Also, due to periodic boundaries
     site_coord lattice_shape {Gluon.Shape()};
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
