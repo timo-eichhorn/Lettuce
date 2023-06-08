@@ -6,7 +6,9 @@
 #include "../coords.hpp"
 #include "../lattice.hpp"
 #include "../math/su3.hpp"
+// #include "../actions/gauge/rectangular_action.hpp"
 #include "../actions/gauge/wilson_action.hpp"
+// #include "../smearing/gradient_flow.hpp"
 #include "../smearing/stout_smearing.hpp"
 //-----
 #include <Eigen/Dense>
@@ -20,8 +22,195 @@
 // Standard C headers
 #include <cmath>
 
-// This sets the lattice equal to a BPST instanton
+// The return value of this function may be negative, as it simply calculates the difference between two coordinates while taking periodic boundaries into account
+double DifferenceMu(const int lattice_length, const double coord1, const double coord2) noexcept
+{
+    // Backwards and forwards are measured with respect to the large of the two coordinates coord1 and coord2
+    double backwards_distance {std::abs(coord1 - coord2)};
+    double forwards_distance  {lattice_length - backwards_distance};
+    // Get a signed(!) distance with respect to coord1
+    int    sign               {coord1 >= coord2 ? -1 : 1};
+    return sign * (backwards_distance < forwards_distance ? -backwards_distance : forwards_distance);
+}
+
+// The return value of this function is always >= 0, since it calculates the distance between two coordinates while taking periodic boundaries into account
+double DistanceMu(const int lattice_length, const double coord1, const double coord2) noexcept
+{
+    // Backwards and forwards are measured with respect to the large of the two coordinates coord1 and coord2
+    double backwards_distance {std::abs(coord1 - coord2)};
+    double forwards_distance  {lattice_length - backwards_distance};
+    return std::fmin(backwards_distance, forwards_distance);
+}
+
+double SquaredDistanceToCenter(const site_coord& lattice_shape, const site_coord& center, const site_coord& site) noexcept
+{
+    // Since we count from 0, coord_max is actually the maximum possible value + 1
+    // Also, since we want to avoid gauge singularities, we shift all components of center by 0.5 into the positive direction
+    double squared_distance {0.0};
+    for (int mu = 0; mu < 4; ++mu)
+    {
+        double distance_mu {DistanceMu(lattice_shape[mu], center[mu] + 0.5, site[mu])};
+        squared_distance += distance_mu * distance_mu;
+    }
+    return squared_distance;
+}
+
+// This creates an approximate (charge 1) BPST instanton on the lattice with scale parameter r
+// Note that no self-dual instanton configurations with abs(Q) = 1 exist on the torus (cf. hep-lat/0112034), but for
+// the purpose of an attempted instanton update we will try to proceed with an approximate abs(Q) = 1 'instanton'
 void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool positive_Q, const site_coord& center, const int r) noexcept
+{
+    Matrix_SU3 sig1, sig2, sig3;
+    sig1 << 0.0, 1.0, 0.0,
+            1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0;
+    sig2 << 0.0      , -i<floatT>, 0.0,
+            i<floatT>,  0.0      , 0.0,
+            0.0      ,  0.0      , 1.0;
+    sig3 << 1.0,  0.0, 0.0,
+            0.0, -1.0, 0.0,
+            0.0,  0.0, 1.0;
+    // sig1 << 1.0, 0.0, 0.0,
+    //         0.0, 0.0, 1.0,
+    //         0.0, 1.0, 0.0;
+    // sig2 << 1.0, 0.0      ,  0.0,
+    //         0.0, 0.0      , -i<floatT>,
+    //         0.0, i<floatT>,  0.0;
+    // sig3 << 1.0, 0.0,  0.0,
+    //         0.0, 1.0,  0.0,
+    //         0.0, 0.0, -1.0;
+    floatT sign;
+    if (positive_Q)
+    {
+        sign = -1.0;
+    }
+    else
+    {
+        sign = 1.0;
+    }
+    // TODO: Overload +/- operators on site_coord to calculate distances?
+    // To avoid gauge singularities on the lattice, we actually do not place the instanton around the site_coord center, but rather shift all coordinates by 0.5 into the positive direction
+    // This way, the gauge singularity at the center of the instanton never actually coincides with a lattice point
+    // Also, due to periodic boundaries
+    site_coord lattice_shape {Gluon.Shape()};
+    #pragma omp parallel for
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    for (int mu = 0; mu < 4; ++mu)
+    {
+        site_coord current_site        {t, x, y, z};
+        double     distance_squared    {SquaredDistanceToCenter(lattice_shape, center, current_site)};
+        double     difference_mu       {DifferenceMu(lattice_shape[mu], center[mu] + 0.5, current_site[mu])};
+        double     distance_mu_squared {difference_mu * difference_mu};
+        double     denom               {std::sqrt(distance_squared - distance_mu_squared)};
+        double     denom_r             {std::sqrt(distance_squared - distance_mu_squared + r * r)};
+        double     lambda              {-std::atan((difference_mu + 1.0) / denom) + std::atan(difference_mu / denom) + denom / denom_r * (std::atan((difference_mu + 1.0) / denom_r) - std::atan(difference_mu / denom_r))};
+        // TODO: Allow to choose between different embeddings
+        //       For now only embed in 01 entries of SU(3) matrix
+        // TODO: Use SU(2) matrices instead of SU(3) for as long as possible?
+        Matrix_SU3 tmp {Matrix_SU3::Zero()};
+        switch (mu)
+        {
+            // Manually worked out the different contributions from the 't Hooft symbol
+            case 0:
+            {
+                // a = 1, mu = 0, nu = 1 => +1
+                tmp += sign * sig1 * DifferenceMu(lattice_shape[1], current_site[1], center[1] + 0.5);
+                // a = 2, mu = 0, nu = 2 => +1
+                tmp += sign * sig2 * DifferenceMu(lattice_shape[2], current_site[2], center[2] + 0.5);
+                // a = 3, mu = 0, nu = 3 => +1
+                tmp += sign * sig3 * DifferenceMu(lattice_shape[3], current_site[3], center[3] + 0.5);
+            }
+            break;
+            case 1:
+            {
+                // a = 1, mu = 1, nu = 0 => -1
+                tmp -= sign * sig1 * DifferenceMu(lattice_shape[0], current_site[0], center[0] + 0.5);
+                // a = 2, mu = 1, nu = 3 => -1
+                tmp -=        sig2 * DifferenceMu(lattice_shape[3], current_site[3], center[3] + 0.5);
+                // a = 3, mu = 1, nu = 2 => +1
+                tmp +=        sig3 * DifferenceMu(lattice_shape[2], current_site[2], center[2] + 0.5);
+            }
+            break;
+            case 2:
+            {
+                // a = 2, mu = 2, nu = 0 => -1
+                tmp -= sign * sig2 * DifferenceMu(lattice_shape[0], current_site[0], center[0] + 0.5);
+                // a = 1, mu = 2, nu = 3 => +1
+                tmp +=        sig1 * DifferenceMu(lattice_shape[3], current_site[3], center[3] + 0.5);
+                // a = 3, mu = 2, nu = 1 => -1
+                tmp -=        sig3 * DifferenceMu(lattice_shape[1], current_site[1], center[1] + 0.5);
+            }
+            break;
+            case 3:
+            {
+                // a = 3, mu = 3, nu = 0 => -1
+                tmp -= sign * sig3 * DifferenceMu(lattice_shape[0], current_site[0], center[0] + 0.5);
+                // a = 1, mu = 3, nu = 2 => -1
+                tmp -=        sig1 * DifferenceMu(lattice_shape[2], current_site[2], center[2] + 0.5);
+                // a = 2, mu = 3, nu = 1 => +1
+                tmp +=        sig2 * DifferenceMu(lattice_shape[1], current_site[1], center[1] + 0.5);
+            }
+            break;
+        }
+        Gluon(current_site, mu) = std::cos(lambda) * Matrix_SU3::Identity() + i<floatT> * std::sin(lambda) / denom * tmp;
+        SU3::Projection::GramSchmidt(Gluon(current_site, mu));
+    }
+    // std::cout << "All elements in group: " << SU3::Tests::TestSU3All(Gluon) << std::endl;
+    //-----
+    // For now only smear uniformly
+    // For even smearing steps the final field is stored in the first argument, so for now we'll hardcode an even amount of smearing steps here (my talk is tomorrow after all)
+    StoutSmearingN(Gluon, Gluon1, 150);
+    //-----
+    // Smearing with spatial dependence (don't smear close to the instanton center, smear more further outwards)
+    // Matrix_3x3 Sigma;
+    // Matrix_3x3 A;
+    // Matrix_3x3 B;
+    // Matrix_3x3 C;
+    // for(int smear_count = 0; smear_count < 10; ++smear_count)
+    // {
+    //     #pragma omp parallel for private(Sigma, A, B, C)
+    //     for (int t = 0; t < Nt; ++t)
+    //     for (int x = 0; x < Nx; ++x)
+    //     for (int y = 0; y < Ny; ++y)
+    //     for (int z = 0; z < Nz; ++z)
+    //     for (int mu = 0; mu < 4; ++mu)
+    //     {
+    //         link_coord current_link {t, x, y, z, mu};
+    //         // TODO: This (hopefully) works as long as we place the instanton around the center of the lattice, but it is probably wrong otherwise since it doesn't respect the periodic boundaries
+    //         double     distance     {std::sqrt(std::pow(current_link.t - (center.t + 0.5), 2) + std::pow(current_link.x - (center.x + 0.5), 2) + std::pow(current_link.y - (center.y + 0.5), 2) + std::pow(current_link.z - (center.z + 0.5), 2))};
+    //         if (distance >= Nt / 4 and distance <= Nt / 2)
+    //         {
+    //             double rho_prime {0.5 * rho_stout * (1.0 + std::sin(4.0 * pi<floatT> / static_cast<floatT>(Nt) * (distance - 3.0/8.0 * Nt)))};
+    //             Sigma.noalias() = WilsonAction::Staple(Gluon, current_link);
+    //             A.noalias() = Sigma * Gluon(current_link).adjoint();
+    //             B.noalias() = A - A.adjoint();
+    //             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_SU3::Identity();
+    //             // Gluon(current_link) = SU3::exp(-i<floatT> * rho_prime * C) * Gluon(current_link);
+    //             Gluon(current_link) = (rho_prime * C).exp() * Gluon(current_link);
+    //             SU3::Projection::GramSchmidt(Gluon(current_link));
+    //         }
+    //         if (distance > Nt / 2)
+    //         {
+    //             Sigma.noalias() = WilsonAction::Staple(Gluon, current_link);
+    //             A.noalias() = Sigma * Gluon(current_link).adjoint();
+    //             B.noalias() = A - A.adjoint();
+    //             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_SU3::Identity();
+    //             // Gluon(current_link) = SU3::exp(-i<floatT> * rho_prime * C) * Gluon(current_link);
+    //             Gluon(current_link) = (rho_stout * C).exp() * Gluon(current_link);
+    //             SU3::Projection::GramSchmidt(Gluon(current_link));
+    //         }
+    //     }
+    // }
+    // std::cout << Gluon(3, 3, 3, 3, 1) << std::endl;
+    // std::cout << Gluon(3, 3, 3, 3, 1) * Gluon(3, 3, 3, 3, 1).adjoint() << std::endl;
+    // std::cout << Gluon(3, 3, 3, 3, 1).determinant() << "\n" << std::endl;
+    // std::cout << SU3::Tests::TestSU3All(Gluon) << std::endl;
+}
+
+void CreateBPSTInstantonOld(GaugeField& Gluon, GaugeField& Gluon1, const bool positive_Q, const site_coord& center, const int r) noexcept
 {
     Matrix_SU3 sig1, sig2, sig3;
     sig1 << 0.0, 1.0, 0.0,
@@ -63,13 +252,6 @@ void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool posit
         //       For now only embed in 01 entries of SU(3) matrix
         // TODO: Use SU(2) matrices instead of SU(3) for as long as possible?
         Matrix_SU3 tmp {Matrix_SU3::Zero()};
-        // for (int nu = 0; nu < 4; ++nu)
-        // {
-        //     if (mu != nu)
-        //     {
-        //         tmp +=
-        //     }
-        // }
         switch (mu)
         {
             case 0:
@@ -242,15 +424,7 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
 void InstantonStart(GaugeField& Gluon, const int Q)
 {
     // First set everything to unity
-    #pragma omp parallel for
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    for (int mu = 0; mu < 4; ++mu)
-    {
-        Gluon({t, x, y, z, mu}).setIdentity();
-    }
+    Gluon.SetToIdentity();
     // Commuting su(2) matrices embedded into su(3)
     // Generally, any traceless, hermitian matrix works here
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
@@ -327,15 +501,7 @@ void InstantonStart(GaugeField& Gluon, const int Q)
 void LocalInstantonStart(GaugeField& Gluon)
 {
     // First set everything to unity
-    #pragma omp parallel for
-    for (int t = 0; t < Nt; ++t)
-    for (int x = 0; x < Nx; ++x)
-    for (int y = 0; y < Ny; ++y)
-    for (int z = 0; z < Nz; ++z)
-    for (int mu = 0; mu < 4; ++mu)
-    {
-        Gluon({t, x, y, z, mu}).setIdentity();
-    }
+    Gluon.SetToIdentity();
     // Generators of SU(2)/Pauli matrices embedded into SU(3) (up to negative determinant)
     // Generally, any traceless, hermitian matrix works here
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
