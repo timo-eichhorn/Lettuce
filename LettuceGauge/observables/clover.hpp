@@ -233,19 +233,6 @@ void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
 //     // The link U(current_site, mu) is a common factor appearing in all 6 components of the clover derivative
 //     derivative_component = U(current_site, mu) * derivative_component;
 //     return -static_cast<floatT>(1.0/(256.0 * pi<floatT> * pi<floatT>)) * SU3::Projection::Algebra(derivative_component);
-//     // // This is still missing the generators in front
-//     // // Also, this is technically only half of the whole derivative term
-//     // // The remaining half however is simply the adjoint
-//     // // Including the adjoint and simplifying some things, we get two times the real part in the end
-//     // // Without the trace we would get two times the hermitian part, with the trace it's only the real part (?)
-//     // // derivative_component = -static_cast<floatT>(4.0/64.0) * (static_cast<floatT>(1.0/3.0) * derivative_component.trace() * Matrix_3x3::Identity() - derivative_component).real();
-//     // Matrix_3x3 tmp {derivative_component - derivative_component.adjoint()};
-//     // // TODO: I think this is not correct yet, since it includes the prefactor coming from the field strength tensor, but not the prefactor 1/(32 pi^2) from the charge definition
-//     // // return -static_cast<floatT>(1.0/32.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-//     // // This should hopefully be correct
-//     // // return -static_cast<floatT>(1.0/(1024.0 * pi<floatT> * pi<floatT>)) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-//     // // Turns out it wasn't correct... Comparison with numerical derivatives revealed a missing factor 2 (not sure where it comes from yet)
-//     // return -static_cast<floatT>(1.0/(512.0 * pi<floatT> * pi<floatT>)) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
 // }
 
 [[nodiscard]]
@@ -284,6 +271,7 @@ Matrix_3x3 CloverDerivative(const GaugeField& U, const FullTensor& Clover, const
     switch (mu)
     {
         // Only three terms per direction are needed here since we can use the antisymmetry of R_{rho, sigma} = C_{rho, sigma} - C_{sigma, rho}
+        // The additional factor 2 is included below in the return statement
         case 0:
         {
             derivative_component += CloverDerivativeComponent(U, Clover, current_site, mu, 1, 2, 3);
@@ -313,22 +301,9 @@ Matrix_3x3 CloverDerivative(const GaugeField& U, const FullTensor& Clover, const
         }
         break;
     }
-    // The link U(current_site, mu) is a common factor appearing in all 6 components of the clover derivative
+    // The link U(current_site, mu) is a common factor appearing in all 6 components of the clover derivative, so multiply here
     derivative_component = U(current_site, mu) * derivative_component;
-    return -static_cast<floatT>(1.0/(256.0 * pi<floatT> * pi<floatT>)) * SU3::Projection::Algebra(derivative_component);
-    // // This is still missing the generators in front
-    // // Also, this is technically only half of the whole derivative term
-    // // The remaining half however is simply the adjoint
-    // // Including the adjoint and simplifying some things, we get two times the real part in the end
-    // // Without the trace we would get two times the hermitian part, with the trace it's only the real part (?)
-    // // derivative_component = -static_cast<floatT>(4.0/64.0) * (static_cast<floatT>(1.0/3.0) * derivative_component.trace() * Matrix_3x3::Identity() - derivative_component).real();
-    // Matrix_3x3 tmp {derivative_component - derivative_component.adjoint()};
-    // // TODO: I think this is not correct yet, since it includes the prefactor coming from the field strength tensor, but not the prefactor 1/(32 pi^2) from the charge definition
-    // // return -static_cast<floatT>(1.0/32.0) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-    // // This should hopefully be correct
-    // // return -static_cast<floatT>(1.0/(1024.0 * pi<floatT> * pi<floatT>)) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
-    // // Turns out it wasn't correct... Comparison with numerical derivatives revealed a missing factor 2 (not sure where it comes from yet)
-    // return -static_cast<floatT>(1.0/(512.0 * pi<floatT> * pi<floatT>)) * (tmp - static_cast<floatT>(1.0/3.0) * tmp.trace() * Matrix_3x3::Identity());
+    return -static_cast<floatT>(2.0/(512.0 * pi<floatT> * pi<floatT>)) * SU3::Projection::Algebra(derivative_component);
 }
 
 #endif // LETTUCE_CLOVER_HPP
