@@ -91,17 +91,13 @@ uint_fast64_t acceptance_count_tempering         {0};       // Parallel temperin
 uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
 
 //-----
-
-using std::array;
-using std::vector;
-
 // NxN_matrix is the same type as SUN_matrix, the different names are only meant to distinguish between
 // SU(N) group elements and NxN matrices mathematically
 using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2>;
 using Matrix_SU2     = Matrix_2x2;
 using Matrix_3x3     = Eigen::Matrix<std::complex<floatT>, 3, 3>;
 using Matrix_SU3     = Matrix_3x3;
-using Local_tensor   = array<array<Matrix_SU3, 4>, 4>;
+using Local_tensor   = std::array<std::array<Matrix_SU3, 4>, 4>;
 
 //-----
 // Better complex numbers?
