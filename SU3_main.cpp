@@ -10,6 +10,7 @@
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
 #include "LettuceGauge/IO/config_io/bridge_text_format.hpp"
+#include "LettuceGauge/IO/parameter_io.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -46,30 +47,21 @@
 #include <array>
 #include <chrono>
 #include <complex>
-// #include <experimental/iterator>
 #include <filesystem>
 #include <fstream>
-// #include <queue>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
 #include <random>
 #include <string>
 #include <utility>
 #include <vector>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
 //----------------------------------------
 // Standard C headers
 #include <cmath>
 #include <ctime>
 
 //-----
-
-// std::unique_ptr<Gl_Lattice> Gluon         {std::make_unique<Gl_Lattice>()};
-// std::unique_ptr<Gl_Lattice> Gluonsmeared1 {std::make_unique<Gl_Lattice>()};
-// std::unique_ptr<Gl_Lattice> Gluonsmeared2 {std::make_unique<Gl_Lattice>()};
-// std::unique_ptr<Gl_Lattice> Gluonchain    {std::make_unique<Gl_Lattice>()};
-// std::unique_ptr<Full_tensor> F_tensor     {std::make_unique<Full_tensor>()};
-// std::unique_ptr<Full_tensor> Q_tensor     {std::make_unique<Full_tensor>()};
 
 // GaugeField     Gluon         {Nt, Nx, Ny, Nz};
 // GaugeField     Gluonsmeared1 {Nt, Nx, Ny, Nz};
@@ -79,232 +71,15 @@
 GaugeField                   Gluon;
 GaugeField                   Gluonsmeared1;
 GaugeField                   Gluonsmeared2;
-// For now only necessarry for global Metadynamics
-// TODO: Move to large if constexpr environment together with entire metadynamics code
-GaugeField                   Gluonsmeared3;
 GaugeField                   Gluonchain;
 FullTensor                   F_tensor;
-// std::unique_ptr<Full_tensor> F_tensor      {std::make_unique<Full_tensor>()};
-// std::unique_ptr<Full_tensor> Q_tensor      {std::make_unique<Full_tensor>()};
-
-//-----
-// Overload << for vectors and arrays?
-
-// template<typename T>
-// std::ostream& operator<<(ostream& out, const std::vector<T>& container)
-// {
-//     out << "Container dump begins: ";
-//     std::copy(container.cbegin(), container.cend(), std::ostream_iterator<T>(out, " "));
-//     out << "\n";
-//     return out;
-// }
-
-// template<typename T>
-// std::ostream& operator<<(ostream& out, const std::array<T>& container)
-// {
-//     out << "Container dump begins: ";
-//     std::copy(container.cbegin(), container.cend(), std::ostream_iterator<T>(out, " "));
-//     out << "\n";
-//     // std::copy(container.cbegin(), std::prev(container.cend()), std::ostream_iterator<T>(correlationlog, ","));
-//     // correlationlog << Correlation_Function.back() << "\n";
-//     return out;
-// }
 
 //-------------------------------------------------------------------------------------
 
-//-----
-// Function to get user input with error handling
-// TODO: Constrain target to writeable range or something like that
-// TODO: Should probably make clear that this version works for the terminal only
-//       Rename this to ValidatedInTerminal and write alternative version for reading from files?
-
-template<typename T>
-void ValidatedIn(const std::string& message, T& target)
-{
-    // Keep count of tries and abort after too many tries (e.g. important when using nohup)
-    size_t count {0};
-    while (std::cout << Lettuce::Color::BoldBlue << message << Lettuce::Color::Reset << "\n" && !(std::cin >> target) && count < 10)
-    {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << Lettuce::Color::Red << "Invalid input." << Lettuce::Color::Reset << "\n";
-        ++count;
-    }
-}
-
-//-----
-// Receives simulation parameters from user input
-// TODO: We should probably wrap all parameters in a struct and also write a single print function we can reuse for both printing
-//       to the terminal and writing to files.
-
-void Configuration()
-{
-    std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
-    std::cout << std::left << std::setw(49) << "| SU(3) theory simulation" << "|\n";
-    std::cout << std::left << std::setw(49) << "| Current version: " + program_version << "|\n";
-    std::cout << "+------------------------------------------------+\n\n" << Lettuce::Color::Reset;
-    // Get simulation parameters from user input
-    ValidatedIn("Please enter beta: ", beta);
-    ValidatedIn("Please enter n_run: ", n_run);
-    ValidatedIn("Please enter expectation_period: ", expectation_period);
-    n_run_inverse = 1.0 / static_cast<double>(n_run);
-    if (n_metro != 0 && multi_hit != 0)
-    {
-        metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
-    }
-    std::cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
-    std::cout << "beta is "                        << beta << ".\n";
-    std::cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
-    std::cout << "n_metro is "                     << n_metro << ".\n";
-    std::cout << "multi_hit is "                   << multi_hit << ".\n";
-    std::cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
-    std::cout << "n_heatbath is "                  << n_heatbath << ".\n";
-    std::cout << "n_hmc is "                       << n_hmc << ".\n";
-    std::cout << "n_orelax is "                    << n_orelax << ".\n";
-    std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
-    std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
-    std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
-    std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
-}
-
-//-----
-// Writes simulation parameters to files
-
-void SaveParameters(std::string filename, const std::string& starttimestring)
-{
-    datalog.open(filename, std::fstream::out | std::fstream::app);
-    datalog << program_version << "\n";
-    datalog << "logfile\n\n";
-    #ifdef DEBUG_MODE_TERMINAL
-    datalog << "DEBUG_MODE_TERMINAL\n";
-    #endif
-    #ifdef FIXED_SEED
-    datalog << "FIXED_SEED\n";
-    #endif
-    datalog << starttimestring << "\n";
-    datalog << "START_PARAMS\n";
-    datalog << "Gauge field precision = "            << typeid(floatT).name()            << "\n";
-    datalog << "Nt = "                               << Nt                               << "\n";
-    datalog << "Nx = "                               << Nx                               << "\n";
-    datalog << "Ny = "                               << Ny                               << "\n";
-    datalog << "Nz = "                               << Nz                               << "\n";
-    datalog << "beta = "                             << beta                             << "\n";
-    datalog << "n_run = "                            << n_run                            << "\n";
-    datalog << "expectation_period = "               << expectation_period               << "\n";
-    datalog << "n_smear = "                          << n_smear                          << "\n";
-    datalog << "n_smear_skip = "                     << n_smear_skip                     << "\n";
-    datalog << "rho_stout = "                        << rho_stout                        << "\n";
-    datalog << "n_metro = "                          << n_metro                          << "\n";
-    datalog << "multi_hit = "                        << multi_hit                        << "\n";
-    datalog << "metro_target_acceptance = "          << metro_target_acceptance          << "\n";
-    datalog << "n_heatbath = "                       << n_heatbath                       << "\n";
-    datalog << "n_hmc = "                            << n_hmc                            << "\n";
-    datalog << "n_orelax = "                         << n_orelax                         << "\n";
-    datalog << "n_instanton_update = "               << n_instanton_update               << "\n";
-    datalog << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";
-    datalog << "metapotential_updated = "            << metapotential_updated            << "\n";
-    datalog << "n_smear_meta = "                     << n_smear_meta                     << "\n";
-    datalog << "tempering_enabled = "                << tempering_enabled                << "\n";
-    datalog << "tempering_nonmetadynamics_sweeps = " << tempering_nonmetadynamics_sweeps << "\n";
-    datalog << "tempering_swap_period = "            << tempering_swap_period            << "\n";
-    datalog << "END_PARAMS\n"                        << std::endl;
-    datalog.close();
-    datalog.clear();
-}
-
-//-----
-// Creates directories and files to store data
-
-void CreateFiles()
-{
-    std::string LatticeSizeString    {std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt)};
-    std::string betaString           {std::to_string(beta)};
-    std::string directoryname_prefix {"SU(3)_N=" + LatticeSizeString + "_beta=" + betaString};
-    directoryname = directoryname_prefix;
-    int append = 1;
-    std::string appendString;
-    while (std::filesystem::exists(directoryname))
-    {
-        appendString  = std::to_string(append);
-        directoryname = directoryname_prefix + " (" + appendString + ")";
-        ++append;
-    }
-    std::filesystem::create_directory(directoryname);
-    std::cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
-    logfilepath           = directoryname + "/log.txt";
-    parameterfilepath     = directoryname + "/parameters.txt";
-    wilsonfilepath        = directoryname + "/wilson.txt";
-    metapotentialfilepath = directoryname + "/metapotential.txt";
-    std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
-    std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
-    std::cout                             << "Filepath (wilson):\t"     << wilsonfilepath                                 << "\n";
-    std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath << Lettuce::Color::Reset << "\n";
-    #ifdef DEBUG_MODE_TERMINAL
-    std::cout << "DEBUG_MODE_TERMINAL\n\n";
-    #endif
-
-    //-----
-    // Writes parameters to files
-
-    std::time_t start_time        {std::chrono::system_clock::to_time_t(start)};
-    std::string start_time_string {std::ctime(&start_time)};
-
-    // logfile
-
-    SaveParameters(logfilepath, start_time_string);
-
-    // parameterfile
-
-    SaveParameters(parameterfilepath, start_time_string);
-
-    // wilsonfile
-
-    SaveParameters(wilsonfilepath, start_time_string);
-}
-
-//-----
-// Print final parameters to a specified ostream
-
-template<typename floatT>
-void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const uint_fast64_t acceptance_count_metadynamics_hmc, const uint_fast64_t acceptance_count_tempering, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
-{
-    double or_norm        {1.0};
-    if constexpr(n_orelax != 0)
-    {
-        or_norm        = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_run * n_orelax);
-    }
-    double hmc_norm       {1.0};
-    if constexpr(n_hmc != 0)
-    {
-        hmc_norm       = 1.0 / n_run;
-    }
-    double tempering_norm {1.0};
-    if constexpr(tempering_enabled)
-    {
-        // Need to cast either numerator or denominator to floating type for the divison to work as we want
-        tempering_norm = static_cast<double>(tempering_swap_period) / n_run;
-    }
-    double instanton_norm {1.0};
-    if constexpr(n_instanton_update != 0)
-    {
-        instanton_norm = 1.0 / (n_run * n_instanton_update);
-    }
-    log << "Metro target acceptance: " << metro_target_acceptance                      << "\n";
-    log << "Metro acceptance: "        << acceptance_count * metro_norm                << "\n";
-    log << "OR acceptance: "           << acceptance_count_or * or_norm                << "\n";
-    log << "HMC acceptance: "          << acceptance_count_hmc * hmc_norm              << "\n";
-    log << "MetaD-HMC acceptance: "    << acceptance_count_metadynamics_hmc * hmc_norm << "\n";
-    log << "Tempering acceptance: "    << acceptance_count_tempering * tempering_norm  << "\n";
-    log << "Instanton acceptance: "    << acceptance_count_instanton * instanton_norm  << "\n";
-    log << "epsilon: "                 << epsilon                                      << "\n";
-    log << std::ctime(&end_time)                                                       << "\n";
-    log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
-}
-
 [[nodiscard]]
-vector<pcg64> CreatePRNGs(const int thread_num = 0)
+std::vector<pcg64> CreatePRNGs(const int thread_num = 0)
 {
-    vector<pcg64> tmp_vec;
+    std::vector<pcg64> tmp_vec;
     #if defined(_OPENMP)
         int max_thread_num {omp_get_max_threads()};
     #else
@@ -346,9 +121,9 @@ vector<pcg64> CreatePRNGs(const int thread_num = 0)
 // Create vector of normal_distribution generators with mean 0 and standard deviation 1 for HMC
 
 [[nodiscard]]
-vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thread_num = 0)
+std::vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thread_num = 0)
 {
-    vector<std::normal_distribution<floatT>> tmp_vec;
+    std::vector<std::normal_distribution<floatT>> tmp_vec;
     #if defined(_OPENMP)
         int max_thread_num {omp_get_max_threads()};
     #else
@@ -379,7 +154,6 @@ vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thr
 }
 
 //-----
-// TODO: Metadynamics
 
 template<typename FuncT>
 void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2, GaugeField& Gluon3, MetaBiasPotential& Metapotential, FuncT&& CV_function, double& CV_old, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
@@ -463,21 +237,21 @@ void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2
 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const bool print_newline = true)
 {
-    vector<double>               Action(n_smear + 1);
-    vector<double>               ActionImproved(n_smear + 1);
-    vector<double>               ActionUnnormalized(n_smear + 1);
-    vector<double>               Plaquette(n_smear + 1);
-    vector<double>               EPlaqutte(n_smear + 1);
-    vector<double>               EClover(n_smear + 1);
-    vector<double>               WLoop2(n_smear + 1);
-    vector<double>               WLoop4(n_smear + 1);
-    vector<double>               WLoop8(n_smear + 1);
-    vector<double>               PLoopRe(n_smear + 1);
-    vector<double>               PLoopIm(n_smear + 1);
-    vector<std::complex<double>> PLoop(n_smear + 1);
-    // vector<double> TopologicalCharge(n_smear + 1);
-    vector<double>               TopologicalChargeSymm(n_smear + 1);
-    vector<double>               TopologicalChargeUnimproved(n_smear + 1);
+    std::vector<double>               Action(n_smear + 1);
+    std::vector<double>               ActionImproved(n_smear + 1);
+    std::vector<double>               ActionUnnormalized(n_smear + 1);
+    std::vector<double>               Plaquette(n_smear + 1);
+    std::vector<double>               EPlaqutte(n_smear + 1);
+    std::vector<double>               EClover(n_smear + 1);
+    std::vector<double>               WLoop2(n_smear + 1);
+    std::vector<double>               WLoop4(n_smear + 1);
+    std::vector<double>               WLoop8(n_smear + 1);
+    std::vector<double>               PLoopRe(n_smear + 1);
+    std::vector<double>               PLoopIm(n_smear + 1);
+    std::vector<std::complex<double>> PLoop(n_smear + 1);
+    // std::vector<double> TopologicalCharge(n_smear + 1);
+    std::vector<double>               TopologicalChargeSymm(n_smear + 1);
+    std::vector<double>               TopologicalChargeUnimproved(n_smear + 1);
     // auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
     // GaugeAction::Rectangular<1> WAct(beta, 1.0, 0.0);
     GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
