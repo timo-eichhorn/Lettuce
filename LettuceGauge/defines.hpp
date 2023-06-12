@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "../PCG/pcg_random.hpp"
+#include "random/prng_wrapper.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Dense>
 //----------------------------------------
@@ -83,6 +84,7 @@ pcg64 generator_rand(seed_source);
 #endif
 std::vector<pcg64> prng_vector;                             // Vector of PRNGs for parallel usage
 std::vector<std::normal_distribution<floatT>> ndist_vector; // Vector of normal distributions for parallel usage in HMC
+// PRNG<pcg64, floatT, int> global_prng((Nt * Nx * Ny * Nz), seed_source);
 uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
 uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
 uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
