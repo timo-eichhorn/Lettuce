@@ -208,14 +208,33 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Generate 8 random numbers as basis coefficients
-                    floatT phi1 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi2 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi3 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi4 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi5 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    std::size_t index {static_cast<std::size_t>(omp_get_thread_num())};
+                    floatT phi1 {ndist_vector[index](prng_vector[index])};
+                    floatT phi2 {ndist_vector[index](prng_vector[index])};
+                    floatT phi3 {ndist_vector[index](prng_vector[index])};
+                    floatT phi4 {ndist_vector[index](prng_vector[index])};
+                    floatT phi5 {ndist_vector[index](prng_vector[index])};
+                    floatT phi6 {ndist_vector[index](prng_vector[index])};
+                    floatT phi7 {ndist_vector[index](prng_vector[index])};
+                    floatT phi8 {ndist_vector[index](prng_vector[index])};
+
+                    // floatT phi1 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi2 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi3 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi4 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi5 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
+                    // std::size_t index {static_cast<std::size_t>(((t * Nx + x) * Ny + y) * Nz + z)};
+                    // floatT phi1 {global_prng.Gaussian(index)};
+                    // floatT phi2 {global_prng.Gaussian(index)};
+                    // floatT phi3 {global_prng.Gaussian(index)};
+                    // floatT phi4 {global_prng.Gaussian(index)};
+                    // floatT phi5 {global_prng.Gaussian(index)};
+                    // floatT phi6 {global_prng.Gaussian(index)};
+                    // floatT phi7 {global_prng.Gaussian(index)};
+                    // floatT phi8 {global_prng.Gaussian(index)};
 
                     // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Random momentum in su(3) given by phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann matrix)
