@@ -1,5 +1,5 @@
-#ifndef METADYNAMICS_HPP
-#define METADYNAMICS_HPP
+#ifndef LETTUCE_METADYNAMICS_HPP
+#define LETTUCE_METADYNAMICS_HPP
 
 // Non-standard library headers
 #include "IO/ansi_colors.hpp"
@@ -23,8 +23,6 @@
 #include <cassert>
 #include <cmath>
 
-// std::string program_version = "SU(3)_version_1.3";
-
 class MetaBiasPotential
 {
 private:
@@ -39,6 +37,26 @@ private:
     std::ifstream binload;
 public:
     // TODO: Rewrite constructor
+    // MetaBiasPotential(const double CV_min_in, const double CV_max_in, const size_t bin_number_in, const double weight_in, const double threshold_weight_in) noexcept :
+    // CV_min(CV_min_in), CV_max(CV_max_in), bin_number(bin_number_in), edge_number(bin_number_in + 1) weight(weight_in), threshold_weight(threshold_weight_in)
+    // {
+    //     assert(CV_min_in < CV_max_in);
+    //     // Resize bin_count and set all entries to 0
+    //     bin_count.assign(edge_number, 0.0);
+    //     // Reset out of range count
+    //     exceeded_count = 0;
+    //     // Print message with parameters
+    //     std::cout << "\nInitialized MetaBiasPotential with the following parameters:\n";
+    //     std::cout << "  CV_min: " << CV_min << "\n";
+    //     std::cout << "  CV_max: " << CV_max << "\n";
+    //     std::cout << "  bin_number: " << bin_number << "\n";
+    //     std::cout << "  edge_number: " << edge_number << "\n";
+    //     std::cout << "  bin_width: " << bin_width << "\n";
+    //     std::cout << "  bin_width_inverse: " << bin_width_inverse << "\n";
+    //     std::cout << "  weight: " << weight << "\n";
+    //     std::cout << "  threshold_weight: " << threshold_weight << "\n";
+    //     std::cout << "  exceeded_count: " << exceeded_count << "\n" << std::endl;
+    // }
     MetaBiasPotential(const double CV_min_in, const double CV_max_in, const size_t bin_number_in, const double weight_in, const double threshold_weight_in)
     {
         assert(CV_min_in < CV_max_in);
@@ -458,4 +476,4 @@ public:
     }
 };
 
-#endif
+#endif // LETTUCE_METADYNAMICS_HPP
