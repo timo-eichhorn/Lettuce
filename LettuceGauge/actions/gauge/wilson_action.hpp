@@ -4,7 +4,6 @@
 // Non-standard library headers
 #include "../../defines.hpp"
 #include "../../observables/plaquette.hpp"
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
@@ -105,7 +104,7 @@ namespace WilsonAction
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
+                st           = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 0}) * U({tp, x, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0}) * U({tp, x, ym, z, 2})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 0}) * U({tp, x, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0}) * U({tp, x, y, zm, 3});
                 // st.noalias() = U[t][x][y][z][1] * U[t][xp][y][z][0] * U[tp][x][y][z][1].adjoint() + U[t][xm][y][z][1].adjoint() * U[t][xm][y][z][0] * U[tp][xm][y][z][1];
@@ -123,7 +122,7 @@ namespace WilsonAction
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 1}) * U({t, xp, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1}) * U({t, xp, ym, z, 2})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 1}) * U({t, xp, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1}) * U({t, xp, y, zm, 3});
                 // st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0});
@@ -141,7 +140,7 @@ namespace WilsonAction
                 int yp {(y + 1)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
                              + U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 2}) * U({t, xm, yp, z, 1})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 2}) * U({t, x, yp, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2}) * U({t, x, yp, zm, 3});
                 // st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0});
@@ -159,7 +158,7 @@ namespace WilsonAction
                 int yp {(y + 1)%Ny};
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
                              + U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 3}) * U({t, xm, y, zp, 1})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 3}) * U({t, x, ym, zp, 2});
                 // st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0});
@@ -189,7 +188,7 @@ namespace WilsonAction
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
+                st           = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 0}) * U({tp, x, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0}) * U({tp, x, ym, z, 2})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 0}) * U({tp, x, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0}) * U({tp, x, y, zm, 3});
             }
@@ -204,7 +203,7 @@ namespace WilsonAction
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 1}) * U({t, xp, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1}) * U({t, xp, ym, z, 2})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 1}) * U({t, xp, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1}) * U({t, xp, y, zm, 3});
             }
@@ -219,7 +218,7 @@ namespace WilsonAction
                 int yp {(y + 1)%Ny};
                 int zp {(z + 1)%Nz};
                 int zm {(z - 1 + Nz)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
                              + U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 2}) * U({t, xm, yp, z, 1})
                              + U({t, x, y, z, 3}) * U({t, x, y, zp, 2}) * U({t, x, yp, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2}) * U({t, x, yp, zm, 3});
             }
@@ -234,7 +233,7 @@ namespace WilsonAction
                 int yp {(y + 1)%Ny};
                 int ym {(y - 1 + Ny)%Ny};
                 int zp {(z + 1)%Nz};
-                st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
+                st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
                              + U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 3}) * U({t, xm, y, zp, 1})
                              + U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 3}) * U({t, x, ym, zp, 2});
             }

@@ -36,8 +36,6 @@
 #include "LettuceGauge/updates/tempering.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
-#include <unsupported/Eigen/MatrixFunctions>
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
@@ -574,7 +572,7 @@ int main()
         if constexpr(n_hmc != 0)
         {
             datalog << "[HMC start thermalization]\n";
-            for (int n_count = 0; n_count < 20; ++n_count)
+            for (int n_count = 0; n_count < 2; ++n_count)
             {
                 HMC(10, false);
             }
@@ -617,14 +615,14 @@ int main()
             // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
             // std::cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << std::endl;
             //-----
-            // auto start_update_hmc {std::chrono::system_clock::now()};
+            auto start_update_hmc {std::chrono::system_clock::now()};
             if constexpr(n_hmc != 0)
             {
                 HMC(n_hmc, true);
             }
-            // auto end_update_hmc {std::chrono::system_clock::now()};
-            // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
-            // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
+            auto end_update_hmc {std::chrono::system_clock::now()};
+            std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
+            std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
             //-----
             // auto start_update_or = std::chrono::system_clock::now();
             if constexpr(n_orelax != 0)

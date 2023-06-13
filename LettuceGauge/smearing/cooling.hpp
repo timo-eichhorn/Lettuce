@@ -6,8 +6,6 @@
 #include "../actions/gauge/wilson_action.hpp"
 #include "../math/su2.hpp"
 #include "../math/su3.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 // ...

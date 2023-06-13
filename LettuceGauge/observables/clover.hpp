@@ -5,7 +5,6 @@
 #include "../defines.hpp"
 #include "plaquette.hpp"
 #include "wilson_loop.hpp"
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 // ...

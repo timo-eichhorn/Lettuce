@@ -2,7 +2,6 @@
 #define LETTUCE_WILSON_LOOP_HPP
 
 // Non-standard library headers
-#include <Eigen/Dense>
 #include "../coords.hpp"
 //----------------------------------------
 // Standard library headers

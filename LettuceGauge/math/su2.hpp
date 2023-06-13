@@ -118,31 +118,25 @@ class SU2_comp
 template<typename floatT>
 Matrix_3x3 Embed01(const SU2_comp<floatT>& Mat) noexcept
 {
-    Matrix_3x3 Mat_embedded;
-    Mat_embedded <<             Mat.e11,            Mat.e12, 0,
-                    -std::conj(Mat.e12), std::conj(Mat.e11), 0,
-                                      0,                  0, 1;
-    return Mat_embedded;
+    return {            Mat.e11,            Mat.e12, 0,
+            -std::conj(Mat.e12), std::conj(Mat.e11), 0,
+                              0,                  0, 1};
 }
 
 template<typename floatT>
 Matrix_3x3 Embed02(const SU2_comp<floatT>& Mat) noexcept
 {
-    Matrix_3x3 Mat_embedded;
-    Mat_embedded <<             Mat.e11, 0,            Mat.e12,
-                                      0, 1,                  0,
-                    -std::conj(Mat.e12), 0, std::conj(Mat.e11);
-    return Mat_embedded;
+    return{            Mat.e11, 0,            Mat.e12,
+                             0, 1,                  0,
+           -std::conj(Mat.e12), 0,  std::conj(Mat.e11)};
 }
 
 template<typename floatT>
 Matrix_3x3 Embed12(const SU2_comp<floatT>& Mat) noexcept
 {
-    Matrix_3x3 Mat_embedded;
-    Mat_embedded << 1,                   0,                  0,
-                    0,             Mat.e11,            Mat.e12,
-                    0, -std::conj(Mat.e12), std::conj(Mat.e11);
-    return Mat_embedded;
+    return {1,                   0,                  0,
+            0,             Mat.e11,            Mat.e12,
+            0, -std::conj(Mat.e12),  std::conj(Mat.e11)};
 }
 
 // Extract SU(2) matrix from SU(3) matrix via projection (we obviously can't directly extract subblocks since that wouldn't generally be in SU(2))

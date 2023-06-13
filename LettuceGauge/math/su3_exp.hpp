@@ -3,8 +3,6 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 // ...

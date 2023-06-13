@@ -115,10 +115,13 @@ void SwapEndianness(T* in) noexcept
 Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
 {
     // BMW format stores only the first two rows
-    Matrix_SU3 tmp;
-    tmp << buffer[0] + i<floatT> * buffer[1], buffer[2] + i<floatT> * buffer[3], buffer[4] + i<floatT> * buffer[5],
-           buffer[6] + i<floatT> * buffer[7], buffer[8] + i<floatT> * buffer[9], buffer[10] + i<floatT> * buffer[11],
-           0.0, 0.0, 0.0;
+    // Matrix_SU3 tmp;
+    // tmp << buffer[0] + i<floatT> * buffer[1], buffer[2] + i<floatT> * buffer[3], buffer[4] + i<floatT> * buffer[5],
+    //        buffer[6] + i<floatT> * buffer[7], buffer[8] + i<floatT> * buffer[9], buffer[10] + i<floatT> * buffer[11],
+    //        0.0, 0.0, 0.0;
+    Matrix_SU3 tmp {buffer[0] + i<floatT> * buffer[1], buffer[2] + i<floatT> * buffer[3], buffer[4]  + i<floatT> * buffer[5],
+                    buffer[6] + i<floatT> * buffer[7], buffer[8] + i<floatT> * buffer[9], buffer[10] + i<floatT> * buffer[11],
+                    0.0                              , 0.0                              , 0.0                                };
     SU3::Projection::RestoreLastRow(tmp);
     return tmp;
 }

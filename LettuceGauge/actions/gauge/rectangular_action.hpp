@@ -117,7 +117,7 @@ namespace GaugeAction
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
+                        st           = U({t, x, y, z, 1}) * U({t, xp, y, z, 0}) * U({tp, x, y, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0}) * U({tp, xm, y, z, 1})
                                      + U({t, x, y, z, 2}) * U({t, x, yp, z, 0}) * U({tp, x, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0}) * U({tp, x, ym, z, 2})
                                      + U({t, x, y, z, 3}) * U({t, x, y, zp, 0}) * U({tp, x, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0}) * U({tp, x, y, zm, 3});
                     }
@@ -132,7 +132,7 @@ namespace GaugeAction
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
+                        st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 1}) * U({tm, xp, y, z, 0})
                                      + U({t, x, y, z, 2}) * U({t, x, yp, z, 1}) * U({t, xp, y, z, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1}) * U({t, xp, ym, z, 2})
                                      + U({t, x, y, z, 3}) * U({t, x, y, zp, 1}) * U({t, xp, y, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1}) * U({t, xp, y, zm, 3});
                     }
@@ -147,7 +147,7 @@ namespace GaugeAction
                         int yp {(y + 1)%Ny};
                         int zp {(z + 1)%Nz};
                         int zm {(z - 1 + Nz)%Nz};
-                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
+                        st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 2}) * U({tm, x, yp, z, 0})
                                      + U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 2}) * U({t, xm, yp, z, 1})
                                      + U({t, x, y, z, 3}) * U({t, x, y, zp, 2}) * U({t, x, yp, z, 3}).adjoint() + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2}) * U({t, x, yp, zm, 3});
                     }
@@ -162,7 +162,7 @@ namespace GaugeAction
                         int yp {(y + 1)%Ny};
                         int ym {(y - 1 + Ny)%Ny};
                         int zp {(z + 1)%Nz};
-                        st.noalias() = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
+                        st           = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, z, 3}) * U({tm, x, y, zp, 0})
                                      + U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 3}) * U({t, xm, y, zp, 1})
                                      + U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 3}) * U({t, x, ym, zp, 2});
                     }
@@ -189,7 +189,7 @@ namespace GaugeAction
                     site_coord site_nudd     {Move<-1>(site_nud    , nu)};
                     site_coord site_mup_nudd {Move< 1>(site_nudd   , mu)};
                     site_coord site_mup_nud  {Move< 1>(site_nud    , mu)};
-                    st.noalias() += U(current_site, nu)           * U(site_nup , nu)           * U(site_nupp, mu) * U(site_mup_nup , nu).adjoint() * U(site_mup    , nu).adjoint()
+                    st           += U(current_site, nu)           * U(site_nup , nu)           * U(site_nupp, mu) * U(site_mup_nup , nu).adjoint() * U(site_mup    , nu).adjoint()
                                   + U(site_nud    , nu).adjoint() * U(site_nudd, nu).adjoint() * U(site_nudd, mu) * U(site_mup_nudd, nu)           * U(site_mup_nud, nu);
                     //-----
                     // Second term, same direction as link (staple originating from current_site)
@@ -197,7 +197,7 @@ namespace GaugeAction
                     site_coord site_mupp     {Move< 1>(site_mup    , mu)};
                     // Left half
                     site_coord site_mupp_nud {Move< 1>(site_mup_nud, mu)};
-                    st.noalias() += (U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint()
+                    st           += (U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint()
                                    + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, mu) * U(site_mupp_nud, nu)) * U(site_mup, mu).adjoint();
                     //-----
                     // Third term, same direction as link (staple originating from site_mud)
@@ -206,7 +206,7 @@ namespace GaugeAction
                     site_coord site_mud_nup  {Move< 1>(site_mud    , nu)};
                     // Left half
                     site_coord site_mud_nud  {Move<-1>(site_mud    , nu)};
-                    st.noalias() += U(site_mud, mu).adjoint() * (U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
+                    st           += U(site_mud, mu).adjoint() * (U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
                                                                + U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(site_nud, mu) * U(site_mup_nud, nu));
                 }
                 return st;

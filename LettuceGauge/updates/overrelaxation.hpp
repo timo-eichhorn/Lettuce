@@ -5,8 +5,6 @@
 #include "../defines.hpp"
 #include "../math/su2.hpp"
 #include "../math/su3.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
@@ -27,47 +25,47 @@
 //| Cabibbo-Marinari decomposition into SU(2) subgroups is also provided.           |
 //+---------------------------------------------------------------------------------+
 
-template<typename floatT, typename ActionT>
-struct OverrelaxationDirectKernel
-{
-    private:
-        GaugeField&                             U;
-        // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
-        ActionT&                                Action;
-        std::uniform_real_distribution<floatT>& distribution_prob;
-    public:
-        explicit OverrelaxationDirectKernel(GaugeField& U_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-        U(U_in), Action(Action_in), distribution_prob(distribution_prob_in)
-        {}
+// template<typename floatT, typename ActionT>
+// struct OverrelaxationDirectKernel
+// {
+//     private:
+//         GaugeField&                             U;
+//         // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
+//         ActionT&                                Action;
+//         std::uniform_real_distribution<floatT>& distribution_prob;
+//     public:
+//         explicit OverrelaxationDirectKernel(GaugeField& U_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
+//         U(U_in), Action(Action_in), distribution_prob(distribution_prob_in)
+//         {}
 
-        bool operator()(const link_coord& current_link) const noexcept
-        {
-            Matrix_3x3 st        {Action.Staple(U, current_link)};
-            // Use normalized staple and project onto group via Kenney-Laub projection (using a Gram-Schmidt projection will lead to worse accceptance rates in the end)
-            Matrix_SU3 or_matrix {static_cast<floatT>(1.0/6.0) * st};
-            SU3::Projection::KenneyLaub(or_matrix);
-            Matrix_SU3 old_link  {U(current_link)};
-            Matrix_SU3 new_link  {or_matrix * old_link.adjoint() * or_matrix};
-            // Calculate action difference
-            // double     S_old     {Action.Local(old_link, st)};
-            // double     S_new     {Action.Local(new_link, st)};
-            // double     p         {std::exp(-S_new + S_old)};
-            double     Delta_S   {Action.Local(new_link - old_link, st)};
-            double     p         {std::exp(-Delta_S)};
-            #if defined(_OPENMP)
-            double     q         {distribution_prob(prng_vector[omp_get_thread_num()])};
-            #else
-            double     q         {distribution_prob(generator_rand)};
-            #endif
-            // The direct overrelaxation algorithm is not exact in the sense that it does not preserve the action, so we need an accept-reject step
-            if (q <= p)
-            {
-                U(current_link) = new_link;
-                return 1;
-            }
-            return 0;
-        }
-};
+//         bool operator()(const link_coord& current_link) const noexcept
+//         {
+//             Matrix_3x3 st        {Action.Staple(U, current_link)};
+//             // Use normalized staple and project onto group via Kenney-Laub projection (using a Gram-Schmidt projection will lead to worse accceptance rates in the end)
+//             Matrix_SU3 or_matrix {static_cast<floatT>(1.0/6.0) * st};
+//             SU3::Projection::KenneyLaub(or_matrix);
+//             Matrix_SU3 old_link  {U(current_link)};
+//             Matrix_SU3 new_link  {or_matrix * old_link.adjoint() * or_matrix};
+//             // Calculate action difference
+//             // double     S_old     {Action.Local(old_link, st)};
+//             // double     S_new     {Action.Local(new_link, st)};
+//             // double     p         {std::exp(-S_new + S_old)};
+//             double     Delta_S   {Action.Local(new_link - old_link, st)};
+//             double     p         {std::exp(-Delta_S)};
+//             #if defined(_OPENMP)
+//             double     q         {distribution_prob(prng_vector[omp_get_thread_num()])};
+//             #else
+//             double     q         {distribution_prob(generator_rand)};
+//             #endif
+//             // The direct overrelaxation algorithm is not exact in the sense that it does not preserve the action, so we need an accept-reject step
+//             if (q <= p)
+//             {
+//                 U(current_link) = new_link;
+//                 return 1;
+//             }
+//             return 0;
+//         }
+// };
 
 // template<typename floatT>
 template<typename ActionT>

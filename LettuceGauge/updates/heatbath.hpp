@@ -5,8 +5,6 @@
 #include "../defines.hpp"
 #include "../math/su2.hpp"
 #include "../math/su3.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>

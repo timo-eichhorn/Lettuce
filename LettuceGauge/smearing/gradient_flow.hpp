@@ -4,8 +4,6 @@
 // Non-standard library headers
 #include "../math/su3.hpp"
 #include "../math/su3_exp.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>

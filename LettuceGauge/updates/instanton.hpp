@@ -10,8 +10,6 @@
 #include "../actions/gauge/wilson_action.hpp"
 // #include "../smearing/gradient_flow.hpp"
 #include "../smearing/stout_smearing.hpp"
-//-----
-#include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
@@ -59,16 +57,25 @@ double SquaredDistanceToCenter(const site_coord& lattice_shape, const site_coord
 // the purpose of an attempted instanton update we will try to proceed with an approximate abs(Q) = 1 'instanton'
 void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool positive_Q, const site_coord& center, const int r) noexcept
 {
-    Matrix_SU3 sig1, sig2, sig3;
-    sig1 << 0.0, 1.0, 0.0,
-            1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0;
-    sig2 << 0.0      , -i<floatT>, 0.0,
-            i<floatT>,  0.0      , 0.0,
-            0.0      ,  0.0      , 1.0;
-    sig3 << 1.0,  0.0, 0.0,
-            0.0, -1.0, 0.0,
-            0.0,  0.0, 1.0;
+    // Matrix_SU3 sig1, sig2, sig3;
+    // sig1 << 0.0, 1.0, 0.0,
+    //         1.0, 0.0, 0.0,
+    //         0.0, 0.0, 1.0;
+    // sig2 << 0.0      , -i<floatT>, 0.0,
+    //         i<floatT>,  0.0      , 0.0,
+    //         0.0      ,  0.0      , 1.0;
+    // sig3 << 1.0,  0.0, 0.0,
+    //         0.0, -1.0, 0.0,
+    //         0.0,  0.0, 1.0;
+    Matrix_3x3 sig1 {0.0, 1.0, 0.0,
+                     1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0};
+    Matrix_3x3 sig2 {0.0      , -i<floatT>, 0.0,
+                     i<floatT>,  0.0      , 0.0,
+                     0.0      ,  0.0      , 1.0};
+    Matrix_3x3 sig3 {1.0,  0.0, 0.0,
+                     0.0, -1.0, 0.0,
+                     0.0,  0.0, 1.0};
     // sig1 << 1.0, 0.0, 0.0,
     //         0.0, 0.0, 1.0,
     //         0.0, 1.0, 0.0;
@@ -285,14 +292,12 @@ void InstantonStart(GaugeField& Gluon, const int Q)
     // Commuting su(2) matrices embedded into su(3)
     // Generally, any traceless, hermitian matrix works here
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
-    Matrix_3x3 sig;
-    sig << 1,  0, 0,
-           0, -1, 0,
-           0,  0, 0;
-    Matrix_3x3 tau;
-    tau << 1, 0,  0,
-           0, 0,  0,
-           0, 0, -1;
+    Matrix_3x3 sig {1.0,  0.0, 0.0,
+                    0.0, -1.0, 0.0,
+                    0.0,  0.0, 0.0};
+    Matrix_3x3 tau {1.0, 0.0,  0.0,
+                    0.0, 0.0,  0.0,
+                    0.0, 0.0, -1.0};
     // Unit matrices in sigma and tau subspace
     Matrix_3x3 id_sig {sig * sig};
     Matrix_3x3 id_tau {tau * tau};
@@ -364,18 +369,15 @@ void LocalInstantonStart(GaugeField& Gluon)
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
     // TODO: This is incorrect, the factors only apply to the stuff inside SU(2), the last entry is always 1!
     // TODO: Directly initialize?
-    Matrix_3x3 sig1;
-    sig1 << 0, 1, 0,
-            1, 0, 0,
-            0, 0, 1;
-    Matrix_3x3 sig2;
-    sig2 << 0        , -i<floatT>, 0,
-            i<floatT>,  0        , 0,
-            0        ,  0        , 1;
-    Matrix_3x3 sig3;
-    sig3 << 1,  0, 0,
-            0, -1, 0,
-            0,  0, 1;
+    Matrix_3x3 sig1 {0.0, 1.0, 0.0,
+                     1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0};
+    Matrix_3x3 sig2 {0.0      , -i<floatT>, 0.0,
+                     i<floatT>,  0.0      , 0.0,
+                     0.0      ,  0.0      , 1.0};
+    Matrix_3x3 sig3 {1.0,  0.0, 0.0,
+                     0.0, -1.0, 0.0,
+                     0.0,  0.0, 1.0};
     // Only links in the elementary hypercube between (0,0,0,0) and (1,1,1,1) take on non-trivial values
     // TODO: See above!
     for (int t = 0; t < 2; ++t)
@@ -414,14 +416,12 @@ void MultiplyInstanton(GaugeField& Gluon, const int Q)
     // Embedded commuting SU(2) matrices
     // Generally, any traceless, hermitian matrix works here
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
-    Matrix_3x3 sig;
-    sig << 1,  0, 0,
-           0, -1, 0,
-           0,  0, 0;
-    Matrix_3x3 tau;
-    tau << 1, 0,  0,
-           0, 0,  0,
-           0, 0, -1;
+    Matrix_3x3 sig {1.0,  0.0, 0.0,
+                    0.0, -1.0, 0.0,
+                    0.0,  0.0, 0.0};
+    Matrix_3x3 tau {1.0, 0.0,  0.0,
+                    0.0, 0.0,  0.0,
+                    0.0, 0.0, -1.0};
     // Unit matrices in sigma and tau subspace
     Matrix_3x3 id_sig {sig * sig};
     Matrix_3x3 id_tau {tau * tau};
@@ -494,18 +494,15 @@ void MultiplyLocalInstanton(GaugeField& Gluon)
     // The condition that the matrices commute enables us to construct charge +/- 1 instantons
     // TODO: This is incorrect, the factors only apply to the stuff inside SU(2), the last entry is always 1!
     // TODO: Directly initialize?
-    Matrix_3x3 sig1;
-    sig1 << 0, 1, 0,
-            1, 0, 0,
-            0, 0, 1;
-    Matrix_3x3 sig2;
-    sig2 << 0        , -i<floatT>, 0,
-            i<floatT>,  0        , 0,
-            0        ,  0        , 1;
-    Matrix_3x3 sig3;
-    sig3 << 1,  0, 0,
-            0, -1, 0,
-            0,  0, 1;
+    Matrix_3x3 sig1 {0.0, 1.0, 0.0,
+                     1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0};
+    Matrix_3x3 sig2 {0.0      , -i<floatT>, 0.0,
+                     i<floatT>,  0.0      , 0.0,
+                     0.0      ,  0.0      , 1.0};
+    Matrix_3x3 sig3 {1.0,  0.0, 0.0,
+                     0.0, -1.0, 0.0,
+                     0.0,  0.0, 1.0};
     // Only links in the elementary hypercube between (0,0,0,0) and (1,1,1,1) take on non-trivial values
     // TODO: See above!
     Matrix_SU3 tmp;

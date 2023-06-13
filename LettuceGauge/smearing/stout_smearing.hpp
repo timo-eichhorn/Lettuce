@@ -42,11 +42,11 @@ void StoutSmearing4D(const GaugeField& U_unsmeared, GaugeField& U_smeared, const
         for (int mu = 0; mu < 4; ++mu)
         {
             link_coord current_link {t, x, y, z, mu};
-            Sigma.noalias() = WilsonAction::Staple(U_unsmeared, current_link);
-            A.noalias() = Sigma * U_unsmeared(current_link).adjoint();
+            Sigma = WilsonAction::Staple(U_unsmeared, current_link);
+            A     = Sigma * U_unsmeared(current_link).adjoint();
             // TODO: Replace with projector function?
-            B.noalias() = A - A.adjoint();
-            C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
+            B     = A - A.adjoint();
+            C     = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // Cayley-Hamilton exponential
             U_smeared(current_link) = SU3::exp(-i<floatT> * smear_param * C) * U_unsmeared(current_link);
             // Eigen exponential (Scaling and squaring)
@@ -105,11 +105,11 @@ void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_s
         for (int mu = 0; mu < 4; ++mu)
         {
             link_coord current_link {t, x, y, z, mu};
-            st.noalias() = WilsonAction::Staple(U_unsmeared, current_link);
-            A.noalias() = st * U_unsmeared(current_link).adjoint();
+            st = WilsonAction::Staple(U_unsmeared, current_link);
+            A = st * U_unsmeared(current_link).adjoint();
             // TODO: Replace with projector function?
-            B.noalias() = A - A.adjoint();
-            C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
+            B = A - A.adjoint();
+            C = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // We want the ExpConstants so we can later reuse them during the calculation of the stout force recursion
             Exp_consts(current_link) = SU3::ExpConstants(-i<floatT> * smear_param * C);
             U_smeared(current_link) = SU3::exp(Exp_consts(current_link)) * U_unsmeared(current_link);
