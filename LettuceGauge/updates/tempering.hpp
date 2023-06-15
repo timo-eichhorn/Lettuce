@@ -35,7 +35,7 @@ namespace GaugeUpdates
                 Integrators::GradientFlow::Euler Euler_Integrator(Forcefield);
                 GradientFlowKernel               StoutSmear(Gluon, Gluon_smeared, Euler_Integrator, GaugeAction::WilsonAction, smear_param);
                 StoutSmear(n_smear_meta);
-                return TopChargeGluonicSymm(Gluon_smeared);
+                return TopChargeClover(Gluon_smeared);
             }
         public:
             explicit MetadynamicsTemperingKernel(GaugeField& U_in, GaugeField& U_temper_in, GaugeField& U_copy1_in, GaugeField& U_copy2_in, MetaBiasPotential& Metapotential_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :

@@ -22,7 +22,7 @@
 //+---------------------------------------------------------------------------------+
 
 [[nodiscard]]
-double TopChargeGluonic(const GaugeField& U) noexcept
+double TopChargeCloverSlow(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -95,7 +95,7 @@ double TopChargeGluonic(const GaugeField& U) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicSymm(const GaugeField& U) noexcept
+double TopChargeClover(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -201,7 +201,7 @@ double TopChargeGluonicSymm(const GaugeField& U) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
+double TopChargeClover(const FullTensor& Clover) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -232,7 +232,7 @@ double TopChargeGluonicSymm(const FullTensor& Clover) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonicUnimproved(const GaugeField& U) noexcept
+double TopChargePlaquette(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -284,7 +284,7 @@ double TopChargeGluonicUnimproved(const GaugeField& U) noexcept
 }
 
 [[nodiscard]]
-double TopChargeGluonic2x2(const GaugeField& U) noexcept
+double TopChargePlaquette2x2(const GaugeField& U) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -324,7 +324,7 @@ double TopChargeGluonic2x2(const GaugeField& U) noexcept
 
 // TODO: Not sure if this is correct yet, but the results don't seem completely incorrect at least
 //       Also, does it even make sense to use different coefficients than the LW coefficients here? All other choices do not cancel the O(a^2) contributions (at tree-level)
-double TopChargeGluonicImproved(const GaugeField& U, const double c_plaq = 1.0 + 8.0 * 1.0/12.0/* = 5/3 */, const double c_rect = -1.0/12.0) noexcept
+double TopChargeCloverImproved(const GaugeField& U, const double c_plaq = 1.0 + 8.0 * 1.0/12.0/* = 5/3 */, const double c_rect = -1.0/12.0) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)

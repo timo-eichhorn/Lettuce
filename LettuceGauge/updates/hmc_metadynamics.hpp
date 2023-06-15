@@ -281,7 +281,7 @@ namespace GaugeUpdates
                 {
                     StoutSmearing4D(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], rho_stout);
                 }
-                return TopChargeGluonicSymm(MetadynamicsData.SmearedFields[n_smear_meta]);
+                return TopChargeClover(MetadynamicsData.SmearedFields[n_smear_meta]);
             }
 
             double MetaChargeWithConstants() noexcept
@@ -293,7 +293,7 @@ namespace GaugeUpdates
                 }
                 // Calculate clover term and topological charge (we usually need the clover term later during the update, so better this way than directly calculating the charge)
                 CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
-                return TopChargeGluonicSymm(MetadynamicsData.Clover);
+                return TopChargeClover(MetadynamicsData.Clover);
             }
 
             void RandomMomentum() const noexcept
@@ -387,7 +387,7 @@ namespace GaugeUpdates
                 // Calculate derivative of metapotential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
-                double CV_old {TopChargeGluonicSymm(MetadynamicsData.Clover)};
+                double CV_old {TopChargeClover(MetadynamicsData.Clover)};
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
                 // Calculate clover derivative
                 #pragma omp parallel for

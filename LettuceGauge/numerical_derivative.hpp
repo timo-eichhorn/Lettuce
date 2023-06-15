@@ -16,7 +16,7 @@ int               direction    {3};
 link_coord        current_link {1, 2, 0, 1, 3};
 double            deltah       {0.00001};
 
-double ChargeOld {TopChargeGluonicSymm(Gluon)};
+double ChargeOld {TopChargeClover(Gluon)};
 double ActionOld {WilsonAction::Action(Gluon)};
 
 for (int group_direction = 1; group_direction <= 8; ++group_direction)
@@ -24,13 +24,13 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     // Go fowards by deltah in group_direction
     FieldFwd = Gluon;
     FieldFwd(current_site, direction) = SU3::Generators::Exp_lambda(group_direction, deltah) * FieldFwd(current_link);
-    double ChargeNewF {TopChargeGluonicSymm(FieldFwd)};
+    double ChargeNewF {TopChargeClover(FieldFwd)};
     double ActionNewF {WilsonAction::Action(FieldFwd)};
 
     // Go backwards by deltah in group_direction
     FieldBwd = Gluon;
     FieldBwd(current_site, direction) = SU3::Generators::Exp_lambda(group_direction, -deltah) * FieldBwd(current_link);
-    double ChargeNewB {TopChargeGluonicSymm(FieldBwd)};
+    double ChargeNewB {TopChargeClover(FieldBwd)};
     double ActionNewB {WilsonAction::Action(FieldBwd)};
 
     // Calculate the clover charge derivative
@@ -91,7 +91,7 @@ link_coord        current_link {1, 2, 0, 1, 3};
 double            deltah       {0.001};
 
 // TODO: Difference between manually smearing and using StoutSmearingAll!
-// std::cout << TopChargeGluonicSymm(Gluon) << std::endl;
+// std::cout << TopChargeClover(Gluon) << std::endl;
 // std::cout << WilsonAction::Action(Gluon) << std::endl;
 TestFieldSmeared[0] = Gluon;
 StoutSmearingAll(TestFieldSmeared, rho_stout);
@@ -99,11 +99,11 @@ StoutSmearingAll(TestFieldSmeared, rho_stout);
 // {
 //     StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
 // }
-// std::cout << TopChargeGluonicSymm(TestFieldSmeared[n_smear_meta]) << std::endl;
+// std::cout << TopChargeClover(TestFieldSmeared[n_smear_meta]) << std::endl;
 // std::cout << WilsonAction::Action(TestFieldSmeared[n_smear_meta]) << std::endl;
 
-double ChargeOld        {TopChargeGluonicSymm(Gluon)};
-double ChargeSmearedOld {TopChargeGluonicSymm(TestFieldSmeared[n_smear_meta])};
+double ChargeOld        {TopChargeClover(Gluon)};
+double ChargeSmearedOld {TopChargeClover(TestFieldSmeared[n_smear_meta])};
 double ActionOld        {WilsonAction::Action(Gluon)};
 double ActionSmearedOld {WilsonAction::Action(TestFieldSmeared[n_smear_meta])};
 
@@ -118,8 +118,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     {
         StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
     }
-    double ChargeNewF        {TopChargeGluonicSymm(FieldFwd)};
-    double ChargeSmearedNewF {TopChargeGluonicSymm(TestFieldSmeared[n_smear_meta])};
+    double ChargeNewF        {TopChargeClover(FieldFwd)};
+    double ChargeSmearedNewF {TopChargeClover(TestFieldSmeared[n_smear_meta])};
     double ActionNewF        {WilsonAction::Action(FieldFwd)};
     double ActionSmearedNewF {WilsonAction::Action(TestFieldSmeared[n_smear_meta])};
 
@@ -132,8 +132,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     {
         StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
     }
-    double ChargeNewB        {TopChargeGluonicSymm(FieldBwd)};
-    double ChargeSmearedNewB {TopChargeGluonicSymm(TestFieldSmeared[n_smear_meta])};
+    double ChargeNewB        {TopChargeClover(FieldBwd)};
+    double ChargeSmearedNewB {TopChargeClover(TestFieldSmeared[n_smear_meta])};
     double ActionNewB        {WilsonAction::Action(FieldBwd)};
     double ActionSmearedNewB {WilsonAction::Action(TestFieldSmeared[n_smear_meta])};
 
