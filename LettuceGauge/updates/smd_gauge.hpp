@@ -179,13 +179,12 @@ namespace GaugeUpdates
                 //-----
                 // Calculate energy after time evolution
                 double energy_new {Hamiltonian()};
-                // Metropolis accept-reject step
-                double p {std::exp(-energy_new + energy_old)};
-                double q {prng.UniformReal()};
                 // TODO: Probably shouldnt use a global variable for DeltaH?
                 DeltaH = energy_new - energy_old;
                 if (metropolis_step)
                 {
+                    double p {std::exp(-energy_new + energy_old)};
+                    double q {prng.UniformReal()};
                     // datalog << "DeltaH: " << DeltaH << std::endl;
                     if (q <= p)
                     {
