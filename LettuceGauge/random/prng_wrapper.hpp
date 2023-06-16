@@ -42,11 +42,44 @@ class PRNG4D
         static constexpr int         Nmu  {4};
         // Promote single length to size_t so the product doesn't overflow
         static constexpr std::size_t size {static_cast<std::size_t>(Nt) * Nx * Ny * Nz * Nmu};
+
+        // This is copied straight from pcg_extras (comes with the PCG PRNG by Melissa O'Neill: http://www.pcg-random.org/)
+        template <typename RngType>
+        class seed_seq_from
+        {
+            private:
+                RngType rng_;
+            public:
+                // typedef uint_least32_t result_type;
+                using result_type = uint_least32_t;
+
+                template<typename... Args>
+                seed_seq_from(Args&&... args) :
+                rng_(std::forward<Args>(args)...)
+                {}
+
+                template<typename Iter>
+                void generate(Iter start, Iter finish)
+                {
+                    for (auto i = start; i != finish; ++i)
+                    {
+                        *i = result_type(rng_());
+                    }
+                }
+
+                constexpr size_t size() const
+                {
+                    return (sizeof(typename RngType::result_type) > sizeof(result_type)
+                            && RngType::max() > ~size_t(0UL))
+                         ? ~size_t(0UL)
+                         : size_t(RngType::max());
+                }
+        };
     public:
         std::vector<prngT>                                  random_generators;
         // uniform_real_distribution and uniform_int_distribution should be thread-safe, so we might only need one instance of each
         // Unfortunately normal_distribution is not thread-safe since it has internal state, so to be able to correcly use it in parallel we need multiple (n_thread_max) instances
-        // It is probably easiest to simply generate one instance of normal_distribution per lattice site (not link!)
+        // It is probably easiest to simply generate one instance of normal_distribution per lattice link
         std::vector<std::normal_distribution<floatT>>       normal_distributions;
         std::vector<std::uniform_real_distribution<floatT>> uniform_real_distributions;
         std::vector<std::uniform_int_distribution<intT>>    uniform_int_distributions;
@@ -60,9 +93,7 @@ class PRNG4D
         random_generators(size), normal_distributions(size, std::normal_distribution<floatT>(0.0, 1.0)), uniform_real_distributions(size, std::uniform_real_distribution<floatT>(0.0, 1.0)), uniform_int_distributions(size, std::uniform_int_distribution<intT>(1, 8))
         {
             #ifdef FIXED_SEED
-            // Ignore seed_source and seed all PRNGs with 1
-            // SeedPRNGs(1);
-            // Ignore seed source and seed all PRNGs incrementally (seeding all PRNGs with 1 lead to strange behaviour of the HMC)
+            // Ignore seed source and seed all PRNGs incrementally (seeding all PRNGs with the same seed will cause the HMC to not work properly, since all initial momenta are the same)
             for (std::size_t index = 0; index < size; ++index)
             {
                 SeedPRNG(index, index);
@@ -77,10 +108,11 @@ class PRNG4D
         template<typename seed_sourceT>
         void SeedPRNGs(seed_sourceT&& seed_source) noexcept
         {
+            seed_seq_from<seed_sourceT> seed_seq(seed_source);
             // For now seed the PRNGs sequentially; not yet sure if we can parallelize this without knowing anything about seed_source
             for (auto& prng : random_generators)
             {
-                prng.seed(seed_source);
+                prng.seed(seed_seq);
             }
         }
 

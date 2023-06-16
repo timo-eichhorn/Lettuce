@@ -82,9 +82,7 @@ pcg64 generator_rand(1);
 #else
 pcg64 generator_rand(seed_source);
 #endif
-// std::vector<pcg64> prng_vector;                             // Vector of PRNGs for parallel usage
-// std::vector<std::normal_distribution<floatT>> ndist_vector; // Vector of normal distributions for parallel usage in HMC
-PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(seed_source);
+PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(generator_rand);
 uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
 uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
 uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
