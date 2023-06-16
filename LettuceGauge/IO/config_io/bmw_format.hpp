@@ -378,6 +378,11 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
     config_ofstream.close();
     config_ofstream.clear();
     auto end_write_config {std::chrono::system_clock::now()};
+    if (!config_ofstream)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Writing config to file " << filename << " failed!" << Lettuce::Color::BoldRed << std::endl;
+        return false;
+    }
     std::chrono::duration<double> write_time_header {end_write_header - start_write_header};
     std::chrono::duration<double> write_time_config {end_write_config - start_write_config};
     std::cout << indent_whitespace << "Time for writing header: " << write_time_header.count() << "\n";
