@@ -250,7 +250,7 @@ bool LoadConfigBMW(GaugeField& U, const std::string& filename)
     }
     std::cout << indent_whitespace << "Checksum (from file):    " << checksum_read_string << std::endl;
     std::cout << indent_whitespace << "Checksum (recalculated): " << checksum_new.ReturnString() << Lettuce::Color::Reset << std::endl;
-    auto end_read_config {std::chrono::system_clock::now()};
+    auto end_read_config {std::chrono::high_resolution_clock::now()};
     std::chrono::duration<double> read_time_header {end_read_header - start_read_header};
     std::chrono::duration<double> read_time_config {end_read_config - start_read_config};
     std::cout << indent_whitespace << "Time for reading header: " << read_time_header.count() << "\n";
@@ -377,7 +377,7 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
     }
     config_ofstream.close();
     config_ofstream.clear();
-    auto end_write_config {std::chrono::system_clock::now()};
+    auto end_write_config {std::chrono::high_resolution_clock::now()};
     if (!config_ofstream)
     {
         std::cerr << Lettuce::Color::BoldRed << "Writing config to file " << filename << " failed!" << Lettuce::Color::BoldRed << std::endl;

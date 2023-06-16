@@ -117,9 +117,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
 
     // Unsmeared observables
-    // auto start_action = std::chrono::system_clock::now();
+    // auto start_action = std::chrono::high_resolution_clock::now();
     // Action[0]                      = WilsonAction::ActionNormalized(Gluon);
-    // auto end_action = std::chrono::system_clock::now();
+    // auto end_action = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> action_time = end_action - start_action;
     // std::cout << "Time for calculating action: " << action_time.count() << std::endl;
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
@@ -127,44 +127,44 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     FieldStrengthTensor::CloverTraceless(Gluon, F_tensor);
     EClover[0]                     = EnergyDensity::Clover(F_tensor);
 
-    // auto start_wilson = std::chrono::system_clock::now();
+    // auto start_wilson = std::chrono::high_resolution_clock::now();
     WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
-    // auto end_wilson = std::chrono::system_clock::now();
+    // auto end_wilson = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
     // std::cout << "Time for calculating wilson 2: " << wilson_time.count() << std::endl;
 
-    // start_wilson = std::chrono::system_clock::now();
+    // start_wilson = std::chrono::high_resolution_clock::now();
     WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
-    // end_wilson = std::chrono::system_clock::now();
+    // end_wilson = std::chrono::high_resolution_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // std::cout << "Time for calculating wilson 4: " << wilson_time.count() << std::endl;
 
-    // start_wilson = std::chrono::system_clock::now();
+    // start_wilson = std::chrono::high_resolution_clock::now();
     WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
-    // end_wilson = std::chrono::system_clock::now();
+    // end_wilson = std::chrono::high_resolution_clock::now();
     // wilson_time = end_wilson - start_wilson;
     // std::cout << "Time for calculating wilson 8: " << wilson_time.count() << std::endl;
 
-    // auto start_polyakov = std::chrono::system_clock::now();
+    // auto start_polyakov = std::chrono::high_resolution_clock::now();
     PLoop[0]                       = PolyakovLoop(Gluon);
-    // auto end_polyakov = std::chrono::system_clock::now();
+    // auto end_polyakov = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
     // std::cout << "Time for calculating Polyakov: " << polyakov_time.count() << std::endl;
 
-    // auto start_topcharge = std::chrono::system_clock::now();
+    // auto start_topcharge = std::chrono::high_resolution_clock::now();
     // TopologicalChargeCloverSlow[0] = TopChargeCloverSlow(Gluon);
-    // auto end_topcharge = std::chrono::system_clock::now();
+    // auto end_topcharge = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // std::cout << "Time for calculating topcharge: " << topcharge_time.count() << std::endl;
-    // auto start_topcharge_symm = std::chrono::system_clock::now();
+    // auto start_topcharge_symm = std::chrono::high_resolution_clock::now();
     TopologicalChargeClover[0]     = TopChargeClover(Gluon);
     // TopologicalChargeClover[0]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-    // auto end_topcharge_symm = std::chrono::system_clock::now();
+    // auto end_topcharge_symm = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
     // std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << std::endl;
-    // auto start_topcharge_plaq = std::chrono::system_clock::now();
+    // auto start_topcharge_plaq = std::chrono::high_resolution_clock::now();
     TopologicalChargePlaquette[0]  = TopChargePlaquette(Gluon);
-    // auto end_topcharge_plaq = std::chrono::system_clock::now();
+    // auto end_topcharge_plaq = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
     // std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << std::endl;
     // ActionStruct.Calculate(0, std::cref(Gluon));
@@ -174,10 +174,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     if (n_smear > 0)
     {
         // Apply smearing (first call is distinct from the calls afterwards, since we need to copy the unsmeared gaugefield here, but not later on)
-        // auto start_smearing = std::chrono::system_clock::now();
+        // auto start_smearing = std::chrono::high_resolution_clock::now();
         Flow(n_smear_skip);
         // Iterator::Checkerboard(Cooling, 1);
-        // auto end_smearing = std::chrono::system_clock::now();
+        // auto end_smearing = std::chrono::high_resolution_clock::now();
         // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
         // std::cout << "Time for calculating smearing: " << smearing_time.count() << std::endl;
         // Calculate observables
@@ -390,7 +390,7 @@ int main()
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            // auto start_update_metro {std::chrono::system_clock::now()};
+            // auto start_update_metro {std::chrono::high_resolution_clock::now()};
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
                 MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, global_prng, multi_hit, metropolis_epsilon);
@@ -401,29 +401,29 @@ int main()
                 metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
             }
-            // auto end_update_metro {std::chrono::system_clock::now()};
+            // auto end_update_metro {std::chrono::high_resolution_clock::now()};
             // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
             // std::cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << std::endl;
             //-----
-            // auto start_update_heatbath {std::chrono::system_clock::now()};
+            // auto start_update_heatbath {std::chrono::high_resolution_clock::now()};
             if constexpr(n_heatbath != 0)
             {
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
             }
-            // auto end_update_heatbath {std::chrono::system_clock::now()};
+            // auto end_update_heatbath {std::chrono::high_resolution_clock::now()};
             // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
             // std::cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << std::endl;
             //-----
-            // auto start_update_hmc {std::chrono::system_clock::now()};
+            // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
             if constexpr(n_hmc != 0)
             {
-                HMC(n_hmc, true);
+                HMC(n_hmc, false);
             }
-            // auto end_update_hmc {std::chrono::system_clock::now()};
+            // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
             // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
             // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
             //-----
-            // auto start_update_or = std::chrono::system_clock::now();
+            // auto start_update_or = std::chrono::high_resolution_clock::now();
             if constexpr(n_orelax != 0)
             {
                 // double action_before {GaugeAction::WilsonAction.Action(Gluon)};
@@ -434,7 +434,7 @@ int main()
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
             }
-            // auto end_update_or = std::chrono::system_clock::now();
+            // auto end_update_or = std::chrono::high_resolution_clock::now();
             // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
             // std::cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << std::endl;
             //-----
@@ -457,9 +457,9 @@ int main()
             //-----
             if (n_count % expectation_period == 0)
             {
-                // auto start_observable = std::chrono::system_clock::now();
+                // auto start_observable = std::chrono::high_resolution_clock::now();
                 Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
-                // auto end_observable = std::chrono::system_clock::now();
+                // auto end_observable = std::chrono::high_resolution_clock::now();
                 // std::chrono::duration<double> observable_time {end_observable - start_observable};
                 // std::cout << "Time for calculating observables: " << observable_time.count() << std::endl;
 
@@ -519,9 +519,9 @@ int main()
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            // auto start_update_meta = std::chrono::system_clock::now();
+            // auto start_update_meta = std::chrono::high_resolution_clock::now();
             HMC_MetaD(n_hmc, true);
-            // auto end_update_meta = std::chrono::system_clock::now();
+            // auto end_update_meta = std::chrono::high_resolution_clock::now();
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
             if (n_count % expectation_period == 0)
