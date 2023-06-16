@@ -29,13 +29,13 @@ class GaugeFieldRaw
 {
     private:
         // This class should only be used internally in GaugeField4D and GaugeField4DSmeared, so everything is private
-        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
         friend class GaugeField4D;
 
-        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
         friend class GaugeField4DSmeared;
 
-        template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeS>
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
         friend class FullTensor4D;
 
         std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
@@ -95,16 +95,17 @@ class GaugeFieldRaw
 // The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
 // TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
-template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
+template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class GaugeField4D
 {
     private:
-        static constexpr std::size_t Nt     {Nt_};
-        static constexpr std::size_t Nx     {Nx_};
-        static constexpr std::size_t Ny     {Ny_};
-        static constexpr std::size_t Nz     {Nz_};
-        static constexpr std::size_t Nmu    {4};
-        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr int         Nt     {Nt_};
+        static constexpr int         Nx     {Nx_};
+        static constexpr int         Ny     {Ny_};
+        static constexpr int         Nz     {Nz_};
+        static constexpr int         Nmu    {4};
+        // Promote single length to size_t so the product doesn't overflow
+        static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
         GaugeFieldRaw<V_link, gaugeT> gaugefield;
     public:
@@ -239,7 +240,7 @@ class GaugeField4D
         {
             return Volume() / Nt;
         }
-        constexpr std::size_t Length(const int direction) const noexcept
+        constexpr int Length(const int direction) const noexcept
         {
             switch (direction)
             {
@@ -313,7 +314,7 @@ class GaugeField4D
             else
             {
                 // TODO: Perhaps replace with safer (potentially less efficient) verion?
-                static_assert(dist <= static_cast<int>(Nt) and dist <= static_cast<int>(Nx) and dist <= static_cast<int>(Ny) and dist <= static_cast<int>(Nz), "Move in negative direction with dist greater than one of the lattice lengths detected!");
+                static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
                 // Alternative: Use negative indices (how to deal with 0 then?)
                 switch (direction)
                 {
@@ -363,7 +364,7 @@ class GaugeField4D
             else
             {
                 // TODO: Perhaps replace with safer (potentially less efficient) verion?
-                static_assert(dist <= static_cast<int>(Nt) and dist <= static_cast<int>(Nx) and dist <= static_cast<int>(Ny) and dist <= static_cast<int>(Nz), "Move in negative direction with dist greater than one of the lattice lengths detected!");
+                static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
                 // Alternative: Use negative indices (how to deal with 0 then?)
                 switch (direction)
                 {
@@ -407,22 +408,26 @@ class GaugeField4D
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const site_coord& site, const int mu) const noexcept
         {
-            return (((site.t * Nx + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu;
+            // Promote single length to size_t so the product doesn't overflow
+            return (((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu;
         }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
         {
-            return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
+            // Promote single length to size_t so the product doesn't overflow
+            return (((coord.t * static_cast<std::size_t>(Nx) + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
         }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
         {
-            return (((t * Nx + x) * Ny + y) * Nz + z) * Nmu + mu;
+            // Promote single length to size_t so the product doesn't overflow
+            return (((t * static_cast<std::size_t>(Nx) + x) * Ny + y) * Nz + z) * Nmu + mu;
         }
         // Transform 5 integers into linear coordinate (direction is the slowest index)
         // int LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
         // {
-        //     return (((mu * Nmu + t) * Nx + x) * Ny + y) * Nz + z;
+        //     // Promote single length to size_t so the product doesn't overflow
+        //     return (((mu * static_cast<std::size_t>(Nmu) + t) * Nx + x) * Ny + y) * Nz + z;
         // }
 };
 
@@ -430,17 +435,18 @@ class GaugeField4D
 // The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
 // The [] operator provides access to the different smearing levels, i.e., it returns a reference to a GaugeField4D (which can the be accessed and manipulated in the usual way)
 // TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
-template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
+template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class GaugeField4DSmeared
 {
     private:
         const  int                   Nsmear;
-        static constexpr std::size_t Nt     {Nt_};
-        static constexpr std::size_t Nx     {Nx_};
-        static constexpr std::size_t Ny     {Ny_};
-        static constexpr std::size_t Nz     {Nz_};
-        static constexpr std::size_t Nmu    {4};
-        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr int         Nt     {Nt_};
+        static constexpr int         Nx     {Nx_};
+        static constexpr int         Ny     {Ny_};
+        static constexpr int         Nz     {Nz_};
+        static constexpr int         Nmu    {4};
+        // Promote single length to size_t so the product doesn't overflow
+        static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
         // std::unique_ptr<GaugeFieldRaw<V_link, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V_link, gaugeT>[]>(Nsmear)};
         std::unique_ptr<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]> gaugefield {std::make_unique<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]>(Nsmear)};
@@ -483,17 +489,18 @@ class GaugeField4DSmeared
 // This class acts as a general container for a (4x4)-component tensor in 4 dimensions
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
 // TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
-template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename gaugeT>
+template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class FullTensor4D
 {
     private:
-        static constexpr std::size_t Nt     {Nt_};
-        static constexpr std::size_t Nx     {Nx_};
-        static constexpr std::size_t Ny     {Ny_};
-        static constexpr std::size_t Nz     {Nz_};
-        static constexpr std::size_t Nmu    {4};
-        static constexpr std::size_t Nnu    {4};
-        static constexpr std::size_t V      {Nt * Nx * Ny * Nz};
+        static constexpr int         Nt     {Nt_};
+        static constexpr int         Nx     {Nx_};
+        static constexpr int         Ny     {Ny_};
+        static constexpr int         Nz     {Nz_};
+        static constexpr int         Nmu    {4};
+        static constexpr int         Nnu    {4};
+        // Promote single length to size_t so the product doesn't overflow
+        static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * Nnu * V};
         GaugeFieldRaw<V_link, gaugeT> gaugefield;
     public:
@@ -601,7 +608,7 @@ class FullTensor4D
         {
             return Volume() / Nt;
         }
-        constexpr std::size_t Length(const int direction) const noexcept
+        constexpr int Length(const int direction) const noexcept
         {
             switch (direction)
             {
@@ -626,22 +633,26 @@ class FullTensor4D
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const site_coord& site, const int mu, const int nu) const noexcept
         {
-            return ((((site.t * Nx + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu) * Nnu + nu;
+            // Promote single length to size_t so the product doesn't overflow
+            return ((((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu) * Nnu + nu;
         }
         // [[nodiscard]]
         // inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
         // {
-        //     return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
+        //     // Promote single length to size_t so the product doesn't overflow
+        //     return (((coord.t * static_cast<std::size_t>(Nx) + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
         // }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
         {
-            return ((((t * Nx + x) * Ny + y) * Nz + z) * Nmu + mu) * Nnu + nu;
+            // Promote single length to size_t so the product doesn't overflow
+            return ((((t * static_cast<std::size_t>(Nx) + x) * Ny + y) * Nz + z) * Nmu + mu) * Nnu + nu;
         }
         // Transform 5 integers into linear coordinate (direction is the slowest index)
         // int LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
         // {
-        //     return (((mu * Nmu + t) * Nx + x) * Ny + y) * Nz + z;
+        //     // Promote single length to size_t so the product doesn't overflow
+        //     return (((mu * static_cast<std::size_t>(Nmu) + t) * Nx + x) * Ny + y) * Nz + z;
         // }
 };
 
@@ -652,25 +663,25 @@ using FullTensor        = FullTensor4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 // Struct to hold a pair of references to smeared fields
 // Useful when smearing multiple times, and only the final smearing level is needed
 // TODO: Make into template and move above type aliases?
-struct SmearedFieldTuple
-{
-    GaugeField& Field1;
-    GaugeField& Field2;
-    SmearedFieldTuple(GaugeField& Field1_in, GaugeField& Field2_in) noexcept :
-    Field1(Field1_in), Field2(Field2_in)
-    {}
-    ~SmearedFieldTuple() = default;
-    SmearedFieldTuple(const SmearedFieldTuple& tuple_in) noexcept :
-    Field1(tuple_in.Field1), Field2(tuple_in.Field2)
-    {}
-    void operator=(const SmearedFieldTuple& tuple_in) noexcept
-    {
-        if (this != &tuple_in)
-        {
-            Field1 = tuple_in.Field1;
-            Field2 = tuple_in.Field2;
-        }
-    }
-};
+// struct SmearedFieldTuple
+// {
+//     GaugeField& Field1;
+//     GaugeField& Field2;
+//     SmearedFieldTuple(GaugeField& Field1_in, GaugeField& Field2_in) noexcept :
+//     Field1(Field1_in), Field2(Field2_in)
+//     {}
+//     ~SmearedFieldTuple() = default;
+//     SmearedFieldTuple(const SmearedFieldTuple& tuple_in) noexcept :
+//     Field1(tuple_in.Field1), Field2(tuple_in.Field2)
+//     {}
+//     void operator=(const SmearedFieldTuple& tuple_in) noexcept
+//     {
+//         if (this != &tuple_in)
+//         {
+//             Field1 = tuple_in.Field1;
+//             Field2 = tuple_in.Field2;
+//         }
+//     }
+// };
 
 #endif // LETTUCE_LATTICE_HPP

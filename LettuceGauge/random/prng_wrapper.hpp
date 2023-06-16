@@ -31,16 +31,17 @@
 
 // Per default, use floatT set in defines.hpp as floating point type and standard ints as integer type
 // template<typename prngT, typename floatT = floatT, typename intT = int>
-template<std::size_t Nt_, std::size_t Nx_, std::size_t Ny_, std::size_t Nz_, typename prngT, typename floatT, typename intT = int>
+template<int Nt_, int Nx_, int Ny_, int Nz_, typename prngT, typename floatT, typename intT = int>
 class PRNG4D
 {
     private:
-        static constexpr std::size_t Nt   {Nt_};
-        static constexpr std::size_t Nx   {Nx_};
-        static constexpr std::size_t Ny   {Ny_};
-        static constexpr std::size_t Nz   {Nz_};
-        static constexpr std::size_t Nmu  {4};
-        static constexpr std::size_t size {Nt * Nx * Ny * Nz * Nmu};
+        static constexpr int         Nt   {Nt_};
+        static constexpr int         Nx   {Nx_};
+        static constexpr int         Ny   {Ny_};
+        static constexpr int         Nz   {Nz_};
+        static constexpr int         Nmu  {4};
+        // Promote single length to size_t so the product doesn't overflow
+        static constexpr std::size_t size {static_cast<std::size_t>(Nt) * Nx * Ny * Nz * Nmu};
     public:
         std::vector<prngT>                                  random_generators;
         // uniform_real_distribution and uniform_int_distribution should be thread-safe, so we might only need one instance of each
@@ -268,17 +269,17 @@ class PRNG4D
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const site_coord& site, const int mu) const noexcept
         {
-            return (((site.t * Nx + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu;
+            return (((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + site.y) * Nz + site.z) * Nmu + mu;
         }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const link_coord& coord) const noexcept
         {
-            return (((coord.t * Nx + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
+            return (((coord.t * static_cast<std::size_t>(Nx) + coord.x) * Ny + coord.y) * Nz + coord.z) * Nmu + coord.mu.direction;
         }
         [[nodiscard]]
         inline std::size_t LinearCoordinate(const int t, const int x, const int y, const int z, const int mu) const noexcept
         {
-            return (((t * Nx + x) * Ny + y) * Nz + z) * Nmu + mu;
+            return (((t * static_cast<std::size_t>(Nx) + x) * Ny + y) * Nz + z) * Nmu + mu;
         }
 };
 
