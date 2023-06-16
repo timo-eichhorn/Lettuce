@@ -246,10 +246,10 @@ namespace WilsonAction
     // [[nodiscard]]
     // Matrix_3x3 PartialStaple(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
     // {
-    //     site_coord site_mup     {Move< 1>(current_site, mu)};
-    //     site_coord site_nup     {Move< 1>(current_site, nu)};
-    //     site_coord site_nud     {Move<-1>(current_site, nu)};
-    //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
+    //     site_coord site_mup     {U.Move< 1>(current_site, mu)};
+    //     site_coord site_nup     {U.Move< 1>(current_site, nu)};
+    //     site_coord site_nud     {U.Move<-1>(current_site, nu)};
+    //     site_coord site_mup_nud {U.Move<-1>(site_mup    , nu)};
     //     return U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
     //          + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
     // }
@@ -263,26 +263,26 @@ namespace WilsonAction
     //     // for (int nu_offset = 1; nu_offset < 4; ++nu_offset)
     //     // {
     //     //     int nu {(mu + nu_offset) % 4};
-    //     //     site_coord site_mup     {Move< 1>(current_site, mu)};
-    //     //     site_coord site_nup     {Move< 1>(current_site, nu)};
-    //     //     site_coord site_nud     {Move<-1>(current_site, nu)};
-    //     //     site_coord site_mup_nud {Move<-1>(site_mup    , nu)};
+    //     //     site_coord site_mup     {U.Move< 1>(current_site, mu)};
+    //     //     site_coord site_nup     {U.Move< 1>(current_site, nu)};
+    //     //     site_coord site_nud     {U.Move<-1>(current_site, nu)};
+    //     //     site_coord site_mup_nud {U.Move<-1>(site_mup    , nu)};
     //     //     st.noalias() += U(current_site, nu)           * U(site_nup, mu) * U(site_mup    , nu).adjoint()
     //     //                   + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, nu);
     //     // }
     //     int nu1 {(mu + 1)%4};
     //     int nu2 {(mu + 2)%4};
     //     int nu3 {(mu + 3)%4};
-    //     site_coord site_mup      {Move< 1>(current_site, mu)};
-    //     site_coord site_nup1     {Move< 1>(current_site, nu1)};
-    //     site_coord site_nud1     {Move<-1>(current_site, nu1)};
-    //     site_coord site_mup_nud1 {Move<-1>(site_mup    , nu1)};
-    //     site_coord site_nup2     {Move< 1>(current_site, nu2)};
-    //     site_coord site_nud2     {Move<-1>(current_site, nu2)};
-    //     site_coord site_mup_nud2 {Move<-1>(site_mup    , nu2)};
-    //     site_coord site_nup3     {Move< 1>(current_site, nu3)};
-    //     site_coord site_nud3     {Move<-1>(current_site, nu3)};
-    //     site_coord site_mup_nud3 {Move<-1>(site_mup    , nu3)};
+    //     site_coord site_mup      {U.Move< 1>(current_site, mu)};
+    //     site_coord site_nup1     {U.Move< 1>(current_site, nu1)};
+    //     site_coord site_nud1     {U.Move<-1>(current_site, nu1)};
+    //     site_coord site_mup_nud1 {U.Move<-1>(site_mup    , nu1)};
+    //     site_coord site_nup2     {U.Move< 1>(current_site, nu2)};
+    //     site_coord site_nud2     {U.Move<-1>(current_site, nu2)};
+    //     site_coord site_mup_nud2 {U.Move<-1>(site_mup    , nu2)};
+    //     site_coord site_nup3     {U.Move< 1>(current_site, nu3)};
+    //     site_coord site_nud3     {U.Move<-1>(current_site, nu3)};
+    //     site_coord site_mup_nud3 {U.Move<-1>(site_mup    , nu3)};
     //     return U(current_site, nu1) * U(site_nup1, mu) * U(site_mup, nu1).adjoint() + U(site_nud1, nu1).adjoint() * U(site_nud1, mu) * U(site_mup_nud1, nu1)
     //          + U(current_site, nu2) * U(site_nup2, mu) * U(site_mup, nu2).adjoint() + U(site_nud2, nu2).adjoint() * U(site_nud2, mu) * U(site_mup_nud2, nu2)
     //          + U(current_site, nu3) * U(site_nup3, mu) * U(site_mup, nu3).adjoint() + U(site_nud3, nu3).adjoint() * U(site_nud3, mu) * U(site_mup_nud3, nu3);

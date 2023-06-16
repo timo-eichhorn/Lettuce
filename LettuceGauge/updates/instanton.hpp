@@ -4,7 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 #include "../coords.hpp"
-#include "../lattice.hpp"
+// #include "../lattice.hpp"
 #include "../math/su3.hpp"
 // #include "../actions/gauge/rectangular_action.hpp"
 #include "../actions/gauge/wilson_action.hpp"
@@ -221,7 +221,8 @@ void MultiplyConfigurations(GaugeField& Gluon1, const GaugeField& Gluon2) noexce
     }
 }
 
-bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q, const site_coord& center, const int r, uint_fast64_t& acceptance_count_instanton, const bool metropolis_test, std::uniform_real_distribution<floatT>& distribution_prob, const bool create_instantons = false) noexcept
+template<typename prngT>
+bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q, const site_coord& center, const int r, uint_fast64_t& acceptance_count_instanton, const bool metropolis_test, prngT& prng, const bool create_instantons = false) noexcept
 {
     static GaugeField PositiveInstanton;
     static GaugeField NegativeInstanton;
@@ -244,11 +245,7 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
     double S_old {WilsonAction::Action(Gluon)};
     double S_new {WilsonAction::Action(Gluon_copy)};
     double p     {std::exp(-S_new + S_old)};
-    #if defined(_OPENMP)
-    double q     {distribution_prob(prng_vector[omp_get_thread_num()])};
-    #else
-    double q     {distribution_prob(generator_rand)};
-    #endif
+    double q     {prng.UniformReal()};
     // TODO: Probably shouldnt use a global variable for DeltaSInstanton?
     DeltaSInstanton = S_new - S_old;
     if (metropolis_test)

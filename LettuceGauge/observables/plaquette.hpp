@@ -20,7 +20,7 @@
 [[nodiscard]]
 Matrix_SU3 Plaquette(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    return U(current_site, mu) * U(Move<1>(current_site, mu), nu) * U(Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
+    return U(current_site, mu) * U(U.Move<1>(current_site, mu), nu) * U(U.Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
 }
 
 [[nodiscard]]
@@ -46,34 +46,34 @@ double PlaquetteSum(const GaugeField& U) noexcept
 [[nodiscard]]
 Matrix_SU3 PlaquetteI(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    return U(current_site, mu) * U(Move<1>(current_site, mu), nu) * U(Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
+    return U(current_site, mu) * U(U.Move<1>(current_site, mu), nu) * U(U.Move<1>(current_site, nu), mu).adjoint() * U(current_site, nu).adjoint();
 }
 
 // Top left quadrant, i.e., P_{nu, -mu}
 [[nodiscard]]
 Matrix_SU3 PlaquetteII(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mud     {Move<-1>(current_site, mu)};
-    return U(current_site, nu) * U(Move<1>(site_mud, nu), mu).adjoint() * U(site_mud, nu).adjoint() * U(site_mud, mu);
+    site_coord site_mud     {U.Move<-1>(current_site, mu)};
+    return U(current_site, nu) * U(U.Move<1>(site_mud, nu), mu).adjoint() * U(site_mud, nu).adjoint() * U(site_mud, mu);
 }
 
 // Bottom left quadrant, i.e., P_{-mu, -nu}
 [[nodiscard]]
 Matrix_SU3 PlaquetteIII(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    // TODO: We could reorder the expression below and replace one Move<-1> by a Move<1>
-    //       Also, we could replace the last Move<-1> with a Move<1> from a different site
-    site_coord site_mud     {Move<-1>(current_site, mu)};
-    site_coord site_mud_nud {Move<-1>(site_mud    , nu)};
-    return U(site_mud, mu).adjoint() * U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(Move<-1>(current_site, nu), nu);
+    // TODO: We could reorder the expression below and replace one U.Move<-1> by a U.Move<1>
+    //       Also, we could replace the last U.Move<-1> with a U.Move<1> from a different site
+    site_coord site_mud     {U.Move<-1>(current_site, mu)};
+    site_coord site_mud_nud {U.Move<-1>(site_mud    , nu)};
+    return U(site_mud, mu).adjoint() * U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(U.Move<-1>(current_site, nu), nu);
 }
 
 // Bottom right quadrant, i.e., P_{-nu, mu}
 [[nodiscard]]
 Matrix_SU3 PlaquetteIV(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_nud     {Move<-1>(current_site, nu)};
-    return U(site_nud, nu).adjoint() * U(site_nud, mu) * U(Move<1>(site_nud, mu), nu) * U(current_site, mu).adjoint();
+    site_coord site_nud     {U.Move<-1>(current_site, nu)};
+    return U(site_nud, nu).adjoint() * U(site_nud, mu) * U(U.Move<1>(site_nud, mu), nu) * U(current_site, mu).adjoint();
 }
 
 #endif // LETTUCE_PLAQUETTE_HPP

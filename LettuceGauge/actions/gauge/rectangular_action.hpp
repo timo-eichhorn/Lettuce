@@ -4,7 +4,6 @@
 // Non-standard library headers
 #include "../../defines.hpp"
 #include "../../coords.hpp"
-#include "../../lattice.hpp"
 #include "../../observables/plaquette.hpp"
 #include "../../observables/wilson_loop.hpp"
 //----------------------------------------
@@ -180,32 +179,32 @@ namespace GaugeAction
                     int nu {(mu + nu_offset) % 4};
                     // First term, orthogonal to link
                     // Right half
-                    site_coord site_nup      {Move< 1>(current_site, nu)};
-                    site_coord site_nupp     {Move< 1>(site_nup    , nu)};
-                    site_coord site_mup_nup  {Move< 1>(site_nup    , mu)};
-                    site_coord site_mup      {Move< 1>(current_site, mu)};
+                    site_coord site_nup      {U.Move< 1>(current_site, nu)};
+                    site_coord site_nupp     {U.Move< 1>(site_nup    , nu)};
+                    site_coord site_mup_nup  {U.Move< 1>(site_nup    , mu)};
+                    site_coord site_mup      {U.Move< 1>(current_site, mu)};
                     // Left half
-                    site_coord site_nud      {Move<-1>(current_site, nu)};
-                    site_coord site_nudd     {Move<-1>(site_nud    , nu)};
-                    site_coord site_mup_nudd {Move< 1>(site_nudd   , mu)};
-                    site_coord site_mup_nud  {Move< 1>(site_nud    , mu)};
+                    site_coord site_nud      {U.Move<-1>(current_site, nu)};
+                    site_coord site_nudd     {U.Move<-1>(site_nud    , nu)};
+                    site_coord site_mup_nudd {U.Move< 1>(site_nudd   , mu)};
+                    site_coord site_mup_nud  {U.Move< 1>(site_nud    , mu)};
                     st.noalias() += U(current_site, nu)           * U(site_nup , nu)           * U(site_nupp, mu) * U(site_mup_nup , nu).adjoint() * U(site_mup    , nu).adjoint()
                                   + U(site_nud    , nu).adjoint() * U(site_nudd, nu).adjoint() * U(site_nudd, mu) * U(site_mup_nudd, nu)           * U(site_mup_nud, nu);
                     //-----
                     // Second term, same direction as link (staple originating from current_site)
                     // Right half
-                    site_coord site_mupp     {Move< 1>(site_mup    , mu)};
+                    site_coord site_mupp     {U.Move< 1>(site_mup    , mu)};
                     // Left half
-                    site_coord site_mupp_nud {Move< 1>(site_mup_nud, mu)};
+                    site_coord site_mupp_nud {U.Move< 1>(site_mup_nud, mu)};
                     st.noalias() += (U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint()
                                    + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, mu) * U(site_mupp_nud, nu)) * U(site_mup, mu).adjoint();
                     //-----
                     // Third term, same direction as link (staple originating from site_mud)
                     // Right half
-                    site_coord site_mud      {Move<-1>(current_site, mu)};
-                    site_coord site_mud_nup  {Move< 1>(site_mud    , nu)};
+                    site_coord site_mud      {U.Move<-1>(current_site, mu)};
+                    site_coord site_mud_nup  {U.Move< 1>(site_mud    , nu)};
                     // Left half
-                    site_coord site_mud_nud  {Move<-1>(site_mud    , nu)};
+                    site_coord site_mud_nud  {U.Move<-1>(site_mud    , nu)};
                     st.noalias() += U(site_mud, mu).adjoint() * (U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
                                                                + U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(site_nud, mu) * U(site_mup_nud, nu));
                 }

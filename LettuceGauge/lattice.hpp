@@ -281,6 +281,124 @@ class GaugeField4D
             }
             Swap(U1.gaugefield, U2.gaugefield);
         }
+        // Move site coordinates
+        // TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
+        template<int dist>
+        [[nodiscard]]
+        site_coord Move(const site_coord& site, const int direction) const noexcept
+        {
+            // site_coord new_site = site;
+            // new_site[direction] = (new_site[direction] + dist) % N[direction];
+            // TODO: Check bounds? If dist < Nx, Ny, Nz, Nt this is unproblematic, but what if dist is larger than linear extent? Check at compile time?
+            static_assert(dist != 0, "Move with dist == 0 detected!");
+            // For positive dist we do not need to consider negative modulo
+            if constexpr(dist > 0)
+            {
+                // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
+                //       Pass the lattice as an additional argument?
+                switch (direction)
+                {
+                    case 0:
+                        return site_coord((site.t + dist) % Nt, site.x              , site.y              , site.z              );
+                    case 1:
+                        return site_coord(site.t              , (site.x + dist) % Nx, site.y              , site.z              );
+                    case 2:
+                        return site_coord(site.t              , site.x              , (site.y + dist) % Ny, site.z              );
+                    case 3:
+                        return site_coord(site.t              , site.x              , site.y              , (site.z + dist) % Nz);
+                    default:
+                        return site_coord(site.t              , site.x              , site.y              , site.z              );
+                }
+            }
+            else
+            {
+                // TODO: Perhaps replace with safer (potentially less efficient) verion?
+                static_assert(dist <= static_cast<int>(Nt) and dist <= static_cast<int>(Nx) and dist <= static_cast<int>(Ny) and dist <= static_cast<int>(Nz), "Move in negative direction with dist greater than one of the lattice lengths detected!");
+                // Alternative: Use negative indices (how to deal with 0 then?)
+                switch (direction)
+                {
+                    case 0:
+                        return site_coord((site.t + Nt + dist) % Nt, site.x                   , site.y                   , site.z                   );
+                    case 1:
+                        return site_coord(site.t                   , (site.x + Nx + dist) % Nx, site.y                   , site.z                   );
+                    case 2:
+                        return site_coord(site.t                   , site.x                   , (site.y + Ny + dist) % Ny, site.z                   );
+                    case 3:
+                        return site_coord(site.t                   , site.x                   , site.y                   , (site.z + Nz + dist) % Nz);
+                    default:
+                        return site_coord(site.t                   , site.x                   , site.y                   , site.z                   );
+                }
+            }
+        }
+
+        // Move link coordinates
+        // TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
+        template<int dist>
+        [[nodiscard]]
+        link_coord Move(const link_coord& link, const int direction) const noexcept
+        {
+            // link_coord new_link = link;
+            // new_link[direction] = (new_link[direction] + dist) % N[direction];
+            // TODO: Check bounds? If dist < Nx, Ny, Nz, Nt this is unproblematic, but what if dist is larger than linear extent? Check at compile time?
+            static_assert(dist != 0, "Move with dist == 0 detected!");
+            // For positive dist we do not need to consider negative modulo
+            if constexpr(dist > 0)
+            {
+                // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
+                //       Pass the lattice as an additional argument?
+                switch (direction)
+                {
+                    case 0:
+                        return link_coord((link.t + dist) % Nt, link.x              , link.y              , link.z              , link.mu);
+                    case 1:
+                        return link_coord(link.t              , (link.x + dist) % Nx, link.y              , link.z              , link.mu);
+                    case 2:
+                        return link_coord(link.t              , link.x              , (link.y + dist) % Ny, link.z              , link.mu);
+                    case 3:
+                        return link_coord(link.t              , link.x              , link.y              , (link.z + dist) % Nz, link.mu);
+                    default:
+                        return link_coord(link.t              , link.x              , link.y              , link.z              , link.mu);
+                }
+            }
+            else
+            {
+                // TODO: Perhaps replace with safer (potentially less efficient) verion?
+                static_assert(dist <= static_cast<int>(Nt) and dist <= static_cast<int>(Nx) and dist <= static_cast<int>(Ny) and dist <= static_cast<int>(Nz), "Move in negative direction with dist greater than one of the lattice lengths detected!");
+                // Alternative: Use negative indices (how to deal with 0 then?)
+                switch (direction)
+                {
+                    case 0:
+                        return link_coord((link.t + Nt + dist) % Nt, link.x                   , link.y                   , link.z                   , link.mu);
+                    case 1:
+                        return link_coord(link.t                   , (link.x + Nx + dist) % Nx, link.y                   , link.z                   , link.mu);
+                    case 2:
+                        return link_coord(link.t                   , link.x                   , (link.y + Ny + dist) % Ny, link.z                   , link.mu);
+                    case 3:
+                        return link_coord(link.t                   , link.x                   , link.y                   , (link.z + Nz + dist) % Nz, link.mu);
+                    default:
+                        return link_coord(link.t                   , link.x                   , link.y                   , link.z                   , link.mu);
+                }
+            }
+        }
+        // Non-templated version?
+        // link_coord Move(link_coord& link, const int dir, const int dist = 1) const noexcept
+        // {
+        //     // link_coord new_link = link;
+        //     // new_link[dir] = (new_link[dir] + dist) % N[dir];
+        //     switch (dir)
+        //     {
+        //         case 0:
+        //             return link_coord((link.t + Nt + dist)%Nt, link.x                 , link.y                 , link.z                 , link.mu);
+        //         case 1:
+        //             return link_coord(link.t                 , (link.x + Nx + dist)%Nx, link.y                 , link.z                 , link.mu);
+        //         case 2:
+        //             return link_coord(link.t                 , link.x                 , (link.y + Ny + dist)%Ny, link.z                 , link.mu);
+        //         case 3:
+        //             return link_coord(link.t                 , link.x                 , link.y                 , (link.z + Nz + dist)%Nz, link.mu);
+        //         default:
+        //             return link_coord(link.t                 , link.x                 , link.y                 , link.z                 , link.mu)
+        //     }
+        // }
     private:
         // -----
         // TODO: Do we need modulo here? Also, it is probably preferable to make the layout/coordinate function a (template) parameter of the class

@@ -38,19 +38,19 @@ Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, cons
         // Since we already initialized link_product as U(current_site, mu), the loop starts from 1
         for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
         {
-            tmp_site = Move<1>(tmp_site, mu);
+            tmp_site = U.Move<1>(tmp_site, mu);
             link_product *= U(tmp_site, mu);
         }
         return link_product;
     }
     else
     {
-        site_coord tmp_site     {Move<-1>(current_site, mu)};
+        site_coord tmp_site     {U.Move<-1>(current_site, mu)};
         Matrix_3x3 link_product {U(tmp_site, mu).adjoint()};
         // Since we already initialized link_product as U(current_site - mu, mu), the loop starts from 1
         for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
         {
-            tmp_site = Move<-1>(tmp_site, mu);
+            tmp_site = U.Move<-1>(tmp_site, mu);
             link_product *= U(tmp_site, mu).adjoint();
         }
         return link_product;
@@ -133,9 +133,9 @@ Matrix_SU3 WilsonLoop(const GaugeField& U, const site_coord current_site, const 
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of WilsonLoop are not allowed to be 0!");
     static_assert((N_mu * N_mu) == (N_nu * N_nu), "The absolute values of the template parameters of WilsonLoop must be the same!");
-    site_coord site_mup     {Move<N_mu>(current_site, mu)};
-    site_coord site_mup_nup {Move<N_nu>(site_mup,     nu)};
-    site_coord site_nup     {Move<N_nu>(current_site, nu)};
+    site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
+    site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
+    site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
     return LineProduct<N_mu>(U, current_site, mu) * LineProduct<N_nu>(U, site_mup, nu) * LineProduct<-N_mu>(U, site_mup_nup, mu) * LineProduct<-N_nu>(U, site_nup, nu);
 }
 
@@ -145,9 +145,9 @@ template<int N_mu, int N_nu>
 Matrix_SU3 RectangularLoop(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of RectangularLoop are not allowed to be 0!");
-    site_coord site_mup     {Move<N_mu>(current_site, mu)};
-    site_coord site_mup_nup {Move<N_nu>(site_mup,     nu)};
-    site_coord site_nup     {Move<N_nu>(current_site, nu)};
+    site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
+    site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
+    site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
     return LineProduct<N_mu>(U, current_site, mu) * LineProduct<N_nu>(U, site_mup, nu) * LineProduct<-N_mu>(U, site_mup_nup, mu) * LineProduct<-N_nu>(U, site_nup, nu);
 }
 
@@ -156,10 +156,10 @@ template<>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop<1, 2>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mup     {Move<1>(current_site, mu)};
-    site_coord site_mup_nup {Move<1>(site_mup    , nu)};
-    site_coord site_nupp    {Move<2>(current_site, nu)};
-    site_coord site_nup     {Move<1>(current_site, nu)};
+    site_coord site_mup     {U.Move<1>(current_site, mu)};
+    site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
+    site_coord site_nupp    {U.Move<2>(current_site, nu)};
+    site_coord site_nup     {U.Move<1>(current_site, nu)};
     return U(current_site, mu) * U(site_mup, nu) * U(site_mup_nup, nu) * U(site_nupp, mu).adjoint() * U(site_nup, nu).adjoint() * U(current_site, nu).adjoint();
 }
 
@@ -167,10 +167,10 @@ template<>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop<2, 1>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mup     {Move<1>(current_site, mu)};
-    site_coord site_mupp    {Move<1>(site_mup    , mu)};
-    site_coord site_mup_nup {Move<1>(site_mup    , nu)};
-    site_coord site_nup     {Move<1>(current_site, nu)};
+    site_coord site_mup     {U.Move<1>(current_site, mu)};
+    site_coord site_mupp    {U.Move<1>(site_mup    , mu)};
+    site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
+    site_coord site_nup     {U.Move<1>(current_site, nu)};
     return U(current_site, mu) * U(site_mup, mu) * U(site_mupp, nu) * U(site_mup_nup, mu).adjoint() * U(site_nup, mu).adjoint() * U(current_site, nu).adjoint();
 }
 

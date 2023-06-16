@@ -155,11 +155,11 @@ void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
 // [[nodiscard]]
 // Matrix_3x3 CloverDerivativeComponent(const GaugeField& U, const FullTensor& Clover, const site_coord& current_site, const int mu, const int nu, const int rho, const int sigma) noexcept
 // {
-//     site_coord site_mup     = Move< 1>(current_site, mu);
-//     site_coord site_nup     = Move< 1>(current_site, nu);
-//     site_coord site_nud     = Move<-1>(current_site, nu);
-//     site_coord site_mup_nup = Move< 1>(site_mup, nu);
-//     site_coord site_mup_nud = Move<-1>(site_mup, nu);
+//     site_coord site_mup     = U.Move< 1>(current_site, mu);
+//     site_coord site_nup     = U.Move< 1>(current_site, nu);
+//     site_coord site_nud     = U.Move<-1>(current_site, nu);
+//     site_coord site_mup_nup = U.Move< 1>(site_mup, nu);
+//     site_coord site_mup_nud = U.Move<-1>(site_mup, nu);
 
 //     // return U(current_site, mu) * (U(site_mup, nu)               * U(site_nup, mu).adjoint()        * U(current_site, nu).adjoint() * Clover(current_site, rho, sigma)
 //     //                             + U(site_mup, nu)               * U(site_nup, mu).adjoint()        * Clover(site_nup, rho, sigma)  * U(current_site, nu).adjoint()
@@ -238,11 +238,11 @@ void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
 [[nodiscard]]
 Matrix_3x3 CloverDerivativeComponent(const GaugeField& U, const FullTensor& Clover, const site_coord& current_site, const int mu, const int nu, const int rho, const int sigma) noexcept
 {
-    site_coord site_mup     = Move< 1>(current_site, mu);
-    site_coord site_nup     = Move< 1>(current_site, nu);
-    site_coord site_nud     = Move<-1>(current_site, nu);
-    site_coord site_mup_nup = Move< 1>(site_mup, nu);
-    site_coord site_mup_nud = Move<-1>(site_mup, nu);
+    site_coord site_mup     = U.Move< 1>(current_site, mu);
+    site_coord site_nup     = U.Move< 1>(current_site, nu);
+    site_coord site_nud     = U.Move<-1>(current_site, nu);
+    site_coord site_mup_nup = U.Move< 1>(site_mup, nu);
+    site_coord site_mup_nud = U.Move<-1>(site_mup, nu);
 
     // We can move the first multiplication outside into the function CloverDerivative(), would go from 6 -> 1 multiplications (although relatively speaking it's not that much)
     // We can also replace all clover terms C_{rho, sigma} with R_{rho, sigma} = C_{rho, sigma} - C_{sigma, rho}, which means we only need half of the clover terms derivative components (due to linearity and antisymmetry of R)

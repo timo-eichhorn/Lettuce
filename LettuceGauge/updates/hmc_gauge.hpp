@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
+#include "../coords.hpp"
 #include "../math/su3.hpp"
 #include "../math/su3_exp.hpp"
 //----------------------------------------
@@ -184,7 +185,7 @@ namespace Integrators::HMC
 
 namespace GaugeUpdates
 {
-    template<typename IntegratorT, typename ActionT>
+    template<typename IntegratorT, typename ActionT, typename prngT>
     struct HMCKernel
     {
         private:
@@ -193,7 +194,7 @@ namespace GaugeUpdates
             GaugeField&  Momentum;
             IntegratorT& Integrator;
             ActionT&     Action;
-            std::uniform_real_distribution<floatT>& distribution_prob;
+            prngT&       prng;
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
@@ -208,33 +209,25 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Generate 8 random numbers as basis coefficients
-                    std::size_t index {static_cast<std::size_t>(omp_get_thread_num())};
-                    floatT phi1 {ndist_vector[index](prng_vector[index])};
-                    floatT phi2 {ndist_vector[index](prng_vector[index])};
-                    floatT phi3 {ndist_vector[index](prng_vector[index])};
-                    floatT phi4 {ndist_vector[index](prng_vector[index])};
-                    floatT phi5 {ndist_vector[index](prng_vector[index])};
-                    floatT phi6 {ndist_vector[index](prng_vector[index])};
-                    floatT phi7 {ndist_vector[index](prng_vector[index])};
-                    floatT phi8 {ndist_vector[index](prng_vector[index])};
+                    // std::size_t index {static_cast<std::size_t>(omp_get_thread_num())};
+                    // floatT phi1 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi2 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi3 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi4 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi5 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi6 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi7 {ndist_vector[index](prng_vector[index])};
+                    // floatT phi8 {ndist_vector[index](prng_vector[index])};
 
-                    // floatT phi1 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi2 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi3 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi4 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi5 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi6 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi7 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // floatT phi8 {ndist_vector[omp_get_thread_num()](prng_vector[omp_get_thread_num()])};
-                    // std::size_t index {static_cast<std::size_t>(((t * Nx + x) * Ny + y) * Nz + z)};
-                    // floatT phi1 {global_prng.Gaussian(index)};
-                    // floatT phi2 {global_prng.Gaussian(index)};
-                    // floatT phi3 {global_prng.Gaussian(index)};
-                    // floatT phi4 {global_prng.Gaussian(index)};
-                    // floatT phi5 {global_prng.Gaussian(index)};
-                    // floatT phi6 {global_prng.Gaussian(index)};
-                    // floatT phi7 {global_prng.Gaussian(index)};
-                    // floatT phi8 {global_prng.Gaussian(index)};
+                    link_coord current_link {t, x, y, z, mu};
+                    floatT     phi1         {global_prng.Gaussian(current_link)};
+                    floatT     phi2         {global_prng.Gaussian(current_link)};
+                    floatT     phi3         {global_prng.Gaussian(current_link)};
+                    floatT     phi4         {global_prng.Gaussian(current_link)};
+                    floatT     phi5         {global_prng.Gaussian(current_link)};
+                    floatT     phi6         {global_prng.Gaussian(current_link)};
+                    floatT     phi7         {global_prng.Gaussian(current_link)};
+                    floatT     phi8         {global_prng.Gaussian(current_link)};
 
                     // TODO: This is the old version/convention where the momenta are not algebra elements, but rather traceless hermitian matrices
                     // Random momentum in su(3) given by phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann matrix)
@@ -249,7 +242,7 @@ namespace GaugeUpdates
                     A << std::complex<floatT>(0.0,phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi2,phi1),                  std::complex<floatT>(phi5,phi4),
                          std::complex<floatT>(-phi2,phi1),                std::complex<floatT>(0.0,-phi3 + phi8/sqrt(3.0)), std::complex<floatT>(phi7,phi6),
                          std::complex<floatT>(-phi5,phi4),                std::complex<floatT>(-phi7,phi6),                 std::complex<floatT>(0.0,-2.0*phi8/sqrt(3.0));
-                    Momentum({t, x, y, z, mu}) = static_cast<floatT>(0.5) * A;
+                    Momentum(current_link) = static_cast<floatT>(0.5) * A;
                 }
                 // std::cout << "Random momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
@@ -345,8 +338,8 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), distribution_prob(distribution_prob_in)
+            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in) noexcept :
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in)
             {}
 
             // TODO: Add parameter: const double tau
@@ -365,11 +358,7 @@ namespace GaugeUpdates
                 double energy_new {Hamiltonian()};
                 // Metropolis accept-reject step
                 double p {std::exp(-energy_new + energy_old)};
-                #if defined(_OPENMP)
-                double q {distribution_prob(prng_vector[omp_get_thread_num()])};
-                #else
-                double q {distribution_prob(generator_rand)};
-                #endif
+                double q {prng.UniformReal()};
                 // TODO: Probably shouldnt use a global variable for DeltaH?
                 DeltaH = energy_new - energy_old;
                 if (metropolis_step)

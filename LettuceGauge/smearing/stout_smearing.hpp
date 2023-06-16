@@ -195,10 +195,10 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
                 // TODO: Perhaps move the directional loops outside?
                 if (mu != nu)
                 {
-                    site_coord site_mup     = Move< 1>(current_site, mu);
-                    site_coord site_nup     = Move< 1>(current_site, nu);
-                    site_coord site_nud     = Move<-1>(current_site, nu);
-                    site_coord site_mup_nud = Move<-1>(site_mup    , nu);
+                    site_coord site_mup     = U.Move< 1>(current_site, mu);
+                    site_coord site_nup     = U.Move< 1>(current_site, nu);
+                    site_coord site_nud     = U.Move<-1>(current_site, nu);
+                    site_coord site_mup_nud = U.Move<-1>(site_mup    , nu);
 
                     force_sum += U (site_mup    , nu)           * U (site_nup    , mu).adjoint() * U (current_site, nu).adjoint() * Lambda(current_site, nu)
                                + U (site_mup_nud, nu).adjoint() * U (site_nud    , mu).adjoint() * Lambda(site_nud    , mu)       * U (site_nud    , nu)

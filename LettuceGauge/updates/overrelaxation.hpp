@@ -27,17 +27,17 @@
 //| Cabibbo-Marinari decomposition into SU(2) subgroups is also provided.           |
 //+---------------------------------------------------------------------------------+
 
-template<typename floatT, typename ActionT>
+template<typename ActionT, typename prngT>
 struct OverrelaxationDirectKernel
 {
     private:
-        GaugeField&                             U;
+        GaugeField& U;
         // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
-        ActionT&                                Action;
-        std::uniform_real_distribution<floatT>& distribution_prob;
+        ActionT&    Action;
+        prngT&      prng;
     public:
-        explicit OverrelaxationDirectKernel(GaugeField& U_in, ActionT& Action_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-        U(U_in), Action(Action_in), distribution_prob(distribution_prob_in)
+        explicit OverrelaxationDirectKernel(GaugeField& U_in, ActionT& Action_in, prngT& prng_in) noexcept :
+        U(U_in), Action(Action_in), prng(prng_in)
         {}
 
         bool operator()(const link_coord& current_link) const noexcept
@@ -54,11 +54,7 @@ struct OverrelaxationDirectKernel
             // double     p         {std::exp(-S_new + S_old)};
             double     Delta_S   {Action.Local(new_link - old_link, st)};
             double     p         {std::exp(-Delta_S)};
-            #if defined(_OPENMP)
-            double     q         {distribution_prob(prng_vector[omp_get_thread_num()])};
-            #else
-            double     q         {distribution_prob(generator_rand)};
-            #endif
+            double     q         {prng.UniformReal(current_link)};
             // The direct overrelaxation algorithm is not exact in the sense that it does not preserve the action, so we need an accept-reject step
             if (q <= p)
             {
@@ -69,7 +65,6 @@ struct OverrelaxationDirectKernel
         }
 };
 
-// template<typename floatT>
 template<typename ActionT>
 struct OverrelaxationSubgroupKernel
 {
@@ -78,7 +73,6 @@ struct OverrelaxationSubgroupKernel
         // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
         ActionT&    Action;
         // Overrelaxation update for SU(2)
-        template<typename floatT>
         SU2_comp<floatT> OverrelaxationSU2(const SU2_comp<floatT>& A) const noexcept
         {
             floatT   a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};

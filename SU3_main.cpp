@@ -4,15 +4,19 @@
 // #define EIGEN_USE_MKL_ALL
 
 // Non-standard library headers
-#include "LettuceGauge/actions/gauge/rectangular_action.hpp"
-#include "LettuceGauge/coords.hpp"
+// Include these three header files first in this order
+// TODO: Should probably check all includes and add the appropriate includes to all files
 #include "LettuceGauge/defines.hpp"
+#include "LettuceGauge/coords.hpp"
+#include "LettuceGauge/lattice.hpp"
+//-----
+// Remaining files in alphabetic order (for now)
+#include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
 #include "LettuceGauge/IO/config_io/bridge_text_format.hpp"
 #include "LettuceGauge/IO/parameter_io.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
-#include "LettuceGauge/lattice.hpp"
 #include "LettuceGauge/math/su2.hpp"
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
@@ -75,164 +79,6 @@ GaugeField                   Gluonchain;
 FullTensor                   F_tensor;
 
 //-------------------------------------------------------------------------------------
-
-[[nodiscard]]
-std::vector<pcg64> CreatePRNGs(const int thread_num = 0)
-{
-    std::vector<pcg64> tmp_vec;
-    #if defined(_OPENMP)
-        int max_thread_num {omp_get_max_threads()};
-    #else
-        int max_thread_num {1};
-    #endif
-    std::cout << "Maximum number of threads: " << max_thread_num << std::endl;
-    #if defined(_OPENMP)
-        if (thread_num != 0)
-        {
-            max_thread_num = thread_num;
-            omp_set_num_threads(thread_num);
-        }
-    #endif
-    if (max_thread_num != 1)
-    {
-        std::cout << "Creating PRNG vector with " << max_thread_num << " PRNGs.\n" << std::endl;
-    }
-    else
-    {
-        std::cout << "Creating PRNG vector with " << max_thread_num << " PRNG.\n" << std::endl;
-    }
-    for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
-    {
-        #ifdef FIXED_SEED
-        pcg64 generator_rand_tmp(thread_count);
-        tmp_vec.emplace_back(generator_rand_tmp);
-        // tmp_vec.emplace_back(generator_rand_tmp(thread_count));
-        #else
-        pcg_extras::seed_seq_from<std::random_device> seed_source_tmp;
-        pcg64 generator_rand_tmp(seed_source_tmp);
-        tmp_vec.emplace_back(generator_rand_tmp);
-        // tmp_vec.emplace_back(generator_rand_tmp(seed_source_tmp));
-        #endif
-    }
-    return tmp_vec;
-}
-
-//-----
-// Create vector of normal_distribution generators with mean 0 and standard deviation 1 for HMC
-
-[[nodiscard]]
-std::vector<std::normal_distribution<floatT>> CreateNormalDistributions(const int thread_num = 0)
-{
-    std::vector<std::normal_distribution<floatT>> tmp_vec;
-    #if defined(_OPENMP)
-        int max_thread_num {omp_get_max_threads()};
-    #else
-        int max_thread_num {1};
-    #endif
-    std::cout << "Maximum number of threads: " << max_thread_num << std::endl;
-    #if defined(_OPENMP)
-        if (thread_num != 0)
-        {
-            max_thread_num = thread_num;
-            omp_set_num_threads(thread_num);
-        }
-    #endif
-    if (max_thread_num != 1)
-    {
-        std::cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << std::endl;
-    }
-    else
-    {
-        std::cout << "Creating vector of normal_distributions with " << max_thread_num << " normal_distributions.\n" << std::endl;
-    }
-    for (int thread_count = 0; thread_count < max_thread_num; ++thread_count)
-    {
-        std::normal_distribution<floatT> tmp_dist{0, 1};
-        tmp_vec.emplace_back(tmp_dist);
-    }
-    return tmp_vec;
-}
-
-//-----
-
-template<typename FuncT>
-void MetadynamicsLocal(GaugeField& Gluon, GaugeField& Gluon1, GaugeField& Gluon2, GaugeField& Gluon3, MetaBiasPotential& Metapotential, FuncT&& CV_function, double& CV_old, const int n_sweep_heatbath, const int n_sweep_orelax, std::uniform_real_distribution<floatT>& distribution_prob, std::uniform_real_distribution<floatT>& distribution_uniform)
-{
-    // Copy old field so we can restore it in case the update gets rejected
-    // In contrast to HMC, we expect the acceptance rates to be quite low, so always perform updates using Gluon1 instead of Gluon
-    // TODO: Is that true? Better check to be sure
-    // auto start_copy = std::chrono::system_clock::now();
-    Gluon1 = Gluon;
-    HeatbathKernel               Heatbath1(Gluon1, GaugeAction::WilsonAction, distribution_uniform);
-    OverrelaxationSubgroupKernel OverrelaxationSubgroup1(Gluon1, GaugeAction::WilsonAction);
-    // auto end_copy = std::chrono::system_clock::now();
-    // std::chrono::duration<double> copy_time = end_copy - start_copy;
-    // std::cout << "Time for copy: " << copy_time.count() << std::endl;
-    // Get old value of collective variable
-    // TODO: Since the calculation is expensive in our case, we should try to reduce the number of CV calculations
-    //       Instead of recomputing the CV, only compute the new CV and remember the old CV from last step
-    // double CV_old {CV_function(Gluon1, Gluon2, rho_stout, 15)};
-    // Perform update sweeps
-    // HeatbathSU3(Gluon1, n_sweep_heatbath, distribution_uniform);
-    // OverrelaxationSubgroupOld(Gluon1, n_sweep_orelax);
-    // Update_function(Gluon1, distribution_uniform, n_sweep_heatbath, n_sweep_orelax);
-    Iterator::Checkerboard(Heatbath1, n_sweep_heatbath);
-    Iterator::Checkerboard(OverrelaxationSubgroup1, n_sweep_orelax);
-    // Get new value of collective variable
-    double CV_new {CV_function(Gluon1, Gluon2, Gluon3, n_smear_meta, rho_stout)};
-    //-----
-    // TODO: Calculate difference in metapotential
-    double DeltaV {Metapotential.ReturnPotential(CV_new) - Metapotential.ReturnPotential(CV_old)};
-    // Metropolis accept-reject step
-    double p {std::exp(-DeltaV)};
-    #if defined(_OPENMP)
-    double q {distribution_prob(prng_vector[omp_get_thread_num()])};
-    #else
-    double q {distribution_prob(generator_rand)};
-    #endif
-    if (q <= p)
-    {
-        // std::cout << "Accepted!" << std::endl;
-        Gluon = Gluon1;
-        CV_old = CV_new;
-        // TODO: Track acceptance rate
-        // acceptance_count_metadyn += 1;
-        // TODO: Update metapotential
-        if constexpr(metapotential_updated)
-        {
-            Metapotential.UpdatePotential(CV_new);
-        }
-    }
-    else
-    {
-        // std::cout << "Rejected" << std::endl;
-    }
-}
-
-// TODO: Old version, can probably delete this
-// double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_copy1, GaugeField& Gluon_copy2, const int n_smear, const double smear_param)
-// {
-//     /*StoutSmearing4D(Gluon, Gluon1);*/
-//     Gluon_copy1 = Gluon;
-//     StoutSmearingN(Gluon_copy1, Gluon_copy2, n_smear, smear_param);
-//     // TODO: Probably need to rewrite StoutSmearingN so we don't have to manually keep track
-//     // For even n_smear, we need to use Gluon1, for odd n_smear we need to use Gluon2!
-//     // See description of StoutSmearingN()
-//     if (n_smear % 2 == 0)
-//     {
-//         return TopChargeClover(Gluon_copy1);
-//     }
-//     else
-//     {
-//         return TopChargeClover(Gluon_copy2);
-//     }
-//     // Old version
-//     // Gluon_copy = Gluon;
-//     // WilsonFlowForward(Gluon_copy, epsilon, n_flow);
-//     // return TopChargeClover(Gluon_copy);
-// }
-
-//-----
 // Calculates and writes observables to logfile
 
 void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const bool print_newline = true)
@@ -487,14 +333,9 @@ int main()
     datalog << std::setprecision(12) << std::fixed;
 
     Configuration();
-    prng_vector = CreatePRNGs();
-    if constexpr(n_hmc != 0)
-    {
-        ndist_vector = CreateNormalDistributions();
-    }
 
     // Default width of random numbers used in Metropolis update is 0.5
-    floatT epsilon {0.5};
+    floatT metropolis_epsilon {0.5};
 
     std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
     std::uniform_real_distribution<floatT> distribution_uniform(0.0, 1.0);
@@ -515,13 +356,13 @@ int main()
     GaugeAction::DBW2Action.SetBeta(beta);
 
     // Initialize update functors
-    HeatbathKernel                   Heatbath(Gluon, GaugeAction::DBW2Action, distribution_uniform);
-    // OverrelaxationDirectKernel       OverrelaxationDirect(Gluon, distribution_prob);
+    HeatbathKernel                   Heatbath(Gluon, GaugeAction::DBW2Action, global_prng);
+    // OverrelaxationDirectKernel       OverrelaxationDirect(Gluon, global_prng);
     OverrelaxationSubgroupKernel     OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
     Integrators::HMC::OMF_4          OMF_4_Integrator;
     // Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
     // Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
-    GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+    GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -552,14 +393,13 @@ int main()
             // auto start_update_metro {std::chrono::system_clock::now()};
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
-                std::uniform_real_distribution<floatT> distribution_unitary(-epsilon, epsilon);
-                MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, multi_hit, distribution_prob, distribution_unitary, distribution_choice);
+                MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, global_prng, multi_hit, metropolis_epsilon);
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
                 //       At the very least, we should probably combine the two actions below into one function
-                epsilon = Metropolis.AdjustedEpsilon(epsilon, acceptance_count);
+                Metropolis.AdjustEpsilon(acceptance_count);
+                metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
-                // MetropolisUpdate(Gluon, n_metro, acceptance_count, epsilon, distribution_prob, distribution_choice, distribution_unitary);
             }
             // auto end_update_metro {std::chrono::system_clock::now()};
             // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
@@ -568,7 +408,6 @@ int main()
             // auto start_update_heatbath {std::chrono::system_clock::now()};
             if constexpr(n_heatbath != 0)
             {
-                // HeatbathSU3(Gluon, n_heatbath, distribution_uniform);
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
             }
             // auto end_update_heatbath {std::chrono::system_clock::now()};
@@ -601,18 +440,18 @@ int main()
             //-----
             if constexpr(n_instanton_update != 0)
             {
-                int        Q_instanton {distribution_instanton(prng_vector[omp_get_thread_num()]) * 2 - 1};
+                int        Q_instanton {distribution_instanton(generator_rand) * 2 - 1};
                 int        L_half      {Nt/2 - 1};
                 site_coord center      {L_half, L_half, L_half, L_half};
                 int        radius      {5};
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, true);
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, global_prng, true);
                 }
                 else
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, distribution_prob, false);
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, global_prng, false);
                 }
             }
             //-----
@@ -664,9 +503,9 @@ int main()
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
 
-        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, distribution_prob);
+        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -682,7 +521,6 @@ int main()
         {
             // auto start_update_meta = std::chrono::system_clock::now();
             HMC_MetaD(n_hmc, true);
-            // MetadynamicsLocal(Gluon, Gluonsmeared1, Gluonsmeared2, Gluonsmeared3, TopBiasPotential, MetaCharge, CV, n_heatbath, n_orelax, distribution_prob, distribution_uniform);
             // auto end_update_meta = std::chrono::system_clock::now();
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
@@ -715,7 +553,7 @@ int main()
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper
-        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
 
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
@@ -724,9 +562,9 @@ int main()
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, distribution_prob);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
 
-        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, distribution_prob);
+        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng);
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -779,18 +617,18 @@ int main()
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 
     std::cout << "\n";
-    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
+    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
 
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
 
     datalog.open(parameterfilepath, std::fstream::out | std::fstream::app);
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
 
-    PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, epsilon, end_time, elapsed_seconds);
+    PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
     wilsonlog.close();
     wilsonlog.clear();
 }

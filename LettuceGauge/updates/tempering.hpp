@@ -3,7 +3,7 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-#include "../lattice.hpp"
+// #include "../lattice.hpp"
 #include "../metadynamics.hpp"
 #include "../observables/topological_charge.hpp"
 #include "../smearing/gradient_flow.hpp"
@@ -19,16 +19,17 @@
 
 namespace GaugeUpdates
 {
+    template<typename prngT>
     struct MetadynamicsTemperingKernel
     {
         private:
-            GaugeField& U;
-            GaugeField& U_temper;
+            GaugeField&        U;
+            GaugeField&        U_temper;
             // Fields we need temporarily during smearing
-            GaugeField& U_copy1;
-            GaugeField& U_copy2;
+            GaugeField&        U_copy1;
+            GaugeField&        U_copy2;
             MetaBiasPotential& Metapotential;
-            std::uniform_real_distribution<floatT>& distribution_prob;
+            prngT&             prng;
 
             double MetaCharge(const GaugeField& Gluon, GaugeField& Gluon_smeared, GaugeField& Forcefield, const int n_smear_meta, const double smear_param) noexcept
             {
@@ -38,8 +39,8 @@ namespace GaugeUpdates
                 return TopChargeClover(Gluon_smeared);
             }
         public:
-            explicit MetadynamicsTemperingKernel(GaugeField& U_in, GaugeField& U_temper_in, GaugeField& U_copy1_in, GaugeField& U_copy2_in, MetaBiasPotential& Metapotential_in, std::uniform_real_distribution<floatT>& distribution_prob_in) noexcept :
-            U(U_in), U_temper(U_temper_in), U_copy1(U_copy1_in), U_copy2(U_copy2_in), Metapotential(Metapotential_in), distribution_prob(distribution_prob_in)
+            explicit MetadynamicsTemperingKernel(GaugeField& U_in, GaugeField& U_temper_in, GaugeField& U_copy1_in, GaugeField& U_copy2_in, MetaBiasPotential& Metapotential_in, prngT& prng_in) noexcept :
+            U(U_in), U_temper(U_temper_in), U_copy1(U_copy1_in), U_copy2(U_copy2_in), Metapotential(Metapotential_in), prng(prng_in)
             {}
 
             bool operator()() noexcept
@@ -48,11 +49,7 @@ namespace GaugeUpdates
                 double CV_new {MetaCharge(U, U_copy1, U_copy2, n_smear_meta, rho_stout)};
                 DeltaVTempering = Metapotential.ReturnPotential(CV_new) - Metapotential.ReturnPotential(CV_old);
                 double p      {std::exp(-DeltaVTempering)};
-                #if defined(_OPENMP)
-                double q     {distribution_prob(prng_vector[omp_get_thread_num()])};
-                #else
-                double q     {distribution_prob(generator_rand)};
-                #endif
+                double q      {prng.UniformReal()};
                 if (q <= p)
                 {
                     // The swap function is cheap since it only swaps the pointers of the underlying raw gaugefields
