@@ -105,7 +105,7 @@ class PRNG4D
             //-----
             if (!state_stream)
             {
-                std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << "failed!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             }
         }
 
@@ -114,7 +114,7 @@ class PRNG4D
         {
             if (!std::filesystem::exists(filename))
             {
-                std::cerr << Lettuce::Color::BoldRed << "Error while trying to load PRNG state: File " << filename << "not found!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Error while trying to load PRNG state: File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
                 return;
             }
             //-----
@@ -126,7 +126,7 @@ class PRNG4D
             //-----
             if (!state_stream)
             {
-                std::cerr << Lettuce::Color::BoldRed << "Reading PRNG state from file " << filename << "failed!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Reading PRNG state from file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             }
             state_stream.close();
         }
@@ -143,7 +143,7 @@ class PRNG4D
             //-----
             if (!state_stream)
             {
-                std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << "failed!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             }
         }
 
@@ -152,7 +152,7 @@ class PRNG4D
         {
             if (!std::filesystem::exists(filename))
             {
-                std::cerr << Lettuce::Color::BoldRed << "Error while trying to load normal distribution state: File " << filename << "not found!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Error while trying to load normal distribution state: File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
                 return;
             }
             //-----
@@ -164,7 +164,7 @@ class PRNG4D
             //-----
             if (!state_stream)
             {
-                std::cerr << Lettuce::Color::BoldRed << "Reading normal distribution state from file " << filename << "failed!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Reading normal distribution state from file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             }
             state_stream.close();
         }
