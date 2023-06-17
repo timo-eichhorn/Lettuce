@@ -231,6 +231,7 @@ bool LoadConfigBMW(GaugeField& U, const std::string& filename)
             std::fread(buffer[mu_permuted].data(), sizeof(double), 12, file);
             for (int i = 0; i < 12; ++i)
             {
+                // TODO: Assumes that the machine is little endian (which is most likely true for modern systems), should probably check somehow to be sure
                 SwapEndianness(buffer[mu_permuted].data() + i);
             }
             U({t, x, y, z, mu}) = ReconstructMatBMW(buffer[mu_permuted]);
@@ -314,27 +315,6 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
             // Reunitarize/project copy of link
             Matrix_SU3 tmp {U(current_site, mu)};
             // SU3::Projection::GramSchmidt(tmp);
-            // TODO: If we use the function above, we get different results than with Szabolcs' code
-            // In Szabolcs' code, the projection looks as follows
-            // #define rdot(A,B) (creal((A)[0])*creal((B)[0])+cimag((A)[0])*cimag((B)[0])+ creal((A)[1])*creal((B)[1])+cimag((A)[1])*cimag((B)[1])+ creal((A)[2])*creal((B)[2])+cimag((A)[2])*cimag((B)[2]))
-            // #define cdot(A,B) (A)[0]*conj((B)[0])+(A)[1]*conj((B)[1])+(A)[2]*conj((B)[2])
-            // double n;
-            // complex double c;
-            // n=rdot(U->c[0],U->c[0]);
-            // n=1./sqrt(n);
-            // U->c[0][0]*=n; 
-            // U->c[0][1]*=n;
-            // U->c[0][2]*=n;
-            // c=cdot(U->c[1],U->c[0]);
-            // U->c[1][0]-=c*U->c[0][0];
-            // U->c[1][1]-=c*U->c[0][1];
-            // U->c[1][2]-=c*U->c[0][2];
-            // n=rdot(U->c[1],U->c[1]);
-            // n=1.0/sqrt(n);
-            // U->c[1][0]*=n;
-            // U->c[1][1]*=n;
-            // U->c[1][2]*=n;
-            // std::memcpy(buffer + mu_permuted * 12, DeconstructMatBMW(tmp).data(), 96);
             std::memcpy(buffer + mu_permuted * 12, DeconstructMatBMW(tmp).data(), 96);
         }
         std::uint64_t site_abs_value {static_cast<std::uint64_t>(((current_site.t * Nz + current_site.z) * Ny + current_site.y) * Nx + current_site.x)};
@@ -368,7 +348,7 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
         Matrix_SU3 tmp {U({t, x, y, z, mu})};
         // SU3::Projection::GramSchmidt(tmp);
         buffer = DeconstructMatBMW(tmp);
-        // Swap to big endian (assuming the host machine is little endian)
+        // Swap to big endian (assuming the host machine is little endian, TODO: should probably check though, see above)
         for (int i = 0; i < 12; ++i)
         {
             SwapEndianness(buffer.data() + i);

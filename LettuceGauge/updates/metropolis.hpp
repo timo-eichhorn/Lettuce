@@ -100,11 +100,6 @@ struct MetropolisKernel
         }
 
         // TODO: This still relies on several global variables like metro_norm and metro_target_acceptance
-        // floatT AdjustedEpsilon(const floatT epsilon, const uint_fast64_t& acceptance_count) const noexcept
-        // {
-        //     return epsilon + (acceptance_count * metro_norm - static_cast<floatT>(metro_target_acceptance)) * static_cast<floatT>(0.2);
-        // }
-
         void AdjustEpsilon(const uint_fast64_t& acceptance_count) noexcept
         {
             epsilon = epsilon + (acceptance_count * metro_norm - static_cast<floatT>(metro_target_acceptance)) * static_cast<floatT>(0.2);

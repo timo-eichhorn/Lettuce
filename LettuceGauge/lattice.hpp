@@ -256,7 +256,6 @@ class GaugeField4D
                     return 0;
             }
         }
-        // TODO: Use site_coord or something different?
         constexpr site_coord Shape() const noexcept
         {
             return {Nt, Nx, Ny, Nz};
@@ -283,7 +282,6 @@ class GaugeField4D
             Swap(U1.gaugefield, U2.gaugefield);
         }
         // Move site coordinates
-        // TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
         template<int dist>
         [[nodiscard]]
         site_coord Move(const site_coord& site, const int direction) const noexcept
@@ -295,8 +293,6 @@ class GaugeField4D
             // For positive dist we do not need to consider negative modulo
             if constexpr(dist > 0)
             {
-                // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
-                //       Pass the lattice as an additional argument?
                 switch (direction)
                 {
                     case 0:
@@ -313,7 +309,7 @@ class GaugeField4D
             }
             else
             {
-                // TODO: Perhaps replace with safer (potentially less efficient) verion?
+                // TODO: Perhaps replace with safer (potentially less efficient) version?
                 static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
                 // Alternative: Use negative indices (how to deal with 0 then?)
                 switch (direction)
@@ -333,7 +329,6 @@ class GaugeField4D
         }
 
         // Move link coordinates
-        // TODO: Make member function of GaugeField to get Nt, Nx, Ny, Nz?
         template<int dist>
         [[nodiscard]]
         link_coord Move(const link_coord& link, const int direction) const noexcept
@@ -345,8 +340,6 @@ class GaugeField4D
             // For positive dist we do not need to consider negative modulo
             if constexpr(dist > 0)
             {
-                // TODO: It is probably best if we don't have to include defines.hpp to get access to Nt, Nx, ...
-                //       Pass the lattice as an additional argument?
                 switch (direction)
                 {
                     case 0:
@@ -363,7 +356,7 @@ class GaugeField4D
             }
             else
             {
-                // TODO: Perhaps replace with safer (potentially less efficient) verion?
+                // TODO: Perhaps replace with safer (potentially less efficient) version?
                 static_assert(dist <= Nt and dist <= Nx and dist <= Ny and dist <= Nz, "Move in negative direction with dist greater than one of the lattice lengths detected!");
                 // Alternative: Use negative indices (how to deal with 0 then?)
                 switch (direction)

@@ -131,7 +131,6 @@ namespace Iterator
     //     }
     // }
     //-----
-    // TODO: Check for correctness. Also, is there a better way than checking inside the loop (similar to conventional Checkerboard function above)?
     // Checkerboard-like iteration through the lattice (for rectangular 2x1 actions), where the function is applied to each lattice link
     template<typename funcT>
     void Checkerboard4(funcT&& function, const int n_sweep = 1)

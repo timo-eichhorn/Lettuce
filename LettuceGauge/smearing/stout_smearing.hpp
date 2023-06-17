@@ -44,7 +44,7 @@ void StoutSmearing4D(const GaugeField& U_unsmeared, GaugeField& U_smeared, const
             link_coord current_link {t, x, y, z, mu};
             Sigma.noalias() = WilsonAction::Staple(U_unsmeared, current_link);
             A.noalias() = Sigma * U_unsmeared(current_link).adjoint();
-            // TODO: Replace with projector function?
+            // TODO: Replace with projector function SU3::Projection::Algebra()?
             B.noalias() = A - A.adjoint();
             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // Cayley-Hamilton exponential
@@ -107,7 +107,7 @@ void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_s
             link_coord current_link {t, x, y, z, mu};
             st.noalias() = WilsonAction::Staple(U_unsmeared, current_link);
             A.noalias() = st * U_unsmeared(current_link).adjoint();
-            // TODO: Replace with projector function?
+            // TODO: Replace with projector function SU3::Projection::Algebra()?
             B.noalias() = A - A.adjoint();
             C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
             // We want the ExpConstants so we can later reuse them during the calculation of the stout force recursion
@@ -233,7 +233,6 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
 struct StoutSmearingKernel
 {
     private:
-        // TODO: Possible parameter ExpFunction?
         // TODO: In contrast to the gradient flow, do we want to support different integrators and actions here?
         //       If yes, correctly implementing the smearing force recursion (without some kind of automatic differentiation) will most likely be very painful
         const GaugeField&  U_unsmeared;

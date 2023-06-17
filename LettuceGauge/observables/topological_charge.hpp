@@ -21,7 +21,7 @@
 //| calculated clover-term or field strength tensor.                                |
 //+---------------------------------------------------------------------------------+
 
-[[nodiscard]]
+[[deprecated("Use of this function is discouraged, preferably use TopChargeClover() instead!"), nodiscard]]
 double TopChargeCloverSlow(const GaugeField& U) noexcept
 {
     double Q {0.0};
@@ -82,7 +82,7 @@ double TopChargeCloverSlow(const GaugeField& U) noexcept
                    + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
         Clov[3][2] = Clov[2][3].adjoint();
         Clov[3][3].setZero();
-        // TODO: Use symmetry of F_mu,nu
+
         for (int mu = 0; mu < 4; ++mu)
         for (int nu = 0; nu < 4; ++nu)
         {
@@ -105,7 +105,6 @@ double TopChargeClover(const GaugeField& U) noexcept
     for (int z = 0; z < Nz; ++z)
     {
         std::array<Matrix_3x3, 6> Clov;
-        // TODO: SU3 or 3x3? Entries of F lie in the adjoint bundle, so probably not SU3?
         std::array<Matrix_3x3, 6> F;
         int tm = (t - 1 + Nt)%Nt;
         int xm = (x - 1 + Nx)%Nx;

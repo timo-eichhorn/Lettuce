@@ -35,7 +35,6 @@ namespace FieldStrengthTensor
         {
             site_coord current_site {t, x, y, z};
             Matrix_3x3 Clover;
-            // TODO: Do we want F to be traceless or not? It seems like often F is not made traceless, only antihermitian
             F(current_site, 0, 0).setZero();
             Clover                = CalculateCloverComponent<1>(U, current_site, 0, 1);
             F(current_site, 0, 1) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);

@@ -244,7 +244,7 @@ bool BPSTInstantonUpdate(GaugeField& Gluon, GaugeField& Gluon_copy, const int Q,
     }
     double S_old {WilsonAction::Action(Gluon)};
     double S_new {WilsonAction::Action(Gluon_copy)};
-    // TODO: Probably shouldnt use a global variable for DeltaSInstanton?
+    // TODO: Probably shouldn't use a global variable for DeltaSInstanton?
     DeltaSInstanton = S_new - S_old;
     if (metropolis_test)
     {

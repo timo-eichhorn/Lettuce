@@ -28,7 +28,6 @@
 
 namespace Integrators::GradientFlow
 {
-    // TODO: Implement
     struct Euler
     {
         GaugeField& Force;
@@ -254,7 +253,6 @@ template<typename IntegratorT, typename ActionT>
 struct GradientFlowKernel
 {
     private:
-        // TODO: Possible parameter ExpFunction?
         const GaugeField&  U_unflowed;
               GaugeField&  U_flowed;
               IntegratorT& Integrator;
