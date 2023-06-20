@@ -129,6 +129,7 @@ class PRNG4D
         void SavePRNGState(const std::string& filename)
         {
             std::ofstream state_stream(filename);
+            state_stream.imbue(std::locale("C"));
             for (auto& prng : random_generators)
             {
                 state_stream << prng << " ";
@@ -151,6 +152,7 @@ class PRNG4D
             }
             //-----
             std::ifstream state_stream(filename);
+            state_stream.imbue(std::locale("C"));
             for(auto& prng : random_generators)
             {
                 state_stream >> prng;
@@ -167,6 +169,7 @@ class PRNG4D
         void SaveDistributionState(const std::string& filename)
         {
             std::ofstream state_stream(filename);
+            state_stream.imbue(std::locale("C"));
             for (auto& normal_distribution : normal_distributions)
             {
                 state_stream << normal_distribution << " ";
@@ -189,6 +192,7 @@ class PRNG4D
             }
             //-----
             std::ifstream state_stream(filename);
+            state_stream.imbue(std::locale("C"));
             for(auto& normal_distribution : normal_distributions)
             {
                 state_stream >> normal_distribution;
