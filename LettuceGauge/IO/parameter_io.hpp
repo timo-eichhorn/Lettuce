@@ -23,6 +23,30 @@
 #include <ctime>
 
 //-----
+// Check if specified command line argument exists
+
+bool CheckCommandLineArgument(char** begin, char** end, const std::string& argument)
+{
+    return std::find(begin, end, argument) != end;
+}
+
+//-----
+// Get parameter from specified command line argument (if it exists)
+
+std::string ExtractCommandLineArgument(char** begin, char** end, const std::string& argument)
+{
+    char** iterator = std::find(begin, end, argument);
+    if (iterator != end and ++iterator != end)
+    {
+        return std::string(*iterator);
+    }
+    else
+    {
+        return std::string("");
+    }
+}
+
+//-----
 // Function to get user input with error handling
 // TODO: Constrain target to writeable range or something like that
 // TODO: Should probably make clear that this version works for the terminal only

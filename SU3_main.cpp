@@ -325,7 +325,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 
 //-----
 
-int main()
+int main(int argc, char** argv)
 {
     // iostream not synchronized with corresponding C streams, might cause a problem with C libraries and might not be thread safe
     std::ios_base::sync_with_stdio(false);
@@ -333,6 +333,7 @@ int main()
     datalog << std::setprecision(12) << std::fixed;
 
     Configuration();
+    CreateFiles();
 
     // Default width of random numbers used in Metropolis update is 0.5
     floatT metropolis_epsilon {0.5};
@@ -342,7 +343,6 @@ int main()
     std::uniform_int_distribution<int> distribution_choice(1, 8);
     std::uniform_int_distribution<int> distribution_instanton(0, 1);
 
-    CreateFiles();
     Gluon.SetToIdentity();
 
     auto startcalc {std::chrono::system_clock::now()};
