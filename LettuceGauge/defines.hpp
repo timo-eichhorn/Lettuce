@@ -68,6 +68,7 @@ double DeltaVTempering;                                     // Metapotential cha
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
 std::string directoryname;                                  // Directory name
+std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
 std::string logfilepath;                                    // Filepath (log)
 std::string parameterfilepath;                              // Filepath (parameters)
 std::string wilsonfilepath;                                 // Filepath (Wilson loops)

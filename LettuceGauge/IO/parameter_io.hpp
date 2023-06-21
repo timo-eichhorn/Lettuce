@@ -165,7 +165,9 @@ void CreateFiles()
         directoryname = directoryname_prefix + " (" + appendString + ")";
         ++append;
     }
+    checkpointdirectory   = directoryname + "/checkpoints"; 
     std::filesystem::create_directory(directoryname);
+    std::filesystem::create_directory(checkpointdirectory);
     std::cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
     logfilepath           = directoryname + "/log.txt";
     parameterfilepath     = directoryname + "/parameters.txt";
@@ -174,7 +176,8 @@ void CreateFiles()
     std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
     std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
     std::cout                             << "Filepath (wilson):\t"     << wilsonfilepath                                 << "\n";
-    std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath << Lettuce::Color::Reset << "\n";
+    std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n";
+    std::cout                             << "Filepath (final):\t"      << checkpointdirectory   << Lettuce::Color::Reset << "\n";
     #ifdef DEBUG_MODE_TERMINAL
     std::cout << "DEBUG_MODE_TERMINAL\n\n";
     #endif

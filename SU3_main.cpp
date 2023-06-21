@@ -614,6 +614,10 @@ int main(int argc, char** argv)
     std::time_t end_time {std::chrono::system_clock::to_time_t(end)};
 
     //-----
+    // Save final configuration and PRNG state
+    SaveConfigBMW(Gluon, checkpointdirectory + "/final_config.conf");
+    global_prng.SaveState(checkpointdirectory + "/prng_state.txt", checkpointdirectory + "/distribution_state.txt");
+
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 
     std::cout << "\n";
