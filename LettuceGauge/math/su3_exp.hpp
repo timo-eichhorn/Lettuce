@@ -89,13 +89,13 @@ namespace SU3
         std::complex<floatT> exp_2iu;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        uDerivedConstants() = default;
+        uDerivedConstants() noexcept = default;
         // Calculate u derived constants from c1 and theta
         uDerivedConstants(const floatT c1, const floatT theta) noexcept :
         u       (std::sqrt(static_cast<floatT>(1.0/3.0) * c1) * std::cos(static_cast<floatT>(1.0/3.0) * theta)),
         u2      (u * u),
         exp_miu (std::exp(-i<floatT> * u)),
-        exp_2iu (std::exp(static_cast<floatT>(2.0) * i<floatT> * u))
+        exp_2iu (std::exp(2 * i<floatT> * u))
         {}
     };
 
@@ -107,7 +107,7 @@ namespace SU3
         std::complex<floatT> i_xi0;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        wDerivedConstants() = default;
+        wDerivedConstants() noexcept = default;
         // Calculate w derived constants from c1 and theta
         wDerivedConstants(const floatT c1, const floatT theta) noexcept :
         w     (std::sqrt(c1) * std::sin(static_cast<floatT>(1.0/3.0) * theta)),
@@ -127,18 +127,18 @@ namespace SU3
         std::complex<floatT> r2_2;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        rConstants() = default;
+        rConstants() noexcept = default;
         // TODO: Add xi_0 (without factor i) and xi_1 to wDerivedConstants? We only need it for the derivative of exp, not for exp itself, so calculating xi_1 there is unnecessary
         rConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const std::complex<floatT> xi_0, const std::complex<floatT> xi_1) noexcept :
-        r1_0 (static_cast<floatT>(2.0) * (u_derived.u + i<floatT> * (u_derived.u2 - w_derived.w2)) * u_derived.exp_2iu
-            + static_cast<floatT>(2.0) * u_derived.exp_miu * (static_cast<floatT>(4.0) * u_derived.u * (static_cast<floatT>(2.0) - i<floatT> * u_derived.u) * w_derived.cosw
-            + w_derived.i_xi0 * (static_cast<floatT>(9.0) * u_derived.u2 + w_derived.w2 - i<floatT> * u_derived.u * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)))),
-        r1_1 (static_cast<floatT>(2.0) * (static_cast<floatT>(1.0) + static_cast<floatT>(2.0) * i<floatT> * u_derived.u) * u_derived.exp_2iu + u_derived.exp_miu * (-static_cast<floatT>(2.0) * (static_cast<floatT>(1.0) - i<floatT> * u_derived.u) * w_derived.cosw
-            + w_derived.i_xi0 * (static_cast<floatT>(6.0) * u_derived.u + i<floatT> * (w_derived.w2 - static_cast<floatT>(3.0) * u_derived.u2)))),
-        r1_2 (static_cast<floatT>(2.0) * i<floatT> * u_derived.exp_2iu + i<floatT> * u_derived.exp_miu * (w_derived.cosw - static_cast<floatT>(3.0) * (static_cast<floatT>(1.0) - i<floatT> * u_derived.u) * xi_0)),
-        r2_0 (-static_cast<floatT>(2.0) * u_derived.exp_2iu + static_cast<floatT>(2.0) * i<floatT> * u_derived.u * u_derived.exp_miu * (w_derived.cosw + (static_cast<floatT>(1.0) + static_cast<floatT>(4.0) * i<floatT> * u_derived.u) * xi_0 + static_cast<floatT>(3.0) * u_derived.u2 * xi_1)),
-        r2_1 (-i<floatT> * u_derived.exp_miu * (w_derived.cosw + (static_cast<floatT>(1.0) + static_cast<floatT>(2.0) * i<floatT> * u_derived.u) * xi_0 - static_cast<floatT>(3.0) * u_derived.u2 * xi_1)),
-        r2_2 (u_derived.exp_miu * (xi_0 - static_cast<floatT>(3.0) * i<floatT> * u_derived.u * xi_1))
+        r1_0 (2 * (u_derived.u + i<floatT> * (u_derived.u2 - w_derived.w2)) * u_derived.exp_2iu
+            + 2 * u_derived.exp_miu * (4 * u_derived.u * (2 - i<floatT> * u_derived.u) * w_derived.cosw
+            + w_derived.i_xi0 * (9 * u_derived.u2 + w_derived.w2 - i<floatT> * u_derived.u * (3 * u_derived.u2 + w_derived.w2)))),
+        r1_1 (2 * (1 + 2 * i<floatT> * u_derived.u) * u_derived.exp_2iu + u_derived.exp_miu * (-2 * (1 - i<floatT> * u_derived.u) * w_derived.cosw
+            + w_derived.i_xi0 * (6 * u_derived.u + i<floatT> * (w_derived.w2 - 3 * u_derived.u2)))),
+        r1_2 (2 * i<floatT> * u_derived.exp_2iu + i<floatT> * u_derived.exp_miu * (w_derived.cosw - 3 * (1 - i<floatT> * u_derived.u) * xi_0)),
+        r2_0 (-2 * u_derived.exp_2iu + 2 * i<floatT> * u_derived.u * u_derived.exp_miu * (w_derived.cosw + (1 + 4 * i<floatT> * u_derived.u) * xi_0 + 3 * u_derived.u2 * xi_1)),
+        r2_1 (-i<floatT> * u_derived.exp_miu * (w_derived.cosw + (1 + 2 * i<floatT> * u_derived.u) * xi_0 - 3 * u_derived.u2 * xi_1)),
+        r2_2 (u_derived.exp_miu * (xi_0 - 3 * i<floatT> * u_derived.u * xi_1))
         {}
     };
 
@@ -153,48 +153,42 @@ namespace SU3
         std::complex<floatT> b_22;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        bConstants() = default;
+        bConstants() noexcept = default;
         // TODO: Encapsulate f_i (and h_i?) in a struct?
-        // bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2) noexcept :
-        // b_denom (static_cast<floatT>(0.5) / (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2))),
-        // b_10    (b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_0 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f0)),
-        // b_11    (b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_1 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f1)),
-        // b_12    (b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_2 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f2)),
-        // b_20    (b_denom * (r_consts.r1_0 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_0 - static_cast<floatT>(24.0) * u_derived.u * f0)),
-        // b_21    (b_denom * (r_consts.r1_1 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_1 - static_cast<floatT>(24.0) * u_derived.u * f1)),
-        // b_22    (b_denom * (r_consts.r1_2 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_2 - static_cast<floatT>(24.0) * u_derived.u * f2))
-        // {}
         bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2, const bool signflip) noexcept
         {
-            // TODO: Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is too small
-            if (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2) < std::numeric_limits<floatT>::min())
+            // Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is too small
+            b_denom = std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2);
+            if (b_denom < std::numeric_limits<floatT>::min())
             {
                 b_denom = static_cast<floatT>(0.0);
+                b_10    = b_denom;
+                b_11    = b_denom;
+                b_12    = b_denom;
+                b_20    = b_denom;
+                b_21    = b_denom;
+                b_22    = b_denom;
+                return;
             }
-            else
-            {
-                b_denom = static_cast<floatT>(0.5) / (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2));
-            }
+            b_denom = static_cast<floatT>(0.5) / b_denom;
             // If c0 -> -c0_max we need to use a symmetry relation to avoid numerical instabilites
             if (signflip)
             {
-                // b_denom =  static_cast<floatT>(0.5) / (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2));
-                b_10    =  b_denom * std::conj(static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_0 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f0);
-                b_11    = -b_denom * std::conj(static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_1 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f1);
-                b_12    =  b_denom * std::conj(static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_2 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f2);
-                b_20    = -b_denom * std::conj(r_consts.r1_0 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_0 - static_cast<floatT>(24.0) * u_derived.u * f0);
-                b_21    =  b_denom * std::conj(r_consts.r1_1 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_1 - static_cast<floatT>(24.0) * u_derived.u * f1);
-                b_22    = -b_denom * std::conj(r_consts.r1_2 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_2 - static_cast<floatT>(24.0) * u_derived.u * f2);
+                b_10    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_0 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - 2 * (15 * u_derived.u2 + w_derived.w2) * f0);
+                b_11    = -b_denom * std::conj(2 * u_derived.u * r_consts.r1_1 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - 2 * (15 * u_derived.u2 + w_derived.w2) * f1);
+                b_12    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_2 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - 2 * (15 * u_derived.u2 + w_derived.w2) * f2);
+                b_20    = -b_denom * std::conj(r_consts.r1_0 - 3 * u_derived.u * r_consts.r2_0 - 24 * u_derived.u * f0);
+                b_21    =  b_denom * std::conj(r_consts.r1_1 - 3 * u_derived.u * r_consts.r2_1 - 24 * u_derived.u * f1);
+                b_22    = -b_denom * std::conj(r_consts.r1_2 - 3 * u_derived.u * r_consts.r2_2 - 24 * u_derived.u * f2);
             }
             else
             {
-                // b_denom = static_cast<floatT>(0.5) / (std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2));
-                b_10    = b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_0 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f0);
-                b_11    = b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_1 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f1);
-                b_12    = b_denom * (static_cast<floatT>(2.0) * u_derived.u * r_consts.r1_2 + (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - static_cast<floatT>(2.0) * (static_cast<floatT>(15.0) * u_derived.u2 + w_derived.w2) * f2);
-                b_20    = b_denom * (r_consts.r1_0 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_0 - static_cast<floatT>(24.0) * u_derived.u * f0);
-                b_21    = b_denom * (r_consts.r1_1 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_1 - static_cast<floatT>(24.0) * u_derived.u * f1);
-                b_22    = b_denom * (r_consts.r1_2 - static_cast<floatT>(3.0) * u_derived.u * r_consts.r2_2 - static_cast<floatT>(24.0) * u_derived.u * f2);
+                b_10    = b_denom * (2 * u_derived.u * r_consts.r1_0 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - 2 * (15 * u_derived.u2 + w_derived.w2) * f0);
+                b_11    = b_denom * (2 * u_derived.u * r_consts.r1_1 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - 2 * (15 * u_derived.u2 + w_derived.w2) * f1);
+                b_12    = b_denom * (2 * u_derived.u * r_consts.r1_2 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - 2 * (15 * u_derived.u2 + w_derived.w2) * f2);
+                b_20    = b_denom * (r_consts.r1_0 - 3 * u_derived.u * r_consts.r2_0 - 24 * u_derived.u * f0);
+                b_21    = b_denom * (r_consts.r1_1 - 3 * u_derived.u * r_consts.r2_1 - 24 * u_derived.u * f1);
+                b_22    = b_denom * (r_consts.r1_2 - 3 * u_derived.u * r_consts.r2_2 - 24 * u_derived.u * f2);
             }
         }
     };
@@ -224,7 +218,7 @@ namespace SU3
         std::complex<floatT> h2;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        ExpConstants() = default;
+        ExpConstants() noexcept = default;
         explicit ExpConstants(const Matrix_3x3& Mat_in) noexcept :
         Mat       (Mat_in),
         Mat2      (Mat_in * Mat_in),
@@ -237,25 +231,7 @@ namespace SU3
         theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta)
-        // denom     (static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2)),
-        // h0        ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2))),
-        // h1        (static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * w_derived.i_xi0)),
-        // h2        (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0))
         {
-            if (signflip)
-            {
-                denom =  static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2);
-                h0    =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)));
-                h1    = -std::conj(static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2)));
-                h2    =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
-            }
-            else
-            {
-                denom = (static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2));
-                h0    = ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)));
-                h1    = (static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2)));
-                h2    = (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
-            }
             // TODO: denom can still be 0
             // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
             if (c0_max < std::numeric_limits<floatT>::min())
@@ -264,6 +240,21 @@ namespace SU3
                 h0    = static_cast<floatT>(1.0);
                 h1    = static_cast<floatT>(0.0);
                 h2    = static_cast<floatT>(0.0);
+                return;
+            }
+            if (signflip)
+            {
+                denom =  1 / (9 * u_derived.u2 - w_derived.w2);
+                h0    =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+                h1    = -std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+                h2    =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+            }
+            else
+            {
+                denom =  1 / (9 * u_derived.u2 - w_derived.w2);
+                h0    =  (u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2));
+                h1    =  2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2));
+                h2    =  u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0);
             }
         }
     };
@@ -306,7 +297,7 @@ namespace SU3
         Matrix_3x3           B_2;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
-        ExpDerivativeConstants() = default;
+        ExpDerivativeConstants() noexcept = default;
         explicit ExpDerivativeConstants(const Matrix_3x3& Mat_in) noexcept :
         Mat       (Mat_in),
         Mat2      (Mat_in * Mat_in),
@@ -322,48 +313,45 @@ namespace SU3
         w_derived (c1, theta),
         xi_0      (return_xi_0(w_derived.w)),
         xi_1      (return_xi_1(w_derived.w))
-        // denom     (static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2)),
-        // h0        ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2))),
-        // h1        (static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2) * w_derived.i_xi0)),
-        // h2        (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0)),
-        // f0        (denom * h0),
-        // f1        (denom * h1),
-        // f2        (denom * h2),
-        // r_consts  (u_derived, w_derived, xi_0, xi_1),
-        // b_consts  (u_derived, w_derived, r_consts, f0, f1, f2, signflip),
-        // B_1       (b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2),
-        // B_2       (b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2)
         {
-            if (signflip)
-            {
-                denom =  static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2);
-                h0    =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)));
-                h1    = -std::conj(static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2)));
-                h2    =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
-            }
-            else
-            {
-                denom = (static_cast<floatT>(1.0) / (static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2));
-                h0    = ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (static_cast<floatT>(8.0) * u_derived.u2 * w_derived.cosw + static_cast<floatT>(2.0) * u_derived.u * w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 + w_derived.w2)));
-                h1    = (static_cast<floatT>(2.0) * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (static_cast<floatT>(2.0) * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (static_cast<floatT>(3.0) * u_derived.u2 - w_derived.w2)));
-                h2    = (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + static_cast<floatT>(3.0) * u_derived.u * w_derived.i_xi0));
-            }
             // TODO: denom can still be 0
             // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
             if (c0_max < std::numeric_limits<floatT>::min())
             {
-                denom = static_cast<floatT>(1.0);
-                h0    = static_cast<floatT>(1.0);
-                h1    = static_cast<floatT>(0.0);
-                h2    = static_cast<floatT>(0.0);
+                denom    = static_cast<floatT>(1.0);
+                h0       = static_cast<floatT>(1.0);
+                h1       = static_cast<floatT>(0.0);
+                h2       = static_cast<floatT>(0.0);
+                f0       = denom * h0; // = 1.0
+                f1       = denom * h1; // = 0.0
+                f2       = denom * h2; // = 0.0
+                r_consts = rConstants(u_derived, w_derived, xi_0, xi_1);
+                b_consts = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, signflip);
+                B_1      = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
+                B_2      = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
+                return;
             }
-            f0       = denom * h0;
-            f1       = denom * h1;
-            f2       = denom * h2;
-            r_consts = rConstants(u_derived, w_derived, xi_0, xi_1);
-            b_consts = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, signflip);
-            B_1      = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
-            B_2      = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
+            if (signflip)
+            {
+                denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
+                h0       =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+                h1       = -std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+                h2       =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+            }
+            else
+            {
+                denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
+                h0       =  (u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2));
+                h1       =  2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2));
+                h2       =  u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0);
+            }
+            f0           = denom * h0;
+            f1           = denom * h1;
+            f2           = denom * h2;
+            r_consts     = rConstants(u_derived, w_derived, xi_0, xi_1);
+            b_consts     = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, signflip);
+            B_1          = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
+            B_2          = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
         }
         explicit ExpDerivativeConstants(const ExpConstants& ExpConstants_in) noexcept :
         Mat       (ExpConstants_in.Mat),
