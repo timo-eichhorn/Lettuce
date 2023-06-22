@@ -221,7 +221,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 
     //-----
     std::transform(Plaquette.cbegin(), Plaquette.cend(),          Plaquette.begin(), [&Gluon](const auto& element){return element / Gluon.Volume();});
-    std::transform(Plaquette.cbegin(), Plaquette.cend(),          EPlaquette.begin(), [      ](const auto& element){return 36.0 - 2.0 * element;});
+    std::transform(Plaquette.cbegin(), Plaquette.cend(),         EPlaquette.begin(), [      ](const auto& element){return 36.0 - 2.0 * element;});
     std::transform(Plaquette.cbegin(), Plaquette.cend(),             Action.begin(), [      ](const auto& element){return 1.0 - element / 18.0;});
     std::transform(   Action.cbegin(),    Action.cend(), ActionUnnormalized.begin(), [&Gluon](const auto& element){return 6.0 * beta * Gluon.Volume() * element;});
     std::transform(    PLoop.cbegin(),     PLoop.cend(),            PLoopRe.begin(), [      ](const auto& element){return std::real(element);});

@@ -44,7 +44,7 @@ class PRNG4D
         static constexpr std::size_t size {static_cast<std::size_t>(Nt) * Nx * Ny * Nz * Nmu};
 
         // This is copied straight from pcg_extras (comes with the PCG PRNG by Melissa O'Neill: http://www.pcg-random.org/)
-        template <typename RngType>
+        template<typename RngType>
         class seed_seq_from
         {
             private:
