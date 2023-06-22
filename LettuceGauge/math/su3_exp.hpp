@@ -18,13 +18,43 @@
 
 namespace SU3
 {
+    template<typename floatT>
+    struct taylor_bounds
+    {
+        // TODO: For types other than float and double, these member functions are deleted
+        //       Not sure how this is going to work if we want to use (SIMD) vectors as fundamental types
+        //       Also, std::numeric_limits simply calls the default constructor for types without specialization (why?)
+        static constexpr floatT xi_0() noexcept = delete;
+        static constexpr floatT xi_1() noexcept = delete;
+    };
+    template<>
+    struct taylor_bounds<float>
+    {
+        // Between 0.60-0.55 the 6th order expansion starts to be more accurate
+        static constexpr float xi_0() noexcept {return 0.56;}
+        // Between 0.85-0.75 the 6th order expansion starts to be more accurate
+        static constexpr float xi_1() noexcept {return 0.75;}
+    };
+    template<>
+    struct taylor_bounds<double>
+    {
+        // In the range slightly below 0.05, the series and std::sin(w)/w mostly match
+        static constexpr double xi_0() noexcept {return 0.05;}
+        // Around 0.12 the series expansion is slightly less accurate, while around 0.11 it is more accurate
+        static constexpr double xi_1() noexcept {return 0.115;}
+    };
+    template<>
+    struct taylor_bounds<long double>
+    {
+        // TODO: Determine appropriate bounds for long double; for now use double bounds
+        static constexpr long double xi_0() noexcept {return 0.05;}
+        static constexpr long double xi_1() noexcept {return 0.115;}
+    };
+
     [[nodiscard]]
     floatT return_xi_0(const floatT w) noexcept
     {
-        // TODO: It seems like we get the exact same results using this and std::sin(w)/w for extremely small non-zero numbers, so perhaps this is unneccessary
-        //       Maybe it is faster than std::sin(), but benchmark first!
-        //       In the range slighltly below 0.05, the series and std::sin(w)/w mostly match
-        if (std::abs(w) <= static_cast<floatT>(0.05))
+        if (std::abs(w) <= taylor_bounds<floatT>::xi_0())
         {
             // 6th order Taylor series of sin(w)/w
             floatT w2 {w * w};
@@ -39,10 +69,7 @@ namespace SU3
     [[nodiscard]]
     floatT return_xi_1(const floatT w) noexcept
     {
-        // Funnily this seems much more instable than xi_0
-        // Threshold is not tuned exactly, but for 0.12 the series expansion seems to be slightly less accurate, while for 0.11 it seems more accurate
-        // Somewhere around 0.115 seems to be a decent choice
-        if (std::abs(w) <= static_cast<floatT>(0.115))
+        if (std::abs(w) <= taylor_bounds<floatT>::xi_1())
         {
             // 6th order Taylor series of cos(w)/w^2 - sin(w)/w^3
             floatT w2 {w * w};
