@@ -362,7 +362,7 @@ int main(int argc, char** argv)
     Integrators::HMC::OMF_4          OMF_4_Integrator;
     // Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
     // Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
-    GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
+    GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -503,9 +503,9 @@ int main(int argc, char** argv)
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
 
-        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng);
+        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng, hmc_trajectory_length);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -553,7 +553,7 @@ int main(int argc, char** argv)
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper
-        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
         // CV_min, CV_max, bin_number, weight, threshold_weight
         MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
@@ -562,7 +562,7 @@ int main(int argc, char** argv)
         TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
         TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
         GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng);
 

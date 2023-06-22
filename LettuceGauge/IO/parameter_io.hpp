@@ -95,6 +95,7 @@ void Configuration()
     std::cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
     std::cout << "n_heatbath is "                  << n_heatbath << ".\n";
     std::cout << "n_hmc is "                       << n_hmc << ".\n";
+    std::cout << "hmc_trajectory_length is "       << hmc_trajectory_length << ".\n";
     std::cout << "n_orelax is "                    << n_orelax << ".\n";
     std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
@@ -135,6 +136,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << "metro_target_acceptance = "          << metro_target_acceptance          << "\n";
     stream << "n_heatbath = "                       << n_heatbath                       << "\n";
     stream << "n_hmc = "                            << n_hmc                            << "\n";
+    stream << "hmc_trajectory_length = "            << hmc_trajectory_length            << "\n";
     stream << "n_orelax = "                         << n_orelax                         << "\n";
     stream << "n_instanton_update = "               << n_instanton_update               << "\n";
     stream << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";

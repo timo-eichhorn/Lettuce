@@ -22,10 +22,10 @@ namespace Integrators::HMC
     struct Leapfrog
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Perform integration
             // Momentum updates are merged in the loop
             HMC.UpdateMomenta(0.5 * epsilon);
@@ -45,10 +45,10 @@ namespace Integrators::HMC
     struct OMF_2_slow
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Integrator constants
             const double alpha {0.1931833275037836 * epsilon};
             const double beta  {0.5 * epsilon};
@@ -70,10 +70,10 @@ namespace Integrators::HMC
     struct OMF_2
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Integrator constants
             const double alpha {0.1931833275037836 * epsilon};
             const double beta  {0.5 * epsilon};
@@ -101,10 +101,10 @@ namespace Integrators::HMC
     struct OMF_4_slow
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Integrator constants
             const double alpha {0.08398315262876693 * epsilon};
             const double beta  {0.2539785108410595 * epsilon};
@@ -138,10 +138,10 @@ namespace Integrators::HMC
     struct OMF_4
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Integrator constants
             const double alpha {0.08398315262876693 * epsilon};
             const double beta  {0.2539785108410595 * epsilon};
@@ -195,6 +195,9 @@ namespace GaugeUpdates
             IntegratorT& Integrator;
             ActionT&     Action;
             prngT&       prng;
+        public:
+            double       trajectory_length;
+        private:
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
@@ -209,16 +212,6 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Generate 8 random numbers as basis coefficients
-                    // std::size_t index {static_cast<std::size_t>(omp_get_thread_num())};
-                    // floatT phi1 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi2 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi3 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi4 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi5 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi6 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi7 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi8 {ndist_vector[index](prng_vector[index])};
-
                     link_coord current_link {t, x, y, z, mu};
                     floatT     phi1         {global_prng.Gaussian(current_link)};
                     floatT     phi2         {global_prng.Gaussian(current_link)};
@@ -316,8 +309,8 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in) noexcept :
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in)
+            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in = 1.0) noexcept :
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in)
             {}
 
             // TODO: Add parameter: const double tau
@@ -330,7 +323,7 @@ namespace GaugeUpdates
                 RandomMomentum();
                 double energy_old {Hamiltonian()};
                 // Perform integration with chosen integrator
-                Integrator(*this, n_step);
+                Integrator(*this, trajectory_length, n_step);
                 //-----
                 // Calculate energy after time evolution
                 double energy_new {Hamiltonian()};

@@ -27,10 +27,10 @@ namespace Integrators::HMC
     struct Leapfrog_OMF_4
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // Integrator constants
             const double alpha {0.08398315262876693 * epsilon};
             const double beta  {0.2539785108410595 * epsilon};
@@ -80,10 +80,10 @@ namespace Integrators::HMC
     struct OMF_2_OMF_4_slow
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // OMF2 Integrator constants
             const double OMF2_alpha {0.1931833275037836 * epsilon};
             const double OMF2_beta  {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
@@ -142,10 +142,10 @@ namespace Integrators::HMC
     struct OMF_2_OMF_4
     {
         template<typename HMCFunctor>
-        void operator()(HMCFunctor& HMC, const int n_step) const noexcept
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
             // Calculate stepsize epsilon from n_step
-            floatT epsilon {static_cast<floatT>(1.0)/n_step};
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
             // OMF2 Integrator constants
             const double OMF2_alpha {0.1931833275037836 * epsilon};
             const double OMF2_beta  {(1.0 - 2.0 * 0.1931833275037836) * epsilon};
@@ -271,6 +271,9 @@ namespace GaugeUpdates
             // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
             // GaugeField                                             ForceFatLink;
             HMCMetaDData&      MetadynamicsData;
+        public:
+            double             trajectory_length;
+        private:
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
@@ -307,16 +310,6 @@ namespace GaugeUpdates
                 for (int mu = 0; mu < 4; ++mu)
                 {
                     // Generate 8 random numbers as basis coefficients
-                    // std::size_t index {static_cast<std::size_t>(omp_get_thread_num())};
-                    // floatT phi1 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi2 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi3 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi4 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi5 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi6 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi7 {ndist_vector[index](prng_vector[index])};
-                    // floatT phi8 {ndist_vector[index](prng_vector[index])};
-
                     link_coord current_link {t, x, y, z, mu};
                     floatT     phi1         {global_prng.Gaussian(current_link)};
                     floatT     phi2         {global_prng.Gaussian(current_link)};
@@ -492,9 +485,9 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in) noexcept :
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in = 1.0) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in)
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in)
             {}
 
 
@@ -507,7 +500,7 @@ namespace GaugeUpdates
                 double CV_old     {MetaCharge()};
                 double energy_old {Hamiltonian() + Metapotential.ReturnPotential(CV_old)};
                 // Perform integration with chosen integrator
-                Integrator(*this, n_step);
+                Integrator(*this, trajectory_length, n_step);
                 //-----
                 // Calculate energy after time evolution
                 double CV_new     {MetaCharge()};
