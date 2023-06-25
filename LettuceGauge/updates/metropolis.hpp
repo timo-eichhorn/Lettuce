@@ -6,7 +6,7 @@
 #include "../math/su3.hpp"
 //----------------------------------------
 // Standard library headers
-#include <omp.h>
+// ...
 //----------------------------------------
 // Standard C++ headers
 #include <random>

@@ -11,7 +11,7 @@
 // ...
 //----------------------------------------
 // Standard C headers
-// ...
+#include <cstddef>
 
 namespace Iterator
 {

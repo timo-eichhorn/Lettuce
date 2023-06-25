@@ -17,6 +17,7 @@
 //----------------------------------------
 // Standard C headers
 #include <cstdio>
+#include <cstddef>
 
 //+---------------------------------------------------------------------------------+
 //| This file provides functions to load and save configurations stored in the      |
@@ -58,7 +59,7 @@ bool LoadConfigBridgeText(GaugeField& U, const std::string& filename)
     }
 
     // Count the total linenumber using std::count (add one to the final result since we only counted the number of '\n' characters)
-    size_t linecount = std::count(std::istreambuf_iterator<char>(config_stream), std::istreambuf_iterator<char>(), '\n') + 1;
+    std::size_t linecount = std::count(std::istreambuf_iterator<char>(config_stream), std::istreambuf_iterator<char>(), '\n') + 1;
     // Check if number of lines in file is compatible with current lattice volume (unfortunately we can not check the lengths since the Bridge++ text format does not contain any information about the exact shape)
     bool lengths_match {U.Volume() * 4 * 18 == linecount};
     std::string indent_whitespace {"    "};

@@ -9,14 +9,13 @@
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
-#include <omp.h>
+// ...
 //----------------------------------------
 // Standard C++ headers
 #include <random>
 //----------------------------------------
 // Standard C headers
 #include <cmath>
-#include <cstddef>
 
 //+---------------------------------------------------------------------------------+
 //| This file provides a functor implementing a pseudo heat bath update for SU(3)   |
@@ -90,7 +89,7 @@ struct HeatbathKernel
             // Therefore, we generate cos(theta) in [-1, 1] using sqrt(1 - rand^2)
             // TODO: We want a random number in the closed interval [-1, 1], but the standard distribution only covers the half open interval [-1, 1) or
             //       (-1, 1]. Therefore, do something like this: std::uniform_real_distribution<floatT> distribution_uniform(-1.0, std::nextafter(1.0, 2.0))
-            //       floatT r1 {static_cast<floatT>(1.0) - static_cast<floatT>(2.0) * distribution_uniform(prng_vector[omp_get_thread_num()])};
+            //       floatT r1 {static_cast<floatT>(1.0) - static_cast<floatT>(2.0) * prng.UniformReal(current_link)};
             // Random number in interval [0, 1)
             floatT phi {prng.UniformReal(current_link)};
             // Random number in interval (-1, 1]

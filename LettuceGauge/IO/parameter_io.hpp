@@ -56,7 +56,7 @@ template<typename T>
 void ValidatedIn(const std::string& message, T& target)
 {
     // Keep count of tries and abort after too many tries (e.g. important when using nohup)
-    size_t count {0};
+    int count {0};
     while (std::cout << Lettuce::Color::BoldBlue << message << Lettuce::Color::Reset << "\n" && !(std::cin >> target) && count < 10)
     {
         std::cin.clear();
@@ -112,9 +112,6 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << std::setprecision(12) << std::fixed;
     stream << program_version << "\n";
     stream << "logfile\n\n";
-    #ifdef DEBUG_MODE_TERMINAL
-    stream << "DEBUG_MODE_TERMINAL\n";
-    #endif
     #ifdef FIXED_SEED
     stream << "FIXED_SEED\n";
     #endif
@@ -180,9 +177,6 @@ void CreateFiles()
     std::cout                             << "Filepath (wilson):\t"     << wilsonfilepath                                 << "\n";
     std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n";
     std::cout                             << "Filepath (final):\t"      << checkpointdirectory   << Lettuce::Color::Reset << "\n";
-    #ifdef DEBUG_MODE_TERMINAL
-    std::cout << "DEBUG_MODE_TERMINAL\n\n";
-    #endif
 
     //-----
     // Writes parameters to files

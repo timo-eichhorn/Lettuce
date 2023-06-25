@@ -137,7 +137,7 @@ namespace Integrators::GradientFlow
             // In the notation of arXiv:2101.05320:
             // Delta Y_1 = 0 * Delta Y_0 + h * F(Y_0)
             // Y_1 = exp(1/4 * Delta Y_1) * Y_0
-            // ----
+            // -----
             // Delta Y_2 = -17/32 * Delta Y_1 + h * F(Y_1)
             //           = -17/32 * h * F(Y_0) + h * F(Y_1)
             // Y_2 = exp(8/9 * Delta Y_2) * Y_1

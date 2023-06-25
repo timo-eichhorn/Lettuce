@@ -9,7 +9,7 @@
 #include <Eigen/Dense>
 //----------------------------------------
 // Standard library headers
-#include <omp.h>
+// ...
 //----------------------------------------
 // Standard C++ headers
 #include <random>

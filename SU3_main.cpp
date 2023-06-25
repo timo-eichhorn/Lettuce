@@ -1,5 +1,5 @@
 // Pure SU(3) theory
-// Debug Flags: -DDEBUG_MODE_TERMINAL, -DFIXED_SEED
+// Command line flags: -DFIXED_SEED
 
 // #define EIGEN_USE_MKL_ALL
 
@@ -21,7 +21,7 @@
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
 #include "LettuceGauge/metadynamics.hpp"
-#include "LettuceGauge/observables/observables.hpp"
+// #include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
 #include "LettuceGauge/observables/field_strength_tensor.hpp"
@@ -48,10 +48,8 @@
 //----------------------------------------
 // Standard C++ headers
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <complex>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -103,14 +101,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // GaugeAction::Rectangular<1> WAct(beta, 1.0, 0.0);
     GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
 
-    // TODO: We can construct the Action in the argument list, so we do not have to declare it in a previous line
-    //       HOWEVER this requires the constructor to take the Action as a forwarding reference. This way, the rvalue reference extends the lifetime of
-    //       the temporary Action functor to be the same as the Flow functor.
-    // TODO: This might be really convenient for many other functors! I should definitely go through all of them and see if I should take more arguments as
-    //       forwarding references in the constructor. Also, check if more references should be made const members
-    //       Actually not sure if this is correct anymore. Possibly, the lifetime only gets extended for the duration of the constructor! 
     Integrators::GradientFlow::Euler Flow_Integrator(Gluonsmeared2);
-    // GradientFlowKernel Flow(Gluon, Gluonsmeared1, Gluonsmeared2, Flow_Integrator, GaugeAction::Rectangular<1>(beta, 1.0, 0.0), rho_stout);
     GradientFlowKernel Flow(Gluon, Gluonsmeared1, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
 
     // CoolingKernel Cooling(Gluonsmeared1);
@@ -543,7 +534,7 @@ int main(int argc, char** argv)
         //     Gluon:        Regular local updates
         //     Gluon_temper: MetaD-HMC updates
         GaugeField                   Gluon_temper;
-        // Need to set all links to identity, otherwise the links are zero matrices, which leads to NaNs during the HMC
+
         Gluon_temper.SetToIdentity();
 
         // Setup second ofstream for Gluon_temper (Gluon uses the default stream datalog)

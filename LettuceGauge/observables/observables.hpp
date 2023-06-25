@@ -43,7 +43,7 @@ struct SingleObservable
         {}
 
         // TODO: Probably need a custom std::forward implementation if we want this to work with GPUs
-        //       Perhaps there is an existinc implementation for one of the CUDA/HIP libraries?
+        //       Perhaps there is an existing implementation for one of the CUDA/HIP libraries?
         template<typename... ParamsT>
         void Calculate(const int smearing_level, ParamsT&&... params) noexcept
         {
