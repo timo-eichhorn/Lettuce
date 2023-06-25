@@ -311,14 +311,14 @@ namespace GaugeUpdates
                 {
                     // Generate 8 random numbers as basis coefficients
                     link_coord current_link {t, x, y, z, mu};
-                    floatT     phi1         {global_prng.Gaussian(current_link)};
-                    floatT     phi2         {global_prng.Gaussian(current_link)};
-                    floatT     phi3         {global_prng.Gaussian(current_link)};
-                    floatT     phi4         {global_prng.Gaussian(current_link)};
-                    floatT     phi5         {global_prng.Gaussian(current_link)};
-                    floatT     phi6         {global_prng.Gaussian(current_link)};
-                    floatT     phi7         {global_prng.Gaussian(current_link)};
-                    floatT     phi8         {global_prng.Gaussian(current_link)};
+                    floatT     phi1         {prng.Gaussian(current_link)};
+                    floatT     phi2         {prng.Gaussian(current_link)};
+                    floatT     phi3         {prng.Gaussian(current_link)};
+                    floatT     phi4         {prng.Gaussian(current_link)};
+                    floatT     phi5         {prng.Gaussian(current_link)};
+                    floatT     phi6         {prng.Gaussian(current_link)};
+                    floatT     phi7         {prng.Gaussian(current_link)};
+                    floatT     phi8         {prng.Gaussian(current_link)};
 
                     // Random momentum in su(3) given by i * phi_i * T^i (where T^i is 0.5 * i-th Gell-Mann/traceless hermitian matrix)
                     Matrix_3x3 A;
