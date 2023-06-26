@@ -484,15 +484,14 @@ int main(int argc, char** argv)
     // Updates with Metadynamics
     if constexpr(metadynamics_enabled and !tempering_enabled)
     {
-        // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
+        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
+        // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return CV_in * CV_in;});
         TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
-        // TopBiasPotential.LoadPotential("metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
         TopBiasPotential.SymmetrizePotentialMaximum();
-        // TopBiasPotential.Setweight(0.005);
-        TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        TopBiasPotential.SaveParameters(metapotentialfilepath);
+        TopBiasPotential.SavePotential(metapotentialfilepath);
 
         // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng, hmc_trajectory_length);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
@@ -521,7 +520,7 @@ int main(int argc, char** argv)
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
-                    TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+                    TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
             }
         }
@@ -546,12 +545,12 @@ int main(int argc, char** argv)
         // Conventional HMC only used during thermalization of Gluon_temper
         GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
-        // CV_min, CV_max, bin_number, weight, threshold_weight
-        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 1000.0};
+        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
+        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
         TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
         TopBiasPotential.SymmetrizePotentialMaximum();
-        TopBiasPotential.SaveMetaParameters(metapotentialfilepath);
-        TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+        TopBiasPotential.SaveParameters(metapotentialfilepath);
+        TopBiasPotential.SavePotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
         GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
@@ -592,7 +591,7 @@ int main(int argc, char** argv)
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
-                    TopBiasPotential.SaveMetaPotential(metapotentialfilepath);
+                    TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
             }
         }
