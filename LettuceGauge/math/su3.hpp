@@ -19,11 +19,8 @@
 // TODO: Implement own SU(3) class (e.g. with compression)?
 // Provides functions relevant for SU(3) elements like group projections
 
-
-// TODO: Currently, this might be somewhat inconsistent/unclear: Are the generators the Gell-Mann matrices lambda_j (which are hermitian), or are the generators
-//       i * lambda_j (which are algebra elements/antihermitian)? Perhaps we should rename our functions so we can provide both...
 // The Gell-Mann matrices lambda_i are traceless hermitian (3x3)-matrices that generate the SU(3) in its defining representation
-// Namely, any group element U may be written as U = exp(i * 0.5 * alpha_j * lambda_j), where alpha_j are eight real coefficients and the summation over j is implicit
+// Namely, any group element U may be written as U = exp(i * 0.5 * alpha_j * lambda_j), where alpha_j are eight real coefficients and the summation over j is implied
 namespace SU3::Generators
 {
     // The following functions return the unnormalized Gell-Mann matrices
@@ -265,98 +262,14 @@ namespace SU3::Generators
 
 namespace SU3
 {
-    // Generates a random SU(3) matrix
+    // Generates a random SU(3) matrix by exponentiating one of the eight generators multiplied with a phase i*phi
+    // Note that the phase phi here corresponds to 0.5 * alpha in the functions lambda_i and Exp_lambda_i functions above
     [[nodiscard]]
-    Matrix_SU3 RandomMat(std::uniform_int_distribution<int>& distribution_choice, std::uniform_real_distribution<floatT>& distribution_unitary)
-    {
-        Matrix_SU3 tmp;
-        int choice {distribution_choice(generator_rand)};
-        floatT phi {distribution_unitary(generator_rand)};
-
-        switch (choice)
-        {
-            case 1:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp << c_phi            , i<floatT> * s_phi, 0.0,
-                       i<floatT> * s_phi, c_phi            , 0.0,
-                       0.0              , 0.0              , 1.0;
-            }
-            break;
-            case 2:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp <<  c_phi, s_phi, 0.0,
-                       -s_phi, c_phi, 0.0,
-                        0.0  , 0.0  , 1.0;
-            }
-            break;
-            case 3:
-            {
-                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi)};
-                tmp << exp_i_phi, 0.0                 , 0.0,
-                       0.0      , std::conj(exp_i_phi), 0.0,
-                       0.0      , 0.0                 , 1.0;
-            }
-            break;
-            case 4:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp << c_phi            , 0.0, i<floatT> * s_phi,
-                       0.0              , 1.0, 0.0,
-                       i<floatT> * s_phi, 0.0, c_phi;
-            }
-            break;
-            case 5:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp <<  c_phi, 0.0, s_phi,
-                        0.0  , 1.0, 0.0,
-                       -s_phi, 0.0, c_phi;
-            }
-            break;
-            case 6:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp << 1.0, 0.0              , 0.0,
-                       0.0, c_phi            , i<floatT> * s_phi,
-                       0.0, i<floatT> * s_phi, c_phi;
-            }
-            break;
-            case 7:
-            {
-                floatT s_phi {std::sin(phi)};
-                floatT c_phi {std::cos(phi)};
-                tmp << 1.0, 0.0  ,  0.0,
-                       0.0,  c_phi, s_phi,
-                       0.0, -s_phi, c_phi;
-            }
-            break;
-            case 8:
-            {
-                floatT               phi_tilde {phi / static_cast<floatT>(std::sqrt(3))};
-                std::complex<floatT> exp_i_phi {std::exp(i<floatT> * phi_tilde)};
-                tmp << exp_i_phi, 0.0      , 0.0,
-                       0.0      , exp_i_phi, 0.0,
-                       0.0      , 0.0      , 1.0/(exp_i_phi * exp_i_phi);
-            }
-            break;
-        }
-        return tmp;
-    }
-
-    // Generates a random SU(3) matrix
-    [[nodiscard]]
-    Matrix_SU3 RandomMatParallel(const int choice, const floatT phi)
+    Matrix_SU3 RandomMatrix(const int group_direction, const floatT phi)
     {
         Matrix_SU3 tmp;
 
-        switch (choice)
+        switch (group_direction)
         {
             case 1:
             {

@@ -18,9 +18,10 @@
 //| This file provides a functor implementing a (multi-hit) Metropolis update for   |
 //| SU(3) gauge theory, which works by multiplying the old link with a random matrix|
 //| obtained by taking a step with random size in a random direction in the algebra |
-//| and exponentiating the result. The range of the stepsize depends on the distri- |
-//| bution 'distribution_unitary'. Generally, acceptance rates at or below 0.5 seem |
-//| to be most efficient.                                                           |
+//| and exponentiating the result. The range of the stepsize depends on the parame- |
+//| ter 'epsilon' and may be accessed and changed from outside. Generally, accep-   |
+//| tance rates at or below 0.5 seem to be most efficient in terms of autocorrela-  |
+//| tion times, and higher acceptance rates seem to perform worse than lower ones.  |
 //+---------------------------------------------------------------------------------+
 
 template<typename ActionT, typename prngT>
@@ -55,7 +56,7 @@ struct MetropolisKernel
                 // Uniform real returns an integer in the interval [0, 1), so adjust accordingly 
                 // TODO: Should this be a feature of the prng class?
                 floatT     phi      {prng.UniformReal(current_link) * 2.0 * epsilon - epsilon};
-                Matrix_SU3 new_link {old_link * SU3::RandomMatParallel(choice, phi)};
+                Matrix_SU3 new_link {old_link * SU3::RandomMatrix(choice, phi)};
                 // auto end_multihit = std::chrono::high_resolution_clock::now();
                 // multihit_time += end_multihit - start_multihit;
 

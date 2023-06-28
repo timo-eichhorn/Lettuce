@@ -329,11 +329,6 @@ int main(int argc, char** argv)
     // Default width of random numbers used in Metropolis update is 0.5
     floatT metropolis_epsilon {0.5};
 
-    std::uniform_real_distribution<floatT> distribution_prob(0.0, 1.0);
-    std::uniform_real_distribution<floatT> distribution_uniform(0.0, 1.0);
-    std::uniform_int_distribution<int> distribution_choice(1, 8);
-    std::uniform_int_distribution<int> distribution_instanton(0, 1);
-
     Gluon.SetToIdentity();
 
     auto startcalc {std::chrono::system_clock::now()};
@@ -431,10 +426,11 @@ int main(int argc, char** argv)
             //-----
             if constexpr(n_instanton_update != 0)
             {
-                int        Q_instanton {distribution_instanton(generator_rand) * 2 - 1};
-                int        L_half      {Nt/2 - 1};
-                site_coord center      {L_half, L_half, L_half, L_half};
-                int        radius      {5};
+                std::uniform_int_distribution<int> distribution_instanton(0, 1);
+                int                                Q_instanton {distribution_instanton(generator_rand) * 2 - 1};
+                int                                L_half      {Nt/2 - 1};
+                site_coord                         center      {L_half, L_half, L_half, L_half};
+                int                                radius      {5};
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
