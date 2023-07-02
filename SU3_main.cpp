@@ -403,7 +403,7 @@ int main(int argc, char** argv)
             // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
             if constexpr(n_hmc != 0)
             {
-                HMC(n_hmc, false);
+                HMC(n_hmc, true);
             }
             // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
             // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
