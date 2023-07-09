@@ -12,6 +12,12 @@
 //----------------------------------------
 // Standard C headers
 #include <cstddef>
+#include <cstdlib>
+
+// Notes/ideas on a general iterator function:
+// Take algorithm and lattice as arguments, and get stencil size from algorithm, and lattice lengths/layout parameters (SIMD/MPI)
+// The smallest separation we want is the stencil size, so exclude all iterations that have a smaller stencil size
+// Then simply search for the ideal allowed choice
 
 namespace Iterator
 {
@@ -137,6 +143,11 @@ namespace Iterator
     {
         // TODO: If checked like this, the static_assert complains, even if the function is never used. Need to explicitly check on an array that we pass to the function...
         // static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
+        if constexpr(Nt % 4 != 0 or Nx % 4 != 0 or Ny % 4 != 0 or Nz % 4 != 0)
+        {
+            std::cerr << "Attempted to use Checkerboard4 function with a lattice where at least one length is not divisible by 4!" << std::endl;
+            std::exit(1);
+        }
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         // For each direction, the lattice is split up into 4 sublattices that must be update one after another
@@ -162,6 +173,11 @@ namespace Iterator
     {
         // TODO: If checked like this, the static_assert complains, even if the function is never used. Need to explicitly check on an array that we pass to the function...
         // static_assert(Nt % 4 == 0 and Nx % 4 == 0 and Ny % 4 == 0 and Nz % 4 == 0, "Currently, only lattice sizes divisible by 4 are supported with parallelization.");
+        if constexpr(Nt % 4 != 0 or Nx % 4 != 0 or Ny % 4 != 0 or Nz % 4 != 0)
+        {
+            std::cerr << "Attempted to use Checkerboard4 function with a lattice where at least one length is not divisible by 4!" << std::endl;
+            std::exit(1);
+        }
         for (int sweep_count = 0; sweep_count < n_sweep; ++sweep_count)
         for (int mu = 0; mu < 4; ++mu)
         // For each direction, the lattice is split up into 4 sublattices that must be update one after another
