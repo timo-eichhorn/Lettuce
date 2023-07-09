@@ -352,6 +352,7 @@ int main(int argc, char** argv)
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
+    // std::chrono::duration<double> overall_time {0.0};
     // Regular updates without Metadynamics
     if constexpr(!metadynamics_enabled)
     {
@@ -376,9 +377,9 @@ int main(int argc, char** argv)
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            // auto start_update_metro {std::chrono::high_resolution_clock::now()};
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
+                // auto start_update_metro {std::chrono::high_resolution_clock::now()};
                 MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, global_prng, multi_hit, metropolis_epsilon);
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
@@ -386,32 +387,34 @@ int main(int argc, char** argv)
                 Metropolis.AdjustEpsilon(acceptance_count);
                 metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
+                // auto end_update_metro {std::chrono::high_resolution_clock::now()};
+                // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
+                // std::cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << std::endl;
             }
-            // auto end_update_metro {std::chrono::high_resolution_clock::now()};
-            // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
-            // std::cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << std::endl;
             //-----
-            // auto start_update_heatbath {std::chrono::high_resolution_clock::now()};
             if constexpr(n_heatbath != 0)
             {
+                // auto start_update_heatbath {std::chrono::high_resolution_clock::now()};
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
+                // auto end_update_heatbath {std::chrono::high_resolution_clock::now()};
+                // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
+                // std::cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << std::endl;
+                // overall_time += update_time_heatbath;
             }
-            // auto end_update_heatbath {std::chrono::high_resolution_clock::now()};
-            // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
-            // std::cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << std::endl;
             //-----
-            // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
             if constexpr(n_hmc != 0)
             {
+                // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
                 HMC(n_hmc, true);
+                // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
+                // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
+                // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
+                // overall_time += update_time_hmc;
             }
-            // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
-            // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
-            // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
             //-----
-            // auto start_update_or = std::chrono::high_resolution_clock::now();
             if constexpr(n_orelax != 0)
             {
+                // auto start_update_or = std::chrono::high_resolution_clock::now();
                 // double action_before {GaugeAction::WilsonAction.Action(Gluon)};
                 // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
@@ -419,10 +422,11 @@ int main(int argc, char** argv)
                 // std::cout << "Action (before): " << action_before << std::endl;
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
+                // auto end_update_or = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
+                // std::cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << std::endl;
+                // overall_time += update_time_or;
             }
-            // auto end_update_or = std::chrono::high_resolution_clock::now();
-            // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-            // std::cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << std::endl;
             //-----
             if constexpr(n_instanton_update != 0)
             {
@@ -510,6 +514,7 @@ int main(int argc, char** argv)
             // auto end_update_meta = std::chrono::high_resolution_clock::now();
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
+            // overall_time += update_time_meta;
             if (n_count % expectation_period == 0)
             {
                 Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear);
@@ -598,6 +603,9 @@ int main(int argc, char** argv)
     auto end {std::chrono::system_clock::now()};
     std::chrono::duration<double> elapsed_seconds {end - startcalc};
     std::time_t end_time {std::chrono::system_clock::to_time_t(end)};
+
+    // std::cout << "Overall time:    " << overall_time.count() << std::endl;
+    // std::cout << "Normalized time: " << overall_time.count() / n_run << std::endl;
 
     //-----
     // Save final configuration and PRNG state
