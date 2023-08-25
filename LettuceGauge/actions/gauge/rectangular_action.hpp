@@ -26,19 +26,20 @@ namespace GaugeAction
         // Do not store the gauge field/a reference to the gauge field in the class, since we might want to use the same action for different fields (e.g. during smearing?)
         // Instead, the field is always passed as an external reference
         private:
-            double beta;
+            double beta {6.0};
         public:
             static constexpr int    stencil_radius {stencil_radius_};
             static_assert(stencil_radius_ > 0 and stencil_radius_ <= 2, "Invalid stencil_radius!");
             // Coefficients for 1x1 loops (c_plaq) and 1x2/2x1 loops (c_rect)
             // static constexpr double c_plaq         {c_plaq_};
             // static constexpr double c_rect         {c_rect_};
-            const double c_plaq;
-            const double c_rect;
+            const double c_plaq {1.0};
+            const double c_rect {0.0};
             //...
             Rectangular(const double beta_in, const double c_plaq_in, const double c_rect_in) noexcept :
             beta(beta_in), c_plaq(c_plaq_in), c_rect(c_rect_in)
             {}
+            Rectangular() noexcept = default;
 
             void SetBeta(const double beta_in) noexcept
             {
