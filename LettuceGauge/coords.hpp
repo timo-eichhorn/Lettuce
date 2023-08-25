@@ -57,7 +57,11 @@ struct site_coord
                 return y;
             case 3:
                 return z;
-            // TODO: Compiler will probably complain that we have no default case?
+            default:
+                // TODO: C++23 introduces unreachable() in stddef.h or std::unreachable in utility, also not sure about CUDA compatibility
+                // std::unreachable();
+                // __builtin_unreachable();
+                std::exit(EXIT_FAILURE);
         }
     }
     inline int operator[](const int i) const noexcept
@@ -72,7 +76,11 @@ struct site_coord
                 return y;
             case 3:
                 return z;
-            // TODO: Compiler will probably complain that we have no default case?
+            default:
+                // TODO: C++23 introduces unreachable() in stddef.h or std::unreachable in utility, also not sure about CUDA compatibility
+                // std::unreachable();
+                // __builtin_unreachable();
+                std::exit(EXIT_FAILURE);
         }
     }
     [[nodiscard]]
@@ -126,7 +134,11 @@ struct link_coord
                 return z;
             case 4:
                 return mu.direction;
-            // TODO: Compiler will probably complain that we have no default case?
+            default:
+                // TODO: C++23 introduces unreachable() in stddef.h or std::unreachable in utility, also not sure about CUDA compatibility
+                // std::unreachable();
+                // __builtin_unreachable();
+                std::exit(EXIT_FAILURE);
         }
     }
     inline int operator[](const int i) const noexcept
@@ -143,7 +155,11 @@ struct link_coord
                 return z;
             case 4:
                 return mu.direction;
-            // TODO: Compiler will probably complain that we have no default case?
+            default:
+                // TODO: C++23 introduces unreachable() in stddef.h or std::unreachable in utility, also not sure about CUDA compatibility
+                // std::unreachable();
+                // __builtin_unreachable();
+                std::exit(EXIT_FAILURE);
         }
     }
     [[nodiscard]]
