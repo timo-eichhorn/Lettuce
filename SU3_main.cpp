@@ -31,6 +31,7 @@
 #include "LettuceGauge/smearing/cooling.hpp"
 #include "LettuceGauge/smearing/stout_smearing.hpp"
 #include "LettuceGauge/smearing/gradient_flow.hpp"
+#include "LettuceGauge/updates/ghmc_gauge.hpp"
 #include "LettuceGauge/updates/heatbath.hpp"
 #include "LettuceGauge/updates/hmc_gauge.hpp"
 #include "LettuceGauge/updates/hmc_metadynamics.hpp"
@@ -79,7 +80,7 @@ FullTensor                   F_tensor;
 //-------------------------------------------------------------------------------------
 // Calculates and writes observables to logfile
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const bool print_newline = true)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const double smearing_parameter = rho_stout, const bool print_newline = true)
 {
     std::vector<double>               ActionImproved(n_smear + 1);
     std::vector<double>               Plaquette(n_smear + 1);
@@ -102,7 +103,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
 
     Integrators::GradientFlow::Euler Flow_Integrator(Gluonsmeared2);
-    GradientFlowKernel Flow(Gluon, Gluonsmeared1, Flow_Integrator, GaugeAction::WilsonAction, rho_stout);
+    GradientFlowKernel Flow(Gluon, Gluonsmeared1, Flow_Integrator, GaugeAction::WilsonAction, smearing_parameter);
 
     // CoolingKernel Cooling(Gluonsmeared1);
     // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
@@ -161,38 +162,18 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // ActionStruct.Calculate(0, std::cref(Gluon));
 
     //-----
-    // Begin smearing
-    if (n_smear > 0)
+    // Measurements involving smearing
+    for (int smear_count = 1; smear_count <= n_smear; ++smear_count)
     {
         // Apply smearing (first call is distinct from the calls afterwards, since we need to copy the unsmeared gaugefield here, but not later on)
-        // auto start_smearing = std::chrono::high_resolution_clock::now();
-        Flow(n_smear_skip);
-        // Iterator::Checkerboard(Cooling, 1);
-        // auto end_smearing = std::chrono::high_resolution_clock::now();
-        // std::chrono::duration<double> smearing_time = end_smearing - start_smearing;
-        // std::cout << "Time for calculating smearing: " << smearing_time.count() << std::endl;
-        // Calculate observables
-        ActionImproved[1]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
-        Plaquette[1]                   = PlaquetteSum(Gluonsmeared1);
-        FieldStrengthTensor::CloverTraceless(Gluonsmeared1, F_tensor);
-        EClover[1]                     = EnergyDensity::Clover(F_tensor);
-        WLoop2[1]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-        WLoop4[1]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-        WLoop8[1]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-        PLoop[1]                       = PolyakovLoop(Gluonsmeared1);
-        // TopologicalChargeCloverSlow[1] = TopChargeCloverSlow(Gluonsmeared1);
-        TopologicalChargeClover[1]     = TopChargeClover(Gluonsmeared1);
-        // TopologicalChargeClover[1]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-        TopologicalChargePlaquette[1]  = TopChargePlaquette(Gluonsmeared1);
-        // ActionStruct.Calculate(1, std::cref(Gluonsmeared1));
-    }
-
-    //-----
-    // Further smearing steps
-    for (int smear_count = 2; smear_count <= n_smear; ++smear_count)
-    {
-        // Apply smearing
-        Flow.Resume(n_smear_skip);
+        if (smear_count == 1)
+        {
+            Flow(n_smear_skip);
+        }
+        else
+        {
+            Flow.Resume(n_smear_skip);
+        }
         // Iterator::Checkerboard(Cooling, n_smear_skip);
         // Calculate observables
         ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
@@ -304,10 +285,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear)
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, logstream, n_count, n_smear, false);
+    Observables(Gluon, Gluonchain, logstream, n_count, n_smear, smearing_parameter, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
     logstream << "CV_MetaD: " << CV_current << "\n";
@@ -342,13 +323,15 @@ int main(int argc, char** argv)
     GaugeAction::DBW2Action.SetBeta(beta);
 
     // Initialize update functors
-    HeatbathKernel                   Heatbath(Gluon, GaugeAction::DBW2Action, global_prng);
-    // OverrelaxationDirectKernel       OverrelaxationDirect(Gluon, global_prng);
-    OverrelaxationSubgroupKernel     OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
-    Integrators::HMC::OMF_4          OMF_4_Integrator;
-    // Integrators::HMC::Leapfrog_OMF_4 LFRG_OMF_4_Integrator;
-    // Integrators::HMC::OMF_2_OMF_4    OMF_2_OMF_4_Integrator;
-    GaugeUpdates::HMCKernel          HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
+    HeatbathKernel                     Heatbath(Gluon, GaugeAction::WilsonAction, global_prng);
+    // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, GaugeAction::WilsonAction, global_prng);
+    OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, GaugeAction::WilsonAction);
+    Integrators::HMC::OMF_4            OMF_4_Integrator;
+    // Integrators::HMC::Leapfrog_OMF_4   LFRG_OMF_4_Integrator;
+    // Integrators::HMC::OMF_2_OMF_4      OMF_2_OMF_4_Integrator;
+    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, global_prng, hmc_trajectory_length);
+    // double ghmc_mixing_angle           {0.25 * pi<floatT>};
+    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -370,8 +353,12 @@ int main(int argc, char** argv)
         {
             for (int n_count = 0; n_count < 20; ++n_count)
             {
+                // auto start_therm {std::chrono::high_resolution_clock::now()};
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
+                // auto end_therm {std::chrono::high_resolution_clock::now()};
+                // std::chrono::duration<double> therm_time {end_therm - start_therm};
+                // std::cout << "Time: " << therm_time.count() << std::endl;
             }
         }
 
@@ -449,7 +436,7 @@ int main(int argc, char** argv)
             if (n_count % expectation_period == 0)
             {
                 // auto start_observable = std::chrono::high_resolution_clock::now();
-                Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
                 // auto end_observable = std::chrono::high_resolution_clock::now();
                 // std::chrono::duration<double> observable_time {end_observable - start_observable};
                 // std::cout << "Time for calculating observables: " << observable_time.count() << std::endl;
@@ -517,7 +504,7 @@ int main(int argc, char** argv)
             // overall_time += update_time_meta;
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear, rho_stout);
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
@@ -587,8 +574,8 @@ int main(int argc, char** argv)
 
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, datalog, n_count, n_smear);
-                Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear);
+                Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
+                Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear, rho_stout);
                 if constexpr(metapotential_updated)
                 {
                     if (n_count % (1 * expectation_period) == 0)
