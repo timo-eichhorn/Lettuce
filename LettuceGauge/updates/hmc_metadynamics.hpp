@@ -273,6 +273,7 @@ namespace GaugeUpdates
             HMCMetaDData&      MetadynamicsData;
         public:
             double             trajectory_length;
+            double             rho_stout_cv;
         private:
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
@@ -283,7 +284,7 @@ namespace GaugeUpdates
                 MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4D(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], rho_stout);
+                    StoutSmearing4D(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], rho_stout_cv);
                 }
                 return TopChargeClover(MetadynamicsData.SmearedFields[n_smear_meta]);
             }
@@ -293,7 +294,7 @@ namespace GaugeUpdates
                 MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout);
+                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout_cv);
                 }
                 // Calculate clover term and topological charge (we usually need the clover term later during the update, so better this way than directly calculating the charge)
                 CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
@@ -357,7 +358,7 @@ namespace GaugeUpdates
                 MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
-                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout);
+                    StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout_cv);
                 }
                 // Now we need the derivative of the metapotential and the contribution of the clover term
                 // Calculate clover term on field that was smeared the most
@@ -386,8 +387,7 @@ namespace GaugeUpdates
                 // Exp is calculated inside the StoutForceRecrusion function, we only need to pass an array of fitting shape
                 for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
                 {
-                    // TODO: Replace global variable rho_stout with parameter?
-                    StoutForceRecursion(MetadynamicsData.SmearedFields[smear_count - 1], MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.ForceFatLink, MetadynamicsData.Exp_consts[smear_count - 1], rho_stout);
+                    StoutForceRecursion(MetadynamicsData.SmearedFields[smear_count - 1], MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.ForceFatLink, MetadynamicsData.Exp_consts[smear_count - 1], rho_stout_cv);
                     // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
                 }
             }
@@ -485,9 +485,9 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in = 1.0) noexcept :
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in)
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}
 
 

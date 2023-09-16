@@ -128,6 +128,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << "n_smear = "                          << n_smear                          << "\n";
     stream << "n_smear_skip = "                     << n_smear_skip                     << "\n";
     stream << "rho_stout = "                        << rho_stout                        << "\n";
+    stream << "rho_stout_metadynamics = "           << rho_stout_metadynamics           << "\n";
     stream << "n_metro = "                          << n_metro                          << "\n";
     stream << "multi_hit = "                        << multi_hit                        << "\n";
     stream << "metro_target_acceptance = "          << metro_target_acceptance          << "\n";

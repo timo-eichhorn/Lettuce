@@ -46,9 +46,10 @@ using floatT = double;
 int n_run;                                                  // Number of runs
 double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-inline int n_smear {7};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
-inline int n_smear_skip {5};                                // Number of smearing steps to skip between measurements
-inline floatT rho_stout {0.12};                             // Stout smearing parameter
+inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
+inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
+inline floatT rho_stout {0.10};                             // Stout smearing parameter
+inline floatT rho_stout_metadynamics {0.12};                // Stout smearing parameter for Metadynamics CV
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {1};                        // Number of heat bath sweeps per total update sweep

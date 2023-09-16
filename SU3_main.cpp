@@ -168,7 +168,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // Apply smearing (first call is distinct from the calls afterwards, since we need to copy the unsmeared gaugefield here, but not later on)
         if (smear_count == 1)
         {
+            // auto start_smear = std::chrono::high_resolution_clock::now();
             Flow(n_smear_skip);
+            // auto end_smear = std::chrono::high_resolution_clock::now();
+            // std::chrono::duration<double> smear_time = end_smear - start_smear;
+            // std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_time.count() << std::endl;
         }
         else
         {
@@ -323,13 +327,13 @@ int main(int argc, char** argv)
     GaugeAction::DBW2Action.SetBeta(beta);
 
     // Initialize update functors
-    HeatbathKernel                     Heatbath(Gluon, GaugeAction::WilsonAction, global_prng);
+    HeatbathKernel                     Heatbath(Gluon, GaugeAction::DBW2Action, global_prng);
     // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, GaugeAction::WilsonAction, global_prng);
-    OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, GaugeAction::WilsonAction);
+    OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
     Integrators::HMC::OMF_4            OMF_4_Integrator;
     // Integrators::HMC::Leapfrog_OMF_4   LFRG_OMF_4_Integrator;
     // Integrators::HMC::OMF_2_OMF_4      OMF_2_OMF_4_Integrator;
-    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, global_prng, hmc_trajectory_length);
+    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
     // double ghmc_mixing_angle           {0.25 * pi<floatT>};
     // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
 
@@ -345,7 +349,11 @@ int main(int argc, char** argv)
             datalog << "[HMC start thermalization]\n";
             for (int n_count = 0; n_count < 20; ++n_count)
             {
+                // auto start_therm_hmc {std::chrono::high_resolution_clock::now()};
                 HMC(10, false);
+                // auto end_therm_hmc {std::chrono::high_resolution_clock::now()};
+                // std::chrono::duration<double> hmc_therm_time {end_therm_hmc - start_therm_hmc};
+                // std::cout << "Time for thermalization sweep (HMC): " << hmc_therm_time.count() << std::endl;
             }
             datalog << "[HMC end thermalization]\n" << std::endl;
         }
@@ -358,7 +366,7 @@ int main(int argc, char** argv)
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
                 // auto end_therm {std::chrono::high_resolution_clock::now()};
                 // std::chrono::duration<double> therm_time {end_therm - start_therm};
-                // std::cout << "Time: " << therm_time.count() << std::endl;
+                // std::cout << "Time for thermalization sweep (local): " << therm_time.count() << std::endl;
             }
         }
 
@@ -473,16 +481,16 @@ int main(int argc, char** argv)
     {
         // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
         MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
-        // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return CV_in * CV_in;});
-        TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
+        // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
+        // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
-        TopBiasPotential.SymmetrizePotentialMaximum();
+        // TopBiasPotential.SymmetrizePotentialMaximum();
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
-        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng, hmc_trajectory_length);
+        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -540,9 +548,9 @@ int main(int argc, char** argv)
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
-        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng);
+        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng, rho_stout_metadynamics);
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
         datalog << "[HMC start thermalization]\n";
