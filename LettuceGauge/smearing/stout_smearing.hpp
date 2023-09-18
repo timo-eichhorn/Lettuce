@@ -74,20 +74,20 @@ void StoutSmearingN(GaugeField& U1, GaugeField& U2, const int N, const floatT sm
     }
 }
 
-// void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const floatT smear_param = 0.12) noexcept
-// {
-//     if (SmearedFields.ReturnNsmear() > 1)
-//     {
-//         for (int smear_count = 0; smear_count < SmearedFields.ReturnNsmear() - 1; ++smear_count)
-//         {
-//             StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], smear_param);
-//         }
-//     }
-//     else
-//     {
-//         std::cerr << "Can't smear field with NSmear <= 1!" << std::endl;
-//     }
-// }
+void StoutSmearingAll(GaugeFieldSmeared& SmearedFields, const floatT smear_param = 0.12) noexcept
+{
+    if (SmearedFields.ReturnNsmear() > 1)
+    {
+        for (int smear_count = 0; smear_count < SmearedFields.ReturnNsmear() - 1; ++smear_count)
+        {
+            StoutSmearing4D(SmearedFields[smear_count], SmearedFields[smear_count + 1], smear_param);
+        }
+    }
+    else
+    {
+        std::cerr << "Can't smear field with NSmear <= 1!" << std::endl;
+    }
+}
 
 void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_smeared, GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const floatT smear_param = 0.12) noexcept
 {
@@ -134,20 +134,12 @@ void CalculateLambda(const GaugeField& U, const GaugeField& Sigma, const GaugeFi
     for (int mu = 0; mu < 4; ++mu)
     {
         link_coord current_link {t, x, y, z, mu};
-        // // Calculate argument of exponential function
-        // st.noalias() = WilsonAction::Staple(U, current_link);
-        // // Omega in Peardon Morningstar paper
-        // A.noalias() = st * U(current_link).adjoint();
-        // B.noalias() = A - A.adjoint();
-        // C.noalias() = static_cast<floatT>(0.5) * B - static_cast<floatT>(1.0/6.0) * B.trace() * Matrix_3x3::Identity();
-        // SU3::ExpDerivativeConstants expd_consts(-i<floatT> * smear_param * C);
-        
         // Since we have already calculated Exp_consts, we can reuse quite some stuff
         SU3::ExpDerivativeConstants expd_consts(Exp_consts(current_link));
         // tmp is reused multiple times below, so precompute (compared to the Peardon Morningstar paper, we shuffled the expressions inside the first two traces around using the cyclicity)
         // tmp = U_{mu}(n) * Sigma'_{mu}(n)
         Matrix_3x3 tmp {U(current_link) * Sigma(current_link)};
-        // // Calculate Lambda (used during stout force recursion)
+        // Calculate Lambda (used during stout force recursion)
         Lambda(current_link) = SU3::Projection::TracelessHermitian((expd_consts.B_1 * tmp).trace() * expd_consts.Mat
                                                                  + (expd_consts.B_2 * tmp).trace() * expd_consts.Mat2
                                                                  +  expd_consts.f1  * tmp
@@ -159,7 +151,10 @@ void CalculateLambda(const GaugeField& U, const GaugeField& Sigma, const GaugeFi
 
 void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeField& Sigma, const GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, const floatT smear_param) noexcept
 {
-    // First multiply the incoming Sigma with V^{\dagger}
+    // In the original Peardon & Morningstar paper, the Sigma they work with is not the algebra-valued force F
+    // Instead, the relation between Sigma and F is given by:
+    // Sigma' = U'^{\dagger} F (all at the same smearing level)
+    // Since we usually work with F, we first need to multiply the incoming 'Sigma' with U'^{\dagger} to actually obtain the Sigma from the Peardon & Morningstar paper
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
@@ -175,9 +170,9 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
     static GaugeField Lambda;
     CalculateLambda(U, Sigma, Exp_consts, Lambda, smear_param);
     // Recursively calculate Sigma (stout force at smearing level n - 1) from Sigma_prev (stout force at smearing level n)
-    // Since we only need the local contribution from Sigma, we do not need two array for Sigma and Sigma_prev and can simply update Sigma in place
+    // Since we only need the local contribution from Sigma, we do not need two arrays for Sigma and Sigma_prev and can simply update Sigma in place
     // Lambda contains contributions from Sigma_prev, but as long as we call CalculateLambda() first everything is correct
-    // Here, U refers to the field at smearing level n - 1
+    // Here, U refers to the field at smearing level n - 1, and U_prev to the field at smearing level n
 
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
@@ -193,6 +188,7 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
             for (int nu = 0; nu < 4; ++nu)
             {
                 // TODO: Perhaps move the directional loops outside?
+                // TODO: Include generic rho_{mu, nu} for anisotropic smearing?
                 if (mu != nu)
                 {
                     site_coord site_mup     = U.Move< 1>(current_site, mu);
@@ -211,17 +207,9 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
             // Staple is used both during the calculation of stout force constants and below during the actual recursion, also precompute whole array?
             // st_adj.noalias() = WilsonAction::Staple(U, current_link).adjoint();
             Matrix_3x3 C_adj {smear_param * WilsonAction::Staple(U, current_link).adjoint()};
-            // Complete recursion relation
-            // Sigma(current_link) = Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link)
-            //                     - i<floatT> * smear_param * force_sum;
-            // With projector
-            // Sigma(current_link) = SU3::Projection::Algebra(Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link)
-            //                                              - i<floatT> * smear_param * force_sum);
-            // Multiply with U and the apply traceless hermitian projector
+            // Multiply with U and then apply traceless hermitian projector
             Sigma(current_link) = SU3::Projection::Algebra(U(current_link) * Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * U(current_link) * C_adj * Lambda(current_link)
                                                          - i<floatT> * smear_param * U(current_link) * force_sum);
-            // Sigma(current_link) = C_adj * Lambda(current_link);
-            // Sigma(current_link) = i<floatT> * C_adj * Lambda(current_link);
         }
     }
     // std::cout << Sigma(1, 2, 0, 1, 3) << std::endl;
