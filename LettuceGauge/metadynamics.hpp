@@ -3,6 +3,7 @@
 
 // Non-standard library headers
 #include "IO/ansi_colors.hpp"
+#include "IO/string_manipulation.hpp"
 //----------------------------------------
 // Standard library headers
 // ...
@@ -14,7 +15,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include <string_view>
+// #include <string_view>
 #include <vector>
 //----------------------------------------
 // Standard C headers
@@ -353,55 +354,6 @@ public:
         binlog << "exceeded_count: " << exceeded_count << "\n";
         binlog.close();
         binlog.clear();
-    }
-
-    // C++ strings suck, so define this helper function
-    // TODO: Eventually remove this function from this struct and move into utility library
-    void LeftErase(std::string& str, const std::string& erase)
-    {
-        std::size_t pos = str.find(erase);
-        if (pos != std::string::npos)
-        {
-            str.erase(pos, erase.length());
-        }
-    }
-
-    // Search the string 'str' for 'erase' starting and delete everything to the left of 'erase'
-    // If including == true, erase everything including 'erase', otherwise only until 'erase'
-    void EraseUntil(std::string& str, const std::string& erase, const bool including = true)
-    {
-        std::size_t pos = str.find(erase);
-        if (pos != std::string::npos)
-        {
-            if (including)
-            {
-                str.erase(0, pos + erase.length());
-            }
-            else
-            {
-                str.erase(0, pos);
-            }
-        }
-    }
-
-    std::size_t FindTokenEnd(const std::string_view str, const std::string_view token)
-    {
-        // First check for leading whitespaces
-        std::size_t first_nonwhitespace {str.find_first_not_of(" \f\n\r\t\v")};
-        if (first_nonwhitespace == std::string::npos)
-        {
-            return std::string::npos;
-        }
-        // Ignoring leading whitespaces, check if the remaining string starts with 'token'
-        // TODO: What about trailing whitespaces?
-        if (str.substr(first_nonwhitespace).starts_with(token))
-        {
-            return first_nonwhitespace + token.length();
-        }
-        else
-        {
-            return std::string::npos;
-        }
     }
 
     // Function that loads the histogram parameters and the histogram itself from a file

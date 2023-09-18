@@ -4,6 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 #include "ansi_colors.hpp"
+#include "string_manipulation.hpp"
 //----------------------------------------
 // Standard library headers
 // ...
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 //----------------------------------------
 // Standard C headers
@@ -101,6 +103,137 @@ void Configuration()
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
     std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
+}
+
+//-----
+// Read parameters from a given filepath
+
+// template<typename T>
+// bool ExtractParameter(std::string_view token, std::string_view token_name)
+// {
+//     std::cout << "Read " << token_name << " = " <<  << "\n";
+// }
+
+void ReadParameters(std::string_view parameterfilepath_string)
+{
+    std::filesystem::path parameterfilepath {parameterfilepath_string};
+    if (!std::filesystem::exists(parameterfilepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "File " << parameterfilepath << " not found!" << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    std::ifstream pstream(parameterfilepath, std::fstream::in);
+    if (!pstream)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Reading parameters from file " << parameterfilepath << " failed!" << Lettuce::Color::Reset << std::endl;
+    }
+    // Check for existence and position of expected tokens "START_PARAMS" and "END_PARAMS"
+    std::string current_line;
+    std::size_t linenumber_start_param {std::string::npos};
+    std::size_t linenumber_end_param   {std::string::npos};
+    bool start_token_found             {false};
+    bool end_token_found               {false};
+    std::size_t current_linenumber     {1};
+    std::size_t parameters_read        {0};
+    while (std::getline(pstream, current_line))
+    {
+        if (current_line.find("START_PARAMS") != std::string::npos)
+        {
+            linenumber_start_param = current_linenumber;
+            start_token_found = true;
+        }
+        if (current_line.find("END_PARAMS") != std::string::npos)
+        {
+            linenumber_end_param = current_linenumber;
+            end_token_found = true;
+        }
+        current_linenumber++;
+    }
+    if (!start_token_found)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find string \"START_PARAMS\" in " << parameterfilepath << "!" << Lettuce::Color::Reset << std::endl;
+    }
+    if (!end_token_found)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find string \"END_PARAMS\" in " << parameterfilepath << "!" << Lettuce::Color::Reset << std::endl;
+    }
+    if (!start_token_found or !end_token_found)
+    {
+        return;
+    }
+    // Attempt to read (runtime) parameters between "START_PARAMS" and "END_PARAMS" tokens
+    pstream.clear();
+    pstream.seekg(0, pstream.beg);
+    for (std::size_t ind = 0; ind < linenumber_start_param; ++ind)
+    {
+        pstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+    while(std::getline(pstream, current_line))
+    {
+        // Search for parameters until reaching "END_PARAMS"
+        if (current_line.find("END_PARAMS") != std::string::npos)
+        {
+            break;
+        }
+        std::size_t pos {std::string::npos};
+        // Get beta
+        if ((pos = FindTokenEnd(current_line, "beta = ")) != std::string::npos)
+        {
+            beta = std::stod(current_line.substr(pos));
+            std::cout << "Read beta = " << beta << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get n_run
+        if ((pos = FindTokenEnd(current_line, "n_run = ")) != std::string::npos)
+        {
+            n_run = std::stoi(current_line.substr(pos));
+            std::cout << "Read n_run = " << n_run << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get expectation_period
+        if ((pos = FindTokenEnd(current_line, "expectation_period = ")) != std::string::npos)
+        {
+            expectation_period = std::stoi(current_line.substr(pos));
+            std::cout << "Read expectation_period = " << expectation_period << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get n_smear
+        if ((pos = FindTokenEnd(current_line, "n_smear = ")) != std::string::npos)
+        {
+            n_smear = std::stoi(current_line.substr(pos));
+            std::cout << "Read n_smear = " << n_smear << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get n_smear_skip
+        if ((pos = FindTokenEnd(current_line, "n_smear_skip = ")) != std::string::npos)
+        {
+            n_smear_skip = std::stoi(current_line.substr(pos));
+            std::cout << "Read n_smear_skip = " << n_smear_skip << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get rho_stout
+        if ((pos = FindTokenEnd(current_line, "rho_stout = ")) != std::string::npos)
+        {
+            rho_stout = std::stod(current_line.substr(pos));
+            std::cout << "Read rho_stout = " << rho_stout << "\n";
+            parameters_read++;
+            continue;
+        }
+        // Get rho_stout_metadynamics
+        if ((pos = FindTokenEnd(current_line, "rho_stout_metadynamics = ")) != std::string::npos)
+        {
+            rho_stout_metadynamics = std::stod(current_line.substr(pos));
+            std::cout << "Read rho_stout_metadynamics = " << rho_stout_metadynamics << "\n";
+            parameters_read++;
+            continue;
+        }
+    }
+    std::cout << Lettuce::Color::BoldBlue << "Successfully read " << parameters_read << " parameters from " << (linenumber_end_param - linenumber_start_param) << " lines." << Lettuce::Color::Reset << std::endl;
 }
 
 //-----
