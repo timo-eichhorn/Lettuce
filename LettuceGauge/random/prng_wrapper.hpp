@@ -9,6 +9,7 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
+#include <concepts>
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -29,9 +30,17 @@
 //| the PRNGs and saving/loading the states to/from files.                          |
 //+---------------------------------------------------------------------------------+
 
+// TODO: Use unsigned long long or more generic integral type?
+// Note that this doesn't give any complexity bounds on the discard function
+template<typename T>
+concept SkippablePRNG = requires(T prng, unsigned long long skip_distance)
+{
+    {prng.discard(skip_distance)} -> std::same_as<void>;
+};
+
 // Per default, use floatT set in defines.hpp as floating point type and standard ints as integer type
 // template<typename prngT, typename floatT = floatT, typename intT = int>
-template<int Nt_, int Nx_, int Ny_, int Nz_, typename prngT, typename floatT, typename intT = int>
+template<int Nt_, int Nx_, int Ny_, int Nz_, SkippablePRNG prngT, typename floatT, typename intT = int>
 class PRNG4D
 {
     private:
@@ -104,7 +113,22 @@ class PRNG4D
             #endif
         }
 
-        // (Re)seed all PRNGs
+        // Shuffle
+        // void ShuffleStates() noexcept
+        // {
+        //     //
+        // }
+
+        // (Re)seed all PRNGs with LCG
+        // void SeedPRNGs() noexcept
+        // {
+        //     for (auto& prng : random_generators)
+        //     {
+        //         prng.seed();
+        //     }
+        // }
+
+        // (Re)seed all PRNGs with a custom seed source
         template<typename seed_sourceT>
         void SeedPRNGs(seed_sourceT&& seed_source) noexcept
         {
