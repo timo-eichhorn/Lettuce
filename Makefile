@@ -1,23 +1,43 @@
-FLG1 := -std=c++20 -O3 -march=native -mtune=native -fiopenmp -DNDEBUG -fno-math-errno -flto -static
-FLG2 := -std=c++20 -O3 -march=broadwell -mtune=broadwell -fiopenmp -DNDEBUG -fno-math-errno -flto -static
-FLG3 := -std=c++20 -O3 -march=alderlake -mtune=alderlake -fiopenmp -DNDEBUG -fno-math-errno -flto -static
+SRC  := SU3_main.cpp
 OUT  := LettuceSU3
 INC  := ./Eigen_3.4
-CC   := icpx
+CXX  := icpx
+
+# OMP flag differs between compilers
+ifeq ($(CXX),icpx)
+    OMPFLAG := -fiopenmp
+else ifeq ($(CXX),g++)
+    OMPFLAG := -fopenmp
+else ifeq ($(CXX),gcc)
+    OMPFLAG := -fopenmp
+else ifeq ($(CXX),clang)
+    OMPFLAG := -fopenmp
+else
+    $(error Unsupported compiler: $(CXX))
+endif
+
+# Other compiler flags
+COMMON_FLGS := -I $(INC) -std=c++20 -O3 -DNDEBUG -fno-math-errno -flto -static $(OMPFLAG)
+ARCH_FLGS   := -march=native -mtune=native
+
+# If using nvcc allow for different host compilers
+HOSTCOMPILER := $(shell which $(CXX))
 override FLGS +=
 
+.PHONY: all build cluster compass cuda cuda_cluster run clean
 
-all:
-		$(CC) -I $(INC) SU3_main.cpp $(FLG1) $(FLGS) -o $(OUT)
+all:    build
+build:
+		$(CXX) $(SRC) $(COMMON_FLGS) $(ARCH_FLGS) -o $(OUT)
 cluster:
-		$(CC) -I $(INC) SU3_main.cpp $(FLG2) $(FLGS) -o $(OUT)
+		$(MAKE) build ARCH_FLGS="-march=broadwell -mtune=broadwell"
 compass:
-		$(CC) -I $(INC) SU3_main.cpp $(FLG3) $(FLGS) -o $(OUT)
+		$(MAKE) build ARCH_FLGS="-march=alderlake -mtune=alderlake"
 cuda:
-		nvcc --compiler-bindir=/opt/intel/oneapi/compiler/2023.2.1/linux/bin/icpx -I./Eigen_3.4 SU3_main.cpp -std=c++20 -O3 -arch=native -Xcompiler -march=native,-mtune=native,-fiopenmp,-DNDEBUG,-fno-math-errno,-flto -o LettuceSU3
+		nvcc --compiler-bindir=$(HOSTCOMPILER) -I $(INC) $(SRC) -std=c++20 -O3 -arch=native -Xcompiler -march=native,-mtune=native,$(OMPFLAG),-DNDEBUG,-fno-math-errno,-flto -o $(OUT)
 cuda_cluster:
-		nvcc --compiler-bindir=/opt/intel/oneapi/compiler/2023.2.1/linux/bin/icpx -I./Eigen_3.4 SU3_main.cpp -std=c++20 -O3 -arch=native -Xcompiler -march=broadwell,-mtune=broadwell,-fiopenmp,-DNDEBUG,-fno-math-errno,-flto -o LettuceSU3
+		nvcc --compiler-bindir=$(HOSTCOMPILER) -I $(INC) $(SRC) -std=c++20 -O3 -arch=native -Xcompiler -march=broadwell,-mtune=broadwell,$(OMPFLAG),-DNDEBUG,-fno-math-errno,-flto -o $(OUT)
 run:
 		./$(OUT)
 clean:
-		rm $(OUT)
+		rm -f $(OUT)
