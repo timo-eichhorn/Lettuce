@@ -22,7 +22,9 @@ ARCH_FLGS   := -march=native -mtune=native
 
 # If using nvcc allow for different host compilers
 HOSTCOMPILER := $(shell which $(CXX))
-override FLGS +=
+# Allow additional flags (like DFIXED_SEED) from command line
+# override COMMON_FLGS += $(FLGS)
+COMMON_FLGS += $(FLGS)
 
 .PHONY: all build cluster compass cuda cuda_cluster run clean
 
