@@ -231,6 +231,140 @@ double TopChargeClover(const FullTensor& Clover) noexcept
 }
 
 [[nodiscard]]
+double TopChargeDensityClover(const GaugeField& U, const int t) noexcept
+{
+    double Q {0.0};
+    #pragma omp parallel for reduction(+: Q)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        std::array<Matrix_3x3, 6> Clov;
+        std::array<Matrix_3x3, 6> F;
+        int tm = (t - 1 + Nt)%Nt;
+        int xm = (x - 1 + Nx)%Nx;
+        int ym = (y - 1 + Ny)%Ny;
+        int zm = (z - 1 + Nz)%Nz;
+        int tp = (t + 1)%Nt;
+        int xp = (x + 1)%Nx;
+        int yp = (y + 1)%Ny;
+        int zp = (z + 1)%Nz;
+        // site_coord current_site {t, x, y, z};
+        // Calculate clover term using Q_{mu,nu} = Q_{nu,mu}^{dagger}
+        // TODO: Rewrite using plaquette function?
+        // Clov[0][1]
+        Clov[0] = U({t, x, y, z, 0})            * U({tp, x, y, z, 1})            * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint()
+                + U({t, x, y, z, 1})            * U({tm, xp, y, z, 0}).adjoint() * U({tm, x, y, z, 1}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, xm, y, z, 1}).adjoint() * U({tm, xm, y, z, 0})          * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, z, 0})            * U({tp, xm, y, z, 1})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[0] = PlaquetteI(U, current_site, 0, 1) + PlaquetteII(U, current_site, 0, 1) + PlaquetteIII(U, current_site, 0, 1) + PlaquetteIV(U, current_site, 0, 1);
+
+        // Clov[0][2]
+        Clov[1] = U({t, x, y, z, 0})            * U({tp, x, y, z, 2})            * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                + U({t, x, y, z, 2})            * U({tm, x, yp, z, 0}).adjoint() * U({tm, x, y, z, 2}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, x, ym, z, 2}).adjoint() * U({tm, x, ym, z, 0})          * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 0})            * U({tp, x, ym, z, 2})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[1] = PlaquetteI(U, current_site, 0, 2) + PlaquetteII(U, current_site, 0, 2) + PlaquetteIII(U, current_site, 0, 2) + PlaquetteIV(U, current_site, 0, 2);
+
+        // Clov[0][3]
+        Clov[2] = U({t, x, y, z, 0})            * U({tp, x, y, z, 3})            * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({tm, x, y, zp, 0}).adjoint() * U({tm, x, y, z, 3}).adjoint() * U({tm, x, y, z, 0})
+                + U({tm, x, y, z, 0}).adjoint() * U({tm, x, y, zm, 3}).adjoint() * U({tm, x, y, zm, 0})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 0})            * U({tp, x, y, zm, 3})          * U({t, x, y, z, 0}).adjoint();
+        // Clov[2] = PlaquetteI(U, current_site, 0, 3) + PlaquetteII(U, current_site, 0, 3) + PlaquetteIII(U, current_site, 0, 3) + PlaquetteIV(U, current_site, 0, 3);
+
+        // Clov[1][2]
+        Clov[3] = U({t, x, y, z, 1})            * U({t, xp, y, z, 2})            * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint()
+                + U({t, x, y, z, 2})            * U({t, xm, yp, z, 1}).adjoint() * U({t, xm, y, z, 2}).adjoint() * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, ym, z, 2}).adjoint() * U({t, xm, ym, z, 1})          * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, z, 1})            * U({t, xp, ym, z, 2})          * U({t, x, y, z, 1}).adjoint();
+        // Clov[3] = PlaquetteI(U, current_site, 1, 2) + PlaquetteII(U, current_site, 1, 2) + PlaquetteIII(U, current_site, 1, 2) + PlaquetteIV(U, current_site, 1, 2);
+
+        // Clov[1][3]
+        Clov[4] = U({t, x, y, z, 1})            * U({t, xp, y, z, 3})            * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({t, xm, y, zp, 1}).adjoint() * U({t, xm, y, z, 3}).adjoint() * U({t, xm, y, z, 1})
+                + U({t, xm, y, z, 1}).adjoint() * U({t, xm, y, zm, 3}).adjoint() * U({t, xm, y, zm, 1})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 1})            * U({t, xp, y, zm, 3})          * U({t, x, y, z, 1}).adjoint();
+        // Clov[4] = PlaquetteI(U, current_site, 1, 3) + PlaquetteII(U, current_site, 1, 3) + PlaquetteIII(U, current_site, 1, 3) + PlaquetteIV(U, current_site, 1, 3);
+
+        // Clov[2][3]
+        Clov[5] = U({t, x, y, z, 2})            * U({t, x, yp, z, 3})            * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint()
+                + U({t, x, y, z, 3})            * U({t, x, ym, zp, 2}).adjoint() * U({t, x, ym, z, 3}).adjoint() * U({t, x, ym, z, 2})
+                + U({t, x, ym, z, 2}).adjoint() * U({t, x, ym, zm, 3}).adjoint() * U({t, x, ym, zm, 2})          * U({t, x, y, zm, 3})
+                + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
+        // Clov[5] = PlaquetteI(U, current_site, 2, 3) + PlaquetteII(U, current_site, 2, 3) + PlaquetteIII(U, current_site, 2, 3) + PlaquetteIV(U, current_site, 2, 3);
+
+        // Version that uses the symmetry of F_mu,nu
+        // for (int mu = 0; mu < 4; ++mu)
+        // for (int nu = mu + 1; nu < 4; ++nu)
+        // {
+        //     F[mu][nu] = -i<floatT>/8.f * (Clov[mu][nu] - Clov[mu][nu].adjoint());
+        // }
+        //-----
+        // // F[0][1]
+        // F[0] = -i<floatT>/8.f * (Clov[0] - Clov[0].adjoint());
+        // // F[0][2]
+        // F[1] = -i<floatT>/8.f * (Clov[1] - Clov[1].adjoint());
+        // // F[0][3]
+        // F[2] = -i<floatT>/8.f * (Clov[2] - Clov[2].adjoint());
+        // // F[1][2]
+        // F[3] = -i<floatT>/8.f * (Clov[3] - Clov[3].adjoint());
+        // // F[1][3]
+        // F[4] = -i<floatT>/8.f * (Clov[4] - Clov[4].adjoint());
+        // // F[2][3]
+        // F[5] = -i<floatT>/8.f * (Clov[5] - Clov[5].adjoint());
+        // Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+        //-----
+        // F[0][1]
+        F[0] = (Clov[0] - Clov[0].adjoint());
+        // F[0][2]
+        F[1] = (Clov[1] - Clov[1].adjoint());
+        // F[0][3]
+        F[2] = (Clov[2] - Clov[2].adjoint());
+        // F[1][2]
+        F[3] = (Clov[3] - Clov[3].adjoint());
+        // F[1][3]
+        F[4] = (Clov[4] - Clov[4].adjoint());
+        // F[2][3]
+        F[5] = (Clov[5] - Clov[5].adjoint());
+        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+    }
+    // The factor -1/64 comes from the field strength tensor terms (factor -i/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
+    // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4
+    return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
+}
+
+[[nodiscard]]
+double TopChargeDensityClover(const FullTensor& Clover, const int t) noexcept
+{
+    double Q {0.0};
+    #pragma omp parallel for reduction(+: Q)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        std::array<Matrix_3x3, 6> F;
+        //-----
+        // F[0][1]
+        F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
+        // F[0][2]
+        F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
+        // F[0][3]
+        F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
+        // F[1][2]
+        F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
+        // F[1][3]
+        F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
+        // F[2][3]
+        F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
+        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+    }
+    // The factor -1/64 comes from the field strength tensor terms (factor -1/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
+    // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4
+    return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
+}
+
+[[nodiscard]]
 double TopChargePlaquette(const GaugeField& U) noexcept
 {
     double Q {0.0};
