@@ -117,6 +117,13 @@ namespace EnergyDensity
     }
 
     [[nodiscard]]
+    double PlaquetteTimeslice(const GaugeField& U, const int t) noexcept
+    {
+        double E {PlaquetteSumTimeslice(U, t)};
+        return 36.0 / U.Length(0) - 2.0 * E / U.Volume();
+    }
+
+    [[nodiscard]]
     double Clover(const FullTensor& F) noexcept
     {
         double E {0.0};
@@ -133,8 +140,27 @@ namespace EnergyDensity
             E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
                           + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
         }
+        return E / F.Volume();
         // This should match Stephan's definition
         // return 1.0 / (36.0 * F.Volume()) * E;
+    }
+
+    [[nodiscard]]
+    double CloverTimeslice(const FullTensor& F, const int t) noexcept
+    {
+        double E {0.0};
+        #pragma omp parallel for reduction(+: E)
+        for (int x = 0; x < Nx; ++x)
+        for (int y = 0; y < Ny; ++y)
+        for (int z = 0; z < Nz; ++z)
+        {
+            site_coord current_site {t, x, y, z};
+            // F_{nu,mu} = F_{mu,nu}^{\dagger}
+            // F_{nu,mu} F_{nu,mu} = (F_{mu,nu} F_{mu,nu})^{\dagger}
+            // Due to the real trace, we can simplify the sum to go over (mu < nu) instead of (mu, nu) and get a factor of two
+            E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
+                          + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
+        }
         return E / F.Volume();
     }
 } // namespace EnergyDensity

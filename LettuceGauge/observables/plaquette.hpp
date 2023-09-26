@@ -42,6 +42,25 @@ double PlaquetteSum(const GaugeField& U) noexcept
     return Plaq_sum;
 }
 
+[[nodiscard]]
+double PlaquetteSumTimeslice(const GaugeField& U, const int t) noexcept
+{
+    double Plaq_sum {0.0};
+    #pragma omp parallel for reduction(+: Plaq_sum)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    for (int nu = 1; nu < 4; ++nu)
+    {
+        site_coord current_site {t, x, y, z};
+        for (int mu = 0; mu < nu; ++mu)
+        {
+            Plaq_sum += std::real(Plaquette(U, current_site, mu, nu).trace());
+        }
+    }
+    return Plaq_sum;
+}
+
 // Top right quadrant, i.e., P_{mu, nu}
 [[nodiscard]]
 Matrix_SU3 PlaquetteI(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept

@@ -84,6 +84,7 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 {
     std::vector<double>               ActionImproved(n_smear + 1);
     std::vector<double>               Plaquette(n_smear + 1);
+    std::vector<std::vector<double>>  ECloverTimeslice(n_smear + 1, std::vector<double>(Gluon.Length(0), 0.0));
     std::vector<double>               EClover(n_smear + 1);
     std::vector<double>               WLoop2(n_smear + 1);
     std::vector<double>               WLoop4(n_smear + 1);
@@ -92,10 +93,11 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     std::vector<double>               PLoopRe(n_smear + 1);
     std::vector<double>               PLoopIm(n_smear + 1);
     // std::vector<double> TopologicalChargeCloverSlow(n_smear + 1);
-    std::vector<std::vector<double>>  TopologicalChargeDensity(n_smear + 1, std::vector<double>(Gluon.Length(0), 0.0));
+    std::vector<std::vector<double>>  TopologicalChargeCloverTimeslice(n_smear + 1, std::vector<double>(Gluon.Length(0), 0.0));
     std::vector<double>               TopologicalChargeClover(n_smear + 1);
     std::vector<double>               TopologicalChargePlaquette(n_smear + 1);
     // Calculate later from plaquette
+    // std::vector<std::vector<double>>  EPlaquetteTimeslice(n_smear + 1, std::vector<double>(Gluon.Length(0), 0.0));
     std::vector<double>               EPlaquette(n_smear + 1);
     std::vector<double>               Action(n_smear + 1);
     std::vector<double>               ActionUnnormalized(n_smear + 1);
@@ -118,7 +120,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
     FieldStrengthTensor::CloverTraceless(Gluon, F_tensor);
-    EClover[0]                     = EnergyDensity::Clover(F_tensor);
+    for (int t = 0; t < Gluon.Length(0); ++t)
+    {
+        ECloverTimeslice[0][t]     = EnergyDensity::CloverTimeslice(F_tensor, t);
+        // EPlaquetteTimeslice[0][t]  = EnergyDensity::PlaquetteTimeslice(Gluon, t);
+    }
+    // EClover[0]                     = EnergyDensity::Clover(F_tensor);
+    EClover[0]                     = std::accumulate(ECloverTimeslice[0].cbegin(), ECloverTimeslice[0].cend(), 0.0);
 
     // auto start_wilson = std::chrono::high_resolution_clock::now();
     WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
@@ -149,16 +157,16 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // auto end_topcharge = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> topcharge_time = end_topcharge - start_topcharge;
     // std::cout << "Time for calculating topcharge: " << topcharge_time.count() << std::endl;
-    // auto start_topcharge_density = std::chrono::high_resolution_clock::now();
+    // auto start_topcharge_timeslice = std::chrono::high_resolution_clock::now();
     for (int t = 0; t < Gluon.Length(0); ++t)
     {
-        TopologicalChargeDensity[0][t] = TopChargeDensityClover(Gluon, t);
+        TopologicalChargeCloverTimeslice[0][t] = TopChargeCloverTimeslice(Gluon, t);
     }
-    // auto end_topcharge_density = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> topcharge_density_time = end_topcharge_density - start_topcharge_density;
-    // std::cout << "Time for calculating topcharge density: " << topcharge_density_time.count() << std::endl;
+    // auto end_topcharge_timeslice = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> topcharge_timeslice_time = end_topcharge_timeslice - start_topcharge_timeslice;
+    // std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_time.count() << std::endl;
     // auto start_topcharge_symm = std::chrono::high_resolution_clock::now();
-    TopologicalChargeClover[0]     = std::accumulate(TopologicalChargeDensity[0].cbegin(), TopologicalChargeDensity[0].cend(), 0.0);
+    TopologicalChargeClover[0]     = std::accumulate(TopologicalChargeCloverTimeslice[0].cbegin(), TopologicalChargeCloverTimeslice[0].cend(), 0.0);
     // TopologicalChargeClover[0]     = TopChargeClover(Gluon);
     // TopologicalChargeClover[0]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
     // auto end_topcharge_symm = std::chrono::high_resolution_clock::now();
@@ -193,7 +201,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
         Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
         FieldStrengthTensor::CloverTraceless(Gluonsmeared1, F_tensor);
-        EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
+        for (int t = 0; t < Gluon.Length(0); ++t)
+        {
+            ECloverTimeslice[smear_count][t]               = EnergyDensity::CloverTimeslice(F_tensor, t);
+            // EPlaquetteTimeslice[smear_count][t]  = EnergyDensity::PlaquetteTimeslice(Gluonsmeared1, t);
+        }
+        // EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
+        EClover[smear_count]                     = std::accumulate(ECloverTimeslice[smear_count].cbegin(), ECloverTimeslice[smear_count].cend(), 0.0);
         WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
         WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
         WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
@@ -201,9 +215,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // TopologicalChargeCloverSlow[smear_count] = TopChargeCloverSlow(Gluonsmeared2);
         for (int t = 0; t < Gluon.Length(0); ++t)
         {
-            TopologicalChargeDensity[smear_count][t] = TopChargeDensityClover(Gluonsmeared1, t);
+            TopologicalChargeCloverTimeslice[smear_count][t] = TopChargeCloverTimeslice(Gluonsmeared1, t);
         }
-        TopologicalChargeClover[smear_count]     = std::accumulate(TopologicalChargeDensity[smear_count].cbegin(), TopologicalChargeDensity[smear_count].cend(), 0.0);
+        TopologicalChargeClover[smear_count]     = std::accumulate(TopologicalChargeCloverTimeslice[smear_count].cbegin(), TopologicalChargeCloverTimeslice[smear_count].cend(), 0.0);
         // TopologicalChargeClover[smear_count]     = TopChargeClover(Gluonsmeared1);
         // TopologicalChargeClover[smear_count]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
         TopologicalChargePlaquette[smear_count]  = TopChargePlaquette(Gluonsmeared1);
@@ -259,10 +273,26 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     std::copy(std::cbegin(EPlaquette), std::prev(std::cend(EPlaquette)), std::ostream_iterator<double>(logstream, " "));
     logstream << EPlaquette.back() << "\n";
     //-----
+    // logstream << "E_plaq_timeslice: ";
+    // for (int smear_count = 0; smear_count < n_smear; ++smear_count)
+    // {
+    //     std::copy(std::cbegin(EPlaquetteTimeslice[smear_count]), std::cend(EPlaquetteTimeslice[smear_count]), std::ostream_iterator<double>(logstream, " "));
+    // }
+    // std::copy(std::cbegin(EPlaquetteTimeslice[n_smear]), std::prev(std::cend(EPlaquetteTimeslice[n_smear])), std::ostream_iterator<double>(logstream, " "));
+    // logstream << EPlaquetteTimeslice[n_smear].back() << "\n";
+    //-----
     logstream << "E_clov: ";
     // std::copy(EClover.cbegin(), std::prev(EClover.cend()), std::ostream_iterator<double>(logstream, " "));
     std::copy(std::cbegin(EClover), std::prev(std::cend(EClover)), std::ostream_iterator<double>(logstream, " "));
     logstream << EClover.back() << "\n";
+    //-----
+    logstream << "E_clov_timeslice: ";
+    for (int smear_count = 0; smear_count < n_smear; ++smear_count)
+    {
+        std::copy(std::cbegin(ECloverTimeslice[smear_count]), std::cend(ECloverTimeslice[smear_count]), std::ostream_iterator<double>(logstream, " "));
+    }
+    std::copy(std::cbegin(ECloverTimeslice[n_smear]), std::prev(std::cend(ECloverTimeslice[n_smear])), std::ostream_iterator<double>(logstream, " "));
+    logstream << ECloverTimeslice[n_smear].back() << "\n";
     //-----
     logstream << "Wilson_Action(unnormalized): ";
     // std::copy(Action.cbegin(), std::prev(Action.cend()), std::ostream_iterator<double>(logstream, " "));
@@ -296,13 +326,13 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     std::copy(std::cbegin(TopologicalChargeClover), std::prev(std::cend(TopologicalChargeClover)), std::ostream_iterator<double>(logstream, " "));
     logstream << TopologicalChargeClover.back() << "\n";
     //-----
-    logstream << "TopChargeDensityClov: ";
+    logstream << "TopChargeClov_timeslice: ";
     for (int smear_count = 0; smear_count < n_smear; ++smear_count)
     {
-        std::copy(std::cbegin(TopologicalChargeDensity[smear_count]), std::cend(TopologicalChargeDensity[smear_count]), std::ostream_iterator<double>(logstream, " "));
+        std::copy(std::cbegin(TopologicalChargeCloverTimeslice[smear_count]), std::cend(TopologicalChargeCloverTimeslice[smear_count]), std::ostream_iterator<double>(logstream, " "));
     }
-    std::copy(std::cbegin(TopologicalChargeDensity[n_smear]), std::prev(std::cend(TopologicalChargeDensity[n_smear])), std::ostream_iterator<double>(logstream, " "));
-    logstream << TopologicalChargeDensity[n_smear].back() << "\n";
+    std::copy(std::cbegin(TopologicalChargeCloverTimeslice[n_smear]), std::prev(std::cend(TopologicalChargeCloverTimeslice[n_smear])), std::ostream_iterator<double>(logstream, " "));
+    logstream << TopologicalChargeCloverTimeslice[n_smear].back() << "\n";
     //-----
     logstream << "TopChargePlaq: ";
     std::copy(std::cbegin(TopologicalChargePlaquette), std::prev(std::cend(TopologicalChargePlaquette)), std::ostream_iterator<double>(logstream, " "));

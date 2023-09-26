@@ -231,7 +231,7 @@ double TopChargeClover(const FullTensor& Clover) noexcept
 }
 
 [[nodiscard]]
-double TopChargeDensityClover(const GaugeField& U, const int t) noexcept
+double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
@@ -335,7 +335,7 @@ double TopChargeDensityClover(const GaugeField& U, const int t) noexcept
 }
 
 [[nodiscard]]
-double TopChargeDensityClover(const FullTensor& Clover, const int t) noexcept
+double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for reduction(+: Q)
