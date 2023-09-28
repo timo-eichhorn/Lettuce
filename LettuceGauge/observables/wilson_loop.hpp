@@ -124,7 +124,7 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
             }
         }
     }
-    return 1.0 - W/(18.0 * U.Volume());
+    return 1.0 - W/(6 * Ncolor * U.Volume());
 }
 
 // Function template to calculate a single (square) Wilson loop of arbitrary length

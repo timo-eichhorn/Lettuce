@@ -28,6 +28,10 @@
 std::string program_version = "SU(3)_version_1.3";
 
 //-----
+inline constexpr int Ndim   {4};
+inline constexpr int Ncolor {3};
+static_assert(Ndim == 4,   "Currently only 4 dimensions are supported!");
+static_assert(Ncolor == 3, "Currently only SU(3) is supported!");
 
 inline constexpr int Nt {24};
 inline constexpr int Nx {24};

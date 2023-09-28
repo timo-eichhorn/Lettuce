@@ -302,6 +302,7 @@ Matrix_3x3 CloverDerivative(const GaugeField& U, const FullTensor& Clover, const
         break;
     }
     // The link U(current_site, mu) is a common factor appearing in all 6 components of the clover derivative, so multiply here
+    // TODO: Currently not sure how to generalize the prefactor to SU(Ncolor) in Ndim dimensions (or if necessary at all)
     derivative_component = U(current_site, mu) * derivative_component;
     return -static_cast<floatT>(2.0/(512.0 * pi<floatT> * pi<floatT>)) * SU3::Projection::Algebra(derivative_component);
 }

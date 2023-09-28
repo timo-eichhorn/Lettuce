@@ -37,7 +37,7 @@ namespace WilsonAction
                 S += std::real(Plaquette(U, {t, x, y, z}, mu, nu).trace());
             }
         }
-        return beta * (6.0 * Nt * Nx * Ny * Nz - 1.0/3.0 * S);
+        return beta * (6 * Nt * Nx * Ny * Nz - 1.0/Ncolor * S);
     }
 
     //-----
@@ -67,7 +67,7 @@ namespace WilsonAction
             }
         }
         // S = S/(6 * Nt * Nx * Ny * Nz);
-        return 1.0 - S/(18.0 * U.Volume());
+        return 1.0 - S/(6 * Ncolor * U.Volume());
     }
 
     //-----
@@ -296,7 +296,7 @@ namespace WilsonAction
     {
         // return beta/3.0 * std::real((Matrix_SU3::Identity() - U * st.adjoint()).trace());
         // return beta/3.0 * (3.0 - std::real((U * st.adjoint()).trace()));
-        return -beta/3.0 * std::real((U * st.adjoint()).trace());
+        return -beta/Ncolor * std::real((U * st.adjoint()).trace());
     }
 } // namespace WilsonAction
 

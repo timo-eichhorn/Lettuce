@@ -113,14 +113,14 @@ namespace EnergyDensity
     double Plaquette(const GaugeField& U) noexcept
     {
         double E {PlaquetteSum(U)};
-        return 36.0 - 2.0 * E / U.Volume();
+        return 2 * (6 * Ncolor - E / U.Volume());
     }
 
     [[nodiscard]]
     double PlaquetteTimeslice(const GaugeField& U, const int t) noexcept
     {
         double E {PlaquetteSumTimeslice(U, t)};
-        return 36.0 / U.Length(0) - 2.0 * E / U.Volume();
+        return 2 * (6 * Ncolor / U.Length(0) - E / U.Volume());
     }
 
     [[nodiscard]]
@@ -140,6 +140,7 @@ namespace EnergyDensity
             E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
                           + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
         }
+        // TODO: Normalization for different Ncolor?
         return E / F.Volume();
         // This should match Stephan's definition
         // return 1.0 / (36.0 * F.Volume()) * E;
@@ -161,6 +162,7 @@ namespace EnergyDensity
             E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
                           + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
         }
+        // TODO: Normalization for different Ncolor?
         return E / F.Volume();
     }
 } // namespace EnergyDensity

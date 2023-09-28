@@ -55,7 +55,7 @@ namespace GaugeAction
             [[nodiscard]]
             double ActionLocal(const Matrix_SU3& U, const Matrix_3x3& st_plaq, const Matrix_3x3& st_rect) const noexcept
             {
-                return beta * (c_plaq * (1.0 - 1.0/3.0 * std::real((U * st_plaq.adjoint()).trace())) + c_rect * (2.0 - 1.0/3.0 * std::real((U * st_rect.adjoint()).trace())));
+                return beta * (c_plaq * (1.0 - 1.0/Ncolor * std::real((U * st_plaq.adjoint()).trace())) + c_rect * (2.0 - 1.0/Ncolor * std::real((U * st_rect.adjoint()).trace())));
             }
 
             [[nodiscard]]
@@ -85,18 +85,18 @@ namespace GaugeAction
                 }
                 if constexpr(stencil_radius == 1)
                 {
-                    return beta * c_plaq * (6.0 * U.Volume() - 1.0/3.0 * sum_plaq);
+                    return beta * c_plaq * (6 * U.Volume() - 1.0/Ncolor * sum_plaq);
                 }
                 else
                 {
-                    return beta * (c_plaq * (6.0 * U.Volume() - 1.0/3.0 * sum_plaq) + c_rect * (12.0 * U.Volume() - 1.0/3.0 * sum_rect));
+                    return beta * (c_plaq * (6 * U.Volume() - 1.0/Ncolor * sum_plaq) + c_rect * (2 * 6 * U.Volume() - 1.0/Ncolor * sum_rect));
                 }
             }
 
             [[nodiscard]]
             double ActionNormalized(const GaugeField& U) const noexcept
             {
-                return Action(U) / (6.0 * beta * U.Volume());
+                return Action(U) / (6 * beta * U.Volume());
             }
 
             // TODO: For now, the plaquette staple is written out explicitly, since the reduced index calculations lead to slightly better performance
@@ -105,6 +105,7 @@ namespace GaugeAction
             {
                 Matrix_3x3 st;
                 auto [t, x, y, z, mu] = current_link;
+                // site_coord current_site {t, x, y, z};
 
                 switch (mu.direction)
                 {
@@ -168,6 +169,17 @@ namespace GaugeAction
                     }
                     break;
                 }
+                // for (int nu = 0; nu < 4; ++nu)
+                // {
+                //     if (nu != mu.direction)
+                //     {
+                //         site_coord site_nup     {U.Move< 1>(current_site, nu)};
+                //         site_coord site_mup     {U.Move< 1>(current_site, mu.direction)};
+                //         site_coord site_nud     {U.Move<-1>(current_site, nu)};
+                //         site_coord site_mup_nud {U.Move< 1>(site_nud,     mu.direction)};
+                //         st.noalias() += U(current_site, nu) * U(site_nup, mu.direction) * U(site_mup, nu).adjoint() + U(site_nud, nu).adjoint() * U(site_nud, mu.direction) * U(site_mup_nud, nu);
+                //     }
+                // }
                 return st;
             }
 
@@ -236,7 +248,7 @@ namespace GaugeAction
             double Local(const Matrix_SU3& U, const Matrix_3x3& st) noexcept
             {
                 // return beta * (c_plaq + 2.0 * c_rect - 1.0/3.0 * std::real((U * st.adjoint()).trace()));
-                return -beta/3.0 * std::real((U * st.adjoint()).trace());
+                return -beta/Ncolor * std::real((U * st.adjoint()).trace());
             }
     };
 

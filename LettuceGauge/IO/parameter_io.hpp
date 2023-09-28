@@ -77,6 +77,8 @@ void ValidatedIn(const std::string& message, T& target)
 void Configuration()
 {
     std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
+    // TODO: Fix alignment
+    // std::cout << std::left << std::setw(49) << "| SU(" << Ncolor << ") theory simulation" << "|\n";
     std::cout << std::left << std::setw(49) << "| SU(3) theory simulation" << "|\n";
     std::cout << std::left << std::setw(49) << "| Current version: " + program_version << "|\n";
     std::cout << "+------------------------------------------------+\n\n" << Lettuce::Color::Reset;
@@ -90,6 +92,7 @@ void Configuration()
         metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
     }
     std::cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
+    std::cout << "Ndim is "                        << Ndim << " and Ncolor is " << Ncolor << ".\n";
     std::cout << "beta is "                        << beta << ".\n";
     std::cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
     std::cout << "n_metro is "                     << n_metro << ".\n";
@@ -251,6 +254,8 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << starttimestring << "\n";
     stream << "START_PARAMS\n";
     stream << "Gauge field precision = "            << typeid(floatT).name()            << "\n";
+    stream << "Ncolor = "                           << Ncolor                           << "\n";
+    stream << "Ndim = "                             << Ndim                             << "\n";
     stream << "Nt = "                               << Nt                               << "\n";
     stream << "Nx = "                               << Nx                               << "\n";
     stream << "Ny = "                               << Ny                               << "\n";
@@ -288,7 +293,7 @@ void CreateFiles()
 {
     std::string LatticeSizeString    {std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt)};
     std::string betaString           {std::to_string(beta)};
-    std::string directoryname_prefix {"SU(3)_N=" + LatticeSizeString + "_beta=" + betaString};
+    std::string directoryname_prefix {"SU(" + std::to_string(Ncolor) + ")_N=" + LatticeSizeString + "_beta=" + betaString};
     directoryname = directoryname_prefix;
     int append = 1;
     std::string appendString;
