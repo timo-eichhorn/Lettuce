@@ -19,6 +19,8 @@ endif
 # Other compiler flags
 COMMON_FLGS := -I $(INC) -std=c++20 -O3 -DNDEBUG -fno-math-errno -flto -static $(OMPFLAG)
 ARCH_FLGS   := -march=native -mtune=native
+# WARN_FLGS   := -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wzero-as-null-pointer-constant -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion -Wfloat-conversion -Wformat=2 -Werror=vla -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference
+
 
 # If using nvcc allow for different host compilers
 HOSTCOMPILER := $(shell which $(CXX))
@@ -35,6 +37,8 @@ cluster:
 		$(MAKE) build ARCH_FLGS="-march=broadwell -mtune=broadwell"
 compass:
 		$(MAKE) build ARCH_FLGS="-march=alderlake -mtune=alderlake"
+pleiades:
+		$(MAKE) build ARCH_FLGS="-march=znver2 -mtune=znver2"
 cuda:
 		nvcc --compiler-bindir=$(HOSTCOMPILER) -I $(INC) $(SRC) -std=c++20 -O3 -arch=native -Xcompiler -march=native,-mtune=native,$(OMPFLAG),-DNDEBUG,-fno-math-errno,-flto -o $(OUT)
 cuda_cluster:
