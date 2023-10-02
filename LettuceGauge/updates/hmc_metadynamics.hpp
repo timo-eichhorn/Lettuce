@@ -355,20 +355,33 @@ namespace GaugeUpdates
             {
                 // This is the Metadynamics/fat-link contribution to the momenta
                 // First we need to smear the fields n_smear_meta times and store all intermediate fields
+                // auto start_smearing = std::chrono::high_resolution_clock::now();
                 MetadynamicsData.SmearedFields[0] = U;
                 for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
                 {
                     StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout_cv);
                 }
+                // auto end_smearing = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> smearing_time {end_smearing - start_smearing};
+                // std::cout << "Time for smearing: " << smearing_time.count() << std::endl;
                 // Now we need the derivative of the metapotential and the contribution of the clover term
                 // Calculate clover term on field that was smeared the most
+                // auto start_clover = std::chrono::high_resolution_clock::now();
                 CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
+                // auto end_clover = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> clover_time {end_clover - start_clover};
+                // std::cout << "Time for clover: " << clover_time.count() << std::endl;
                 // Calculate derivative of metapotential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
+                // auto start_deriv = std::chrono::high_resolution_clock::now();
                 double CV_old {TopChargeClover(MetadynamicsData.Clover)};
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
+                // auto end_deriv = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> deriv_time {end_deriv - start_deriv};
+                // std::cout << "Time for deriv: " << deriv_time.count() << std::endl;
                 // Calculate clover derivative
+                // auto start_cderiv = std::chrono::high_resolution_clock::now();
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
@@ -381,15 +394,22 @@ namespace GaugeUpdates
                     //       There is another minus later on in the momentum update
                     MetadynamicsData.ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover, current_site, mu);
                 }
+                // auto end_cderiv = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> cderiv_time {end_cderiv - start_cderiv};
+                // std::cout << "Time for cderiv: " << cderiv_time.count() << std::endl;
                 // std::cout << "Clover derivative:\n" << ForceFatLink({4,2,6,7,1}) << std::endl;
                 // std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
                 // Finally perform the stout force recursion
                 // Exp is calculated inside the StoutForceRecrusion function, we only need to pass an array of fitting shape
+                // auto start_recursion = std::chrono::high_resolution_clock::now();
                 for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
                 {
                     StoutForceRecursion(MetadynamicsData.SmearedFields[smear_count - 1], MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.ForceFatLink, MetadynamicsData.Exp_consts[smear_count - 1], rho_stout_cv);
                     // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
                 }
+                // auto end_recursion = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double> recursion_time {end_recursion - start_recursion};
+                // std::cout << "Time for recursion: " << recursion_time.count() << std::endl;
             }
 
             //-----
@@ -517,8 +537,17 @@ namespace GaugeUpdates
                         Metapotential.SetCV_current(CV_new);
                         if constexpr(metapotential_updated)
                         {
-                            Metapotential.UpdatePotential(CV_new);
-                            Metapotential.UpdatePotential(-CV_new);
+                            // TODO: Move this to potential class?
+                            if constexpr(metapotential_well_tempered)
+                            {
+                                Metapotential.UpdatePotentialWellTempered(CV_new);
+                                Metapotential.UpdatePotentialWellTempered(-CV_new);
+                            }
+                            else
+                            {
+                                Metapotential.UpdatePotential(CV_new);
+                                Metapotential.UpdatePotential(-CV_new);
+                            }
                         }
                         acceptance_count_metadynamics_hmc += 1;
                         return true;
@@ -535,8 +564,16 @@ namespace GaugeUpdates
                     Metapotential.SetCV_current(CV_new);
                     if constexpr(metapotential_updated)
                     {
-                        Metapotential.UpdatePotential(CV_new);
-                        Metapotential.UpdatePotential(-CV_new);
+                        if constexpr(metapotential_well_tempered)
+                        {
+                            Metapotential.UpdatePotentialWellTempered(CV_new);
+                            Metapotential.UpdatePotentialWellTempered(-CV_new);
+                        }
+                        else
+                        {
+                            Metapotential.UpdatePotential(CV_new);
+                            Metapotential.UpdatePotential(-CV_new);
+                        }
                     }
                     datalog << "DeltaH: " << DeltaH << std::endl;
                     return true;

@@ -367,7 +367,8 @@ int main(int argc, char** argv)
     CreateFiles();
 
     // Default width of random numbers used in Metropolis update is 0.5
-    floatT metropolis_epsilon {0.5};
+    floatT        metropolis_epsilon {0.5};
+    constexpr int n_therm            {20};
 
     Gluon.SetToIdentity();
 
@@ -402,7 +403,7 @@ int main(int argc, char** argv)
         if constexpr(n_hmc != 0)
         {
             datalog << "[HMC start thermalization]\n";
-            for (int n_count = 0; n_count < 20; ++n_count)
+            for (int n_count = 0; n_count < n_therm; ++n_count)
             {
                 // auto start_therm_hmc {std::chrono::high_resolution_clock::now()};
                 HMC(10, false);
@@ -414,7 +415,7 @@ int main(int argc, char** argv)
         }
         else
         {
-            for (int n_count = 0; n_count < 20; ++n_count)
+            for (int n_count = 0; n_count < n_therm; ++n_count)
             {
                 // auto start_therm {std::chrono::high_resolution_clock::now()};
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
@@ -535,7 +536,10 @@ int main(int argc, char** argv)
     if constexpr(metadynamics_enabled and !tempering_enabled)
     {
         // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
+        // Original default values
+        // MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
+        // New attempt at values for well tempered updates
+        MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.1, 50, 1000.0};
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
@@ -549,7 +553,7 @@ int main(int argc, char** argv)
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
-        for (int i = 0; i < 20; ++i)
+        for (int n_count = 0; n_count < n_therm; ++n_count)
         {
             // Iterator::Checkerboard(Heatbath, 1);
             // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
@@ -597,7 +601,10 @@ int main(int argc, char** argv)
         GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
 
         // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
+        // Original default values
+        // MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
+        // New attempt at values for well tempered updates
+        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.1, 50, 1000.0};
         TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
         TopBiasPotential.SymmetrizePotentialMaximum();
         TopBiasPotential.SaveParameters(metapotentialfilepath);
@@ -609,7 +616,7 @@ int main(int argc, char** argv)
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
         datalog << "[HMC start thermalization]\n";
-        for (int i = 0; i < 20; ++i)
+        for (int n_count = 0; n_count < n_therm; ++n_count)
         {
             Iterator::Checkerboard4(Heatbath, n_heatbath);
             Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);

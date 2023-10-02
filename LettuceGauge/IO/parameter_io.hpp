@@ -105,6 +105,7 @@ void Configuration()
     std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
     std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
+    std::cout << "metapotential_well_tempered is " << metapotential_well_tempered << ".\n";
     std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
 }
 
@@ -277,6 +278,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << "n_instanton_update = "               << n_instanton_update               << "\n";
     stream << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";
     stream << "metapotential_updated = "            << metapotential_updated            << "\n";
+    stream << "metapotential_well_tempered = "      << metapotential_well_tempered      << "\n";
     stream << "n_smear_meta = "                     << n_smear_meta                     << "\n";
     stream << "tempering_enabled = "                << tempering_enabled                << "\n";
     stream << "tempering_nonmetadynamics_sweeps = " << tempering_nonmetadynamics_sweeps << "\n";
