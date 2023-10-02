@@ -19,7 +19,7 @@
 namespace SU3
 {
     template<typename floatT>
-    struct taylor_bounds
+    struct ExpTaylorBounds
     {
         // TODO: For types other than float and double, these member functions are deleted
         //       Not sure how this is going to work if we want to use (SIMD) vectors as fundamental types
@@ -28,7 +28,7 @@ namespace SU3
         static constexpr floatT xi_1() noexcept = delete;
     };
     template<>
-    struct taylor_bounds<float>
+    struct ExpTaylorBounds<float>
     {
         // Between 0.60-0.55 the 6th order expansion starts to be more accurate
         static constexpr float xi_0() noexcept {return 0.56;}
@@ -36,7 +36,7 @@ namespace SU3
         static constexpr float xi_1() noexcept {return 0.75;}
     };
     template<>
-    struct taylor_bounds<double>
+    struct ExpTaylorBounds<double>
     {
         // In the range slightly below 0.05, the series and std::sin(w)/w mostly match
         static constexpr double xi_0() noexcept {return 0.05;}
@@ -44,7 +44,7 @@ namespace SU3
         static constexpr double xi_1() noexcept {return 0.115;}
     };
     template<>
-    struct taylor_bounds<long double>
+    struct ExpTaylorBounds<long double>
     {
         // TODO: Determine appropriate bounds for long double; for now use double bounds
         static constexpr long double xi_0() noexcept {return 0.05;}
@@ -54,7 +54,7 @@ namespace SU3
     [[nodiscard]]
     floatT return_xi_0(const floatT w) noexcept
     {
-        if (std::abs(w) <= taylor_bounds<floatT>::xi_0())
+        if (std::abs(w) <= ExpTaylorBounds<floatT>::xi_0())
         {
             // 6th order Taylor series of sin(w)/w
             floatT w2 {w * w};
@@ -69,7 +69,7 @@ namespace SU3
     [[nodiscard]]
     floatT return_xi_1(const floatT w) noexcept
     {
-        if (std::abs(w) <= taylor_bounds<floatT>::xi_1())
+        if (std::abs(w) <= ExpTaylorBounds<floatT>::xi_1())
         {
             // 6th order Taylor series of cos(w)/w^2 - sin(w)/w^3
             floatT w2 {w * w};
@@ -95,7 +95,8 @@ namespace SU3
         u       (std::sqrt(static_cast<floatT>(1.0/3.0) * c1) * std::cos(static_cast<floatT>(1.0/3.0) * theta)),
         u2      (u * u),
         exp_miu (std::exp(-i<floatT> * u)),
-        exp_2iu (std::exp(2 * i<floatT> * u))
+        // Avoid call to exp function by reusing previous result for better performance
+        exp_2iu (std::conj(exp_miu * exp_miu))
         {}
     };
 
@@ -157,8 +158,10 @@ namespace SU3
         // TODO: Encapsulate f_i (and h_i?) in a struct?
         bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2, const bool signflip) noexcept
         {
+            // Manually squaring the expression is slightly faster than using std::pow()
+            b_denom = static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2;
+            b_denom *= b_denom;
             // Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is too small
-            b_denom = std::pow(static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2, 2);
             if (b_denom < std::numeric_limits<floatT>::min())
             {
                 b_denom = static_cast<floatT>(0.0);
@@ -196,22 +199,23 @@ namespace SU3
     // Constants used during the calculation of the matrix exponential via Cayley-Hamilton
     struct ExpConstants
     {
-        Matrix_3x3 Mat;
-        Matrix_3x3 Mat2;
+        Matrix_3x3           Mat;
+        Matrix_3x3           Mat2;
         // Both c0 and c1 (det(Mat_in) and 0.5*tr(Mat_in^2) respectively) are real since we consider Hermitian matrices
-        floatT c0;
-        floatT c1;
-        floatT c0_max;
+        floatT               c0;
+        floatT               c1;
+        floatT               c0_max;
         // Flip sign of c0 for better numerical stabilty (we always work with positive c0)
-        bool   signflip;
+        bool                 signflip;
+        // TODO?: 7 bytes of padding inserted here...
         // Theta, u, w are real parameters derived from c0 and c0_max
-        floatT theta;
+        floatT               theta;
         // Auxiliary variables depending on u (including u itself)
-        uDerivedConstants u_derived;
+        uDerivedConstants    u_derived;
         // Auxiliary variables depending on w (including w itself)
-        wDerivedConstants w_derived;
+        wDerivedConstants    w_derived;
         // Denominator of coefficients f_0, f_1, f_2
-        floatT denom;
+        floatT               denom;
         // h_0, h_1, h_2 functions used during calculation of f_1, f_2, f_3
         std::complex<floatT> h0;
         std::complex<floatT> h1;
@@ -227,7 +231,7 @@ namespace SU3
         c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
         c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
         signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
-        // TODO: On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
+        // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
         theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta)
@@ -306,8 +310,7 @@ namespace SU3
         c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
         c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
         signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
-        // TODO: On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
-        //       Also add this to ExpDerivativeConstants below
+        // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
         theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta),

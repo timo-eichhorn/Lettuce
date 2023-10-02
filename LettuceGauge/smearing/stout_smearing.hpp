@@ -196,20 +196,36 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
                     site_coord site_nud     = U.Move<-1>(current_site, nu);
                     site_coord site_mup_nud = U.Move<-1>(site_mup    , nu);
 
-                    force_sum += U (site_mup    , nu)           * U (site_nup    , mu).adjoint() * U (current_site, nu).adjoint() * Lambda(current_site, nu)
-                               + U (site_mup_nud, nu).adjoint() * U (site_nud    , mu).adjoint() * Lambda(site_nud    , mu)       * U (site_nud    , nu)
-                               + U (site_mup_nud, nu).adjoint() * Lambda(site_mup_nud, nu)       * U (site_nud    , mu).adjoint() * U (site_nud    , nu)
-                               - U (site_mup_nud, nu).adjoint() * U (site_nud    , mu).adjoint() * Lambda(site_nud    , nu)       * U (site_nud    , nu)
-                               - Lambda(site_mup    , nu)       * U (site_mup    , nu)           * U (site_nup    , mu).adjoint() * U (current_site, nu).adjoint()
-                               + U (site_mup    , nu)           * U (site_nup    , mu).adjoint() * Lambda(site_nup    , mu)       * U (current_site, nu).adjoint();
+                    // Original version without reusing common factors (left here due to better readability)
+                    // force_sum += U(     site_mup, nu)           * U(         site_nup, mu).adjoint() * U( current_site, nu).adjoint() * Lambda(current_site, nu)
+                    //            + U( site_mup_nud, nu).adjoint() * U(         site_nud, mu).adjoint() * Lambda(site_nud, mu)           * U(         site_nud, nu)
+                    //            + U( site_mup_nud, nu).adjoint() * Lambda(site_mup_nud, nu)           * U(     site_nud, mu).adjoint() * U(         site_nud, nu)
+                    //            - U( site_mup_nud, nu).adjoint() * U(         site_nud, mu).adjoint() * Lambda(site_nud, nu)           * U(         site_nud, nu)
+                    //            - Lambda(site_mup, nu)           * U(         site_mup, nu)           * U(     site_nup, mu).adjoint() * U(     current_site, nu).adjoint()
+                    //            + U(     site_mup, nu)           * U(         site_nup, mu).adjoint() * Lambda(site_nup, mu)           * U(     current_site, nu).adjoint();
+
+                    // Calculate terms occuring more than once
+                    Matrix_3x3 tmp1 {U(    site_mup, nu)       * U(site_nup, mu).adjoint()                      };                                                                                          // Appears in rows 1, 5, and 6 (TODO?: Technically Matrix_SU3)
+                    Matrix_3x3 tmp2 {U(site_nud, mu).adjoint() * ( Lambda(site_nud, mu) - Lambda(site_nud, nu) )};                                                                                          // Appears in rows 2 and 4
+                    // Less readable, but more performant version
+                    force_sum += (tmp1                          * ( U(current_site , nu).adjoint()  * Lambda(current_site, nu) + Lambda(site_nup, mu) * U(current_site, nu).adjoint() )                     // Rows 1 and 6 in equation C6 in [2307.04742]
+                                + U(site_mup_nud, nu).adjoint() * ( tmp2 + Lambda(site_mup_nud, nu) * U(site_nud, mu).adjoint()                                                       ) * U(site_nud, nu)   // Rows 2, 4, and 3 in equation C6 in [2307.04742]
+                                - Lambda(site_mup, nu)          *   tmp1                            * U(current_site, nu).adjoint()                                                                      ); // Row 5 in equation C6 in [2307.04742]
+
+                    // TODO: In the future if we want to support anisotropic smearing we need to replace the force sum above with the following expression
+                    // Matrix_3x3 tmp1 {U(    site_mup, nu)       * U(site_nup, mu).adjoint()                                              };                                                                                           // Appears in rows 1, 5, and 6
+                    // Matrix_3x3 tmp2 {U(site_nud, mu).adjoint() * ( rho_mu_nu * Lambda(site_nud, mu) - rho_nu_mu * Lambda(site_nud, nu) )};                                                                                           // Appears in rows 2 and 4
+                    // force_sum += (tmp1                          * ( rho_nu_mu * U(current_site , nu).adjoint()  * Lambda(current_site, nu) + rho_mu_nu *  Lambda(site_nup, mu) * U(current_site, nu).adjoint() )                     // Rows 1 and 6 in equation C6 in [2307.04742]
+                    //             + U(site_mup_nud, nu).adjoint() * ( tmp2 + rho_nu_mu * Lambda(site_mup_nud, nu) * U(site_nud, mu).adjoint()                                                                    ) * U(site_nud, nu)   // Rows 2, 4, and 3 in equation C6 in [2307.04742]
+                    //             - rho_nu_mu                     * Lambda(site_mup, nu) * tmp1                   * U(current_site, nu).adjoint()                                                                                   ); // Row 5 in equation C6 in [2307.04742]
                 }
             }
+            // TODO: In the future if we want to support anisotropic smearing we need to replace the smear_param below (in both the computation of C_adj and Sigma) with the appropriate different prefactors
             // Staple is used both during the calculation of stout force constants and below during the actual recursion, also precompute whole array?
             // st_adj.noalias() = WilsonAction::Staple(U, current_link).adjoint();
             Matrix_3x3 C_adj {smear_param * WilsonAction::Staple(U, current_link).adjoint()};
             // Multiply with U and then apply traceless hermitian projector
-            Sigma(current_link) = SU3::Projection::Algebra(U(current_link) * Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * U(current_link) * C_adj * Lambda(current_link)
-                                                         - i<floatT> * smear_param * U(current_link) * force_sum);
+            Sigma(current_link) = SU3::Projection::Algebra(U(current_link) * ( Sigma(current_link) * SU3::exp(Exp_consts(current_link)) + i<floatT> * C_adj * Lambda(current_link) - i<floatT> * smear_param * force_sum ));
         }
     }
     // std::cout << Sigma(1, 2, 0, 1, 3) << std::endl;

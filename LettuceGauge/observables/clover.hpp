@@ -252,14 +252,27 @@ Matrix_3x3 CloverDerivativeComponent(const GaugeField& U, const FullTensor& Clov
     Matrix_3x3 R_site_mup     {Clover(    site_mup, rho, sigma) - Clover(    site_mup, sigma, rho)};
     Matrix_3x3 R_site_nud     {Clover(    site_nud, rho, sigma) - Clover(    site_nud, sigma, rho)};
     Matrix_3x3 R_site_mup_nud {Clover(site_mup_nud, rho, sigma) - Clover(site_mup_nud, sigma, rho)};
-    return (U(site_mup, nu)               * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint() * R_current_site
-          + U(site_mup, nu)               * U(site_nup, mu).adjoint()     * R_site_nup                    * U(current_site, nu).adjoint()
-          + U(site_mup, nu)               * R_site_mup_nup                * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint()
-          + R_site_mup                    * U(site_mup, nu)               * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint()
-          - U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * U(site_nud, nu)               * R_current_site
-          - U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * R_site_nud                    * U(site_nud, nu)
-          - U(site_mup_nud, nu).adjoint() * R_site_mup_nud                * U(site_nud, mu).adjoint()     * U(site_nud, nu)
-          - R_site_mup                    * U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * U(site_nud, nu));
+
+    // Original return statement without reusing common factors (left here due to better readability)
+    // return (U(site_mup, nu)               * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint() * R_current_site
+    //       + U(site_mup, nu)               * U(site_nup, mu).adjoint()     * R_site_nup                    * U(current_site, nu).adjoint()
+    //       + U(site_mup, nu)               * R_site_mup_nup                * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint()
+    //       + R_site_mup                    * U(site_mup, nu)               * U(site_nup, mu).adjoint()     * U(current_site, nu).adjoint()
+    //       - U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * U(site_nud, nu)               * R_current_site
+    //       - U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * R_site_nud                    * U(site_nud, nu)
+    //       - U(site_mup_nud, nu).adjoint() * R_site_mup_nud                * U(site_nud, mu).adjoint()     * U(site_nud, nu)
+    //       - R_site_mup                    * U(site_mup_nud, nu).adjoint() * U(site_nud, mu).adjoint()     * U(site_nud, nu));
+
+    // Calculate products occuring more than once
+    Matrix_SU3 tmp1            {U(    site_mup, nu)               * U(    site_nup, mu).adjoint()};
+    Matrix_SU3 tmp2            {U(    site_nup, mu).adjoint()     * U(current_site, nu).adjoint()};
+    Matrix_SU3 tmp3            {U(site_mup_nud, nu).adjoint()     * U(    site_nud, mu).adjoint()};
+    Matrix_SU3 tmp4            {U(    site_nud, mu).adjoint()     * U(    site_nud, nu)          };
+    // Less readable, but more performant return statement
+    return (tmp1 * ( U(current_site, nu).adjoint() * R_current_site + R_site_nup * U(current_site, nu).adjoint() )
+          +        ( U(site_mup    , nu)           * R_site_mup_nup + R_site_mup * U(site_mup    , nu)           ) * tmp2
+          - tmp3 * ( U(site_nud    , nu)           * R_current_site + R_site_nud * U(site_nud    , nu)           )
+          -        ( U(site_mup_nud, nu).adjoint() * R_site_mup_nud + R_site_mup * U(site_mup_nud, nu).adjoint() ) * tmp4);
 }
 
 // TODO: How do we generalize the function for abritrary clover sizes?
