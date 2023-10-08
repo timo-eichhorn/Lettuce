@@ -34,7 +34,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     double ActionNewB {WilsonAction::Action(FieldBwd)};
 
     // Calculate the clover charge derivative
-    CalculateClover(Gluon, Clov);
+    CalculateClover<1, 1>(Gluon, Clov);
     Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, Clov, current_site, direction)};
 
     // Calculate the Wilson action derivative (where the sum over all 8 generators is already taken)
@@ -69,7 +69,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
 std::exit(0);
 
 // The most up to date version which checks smeared quantities
-// Using standard parameters (rho_stout = 0.12, 10 smearing levels, deltah = 0.001 or 0.00001) led to relative differences of order 0.001% to 0.0001%
+// Using standard parameters (rho_stout_metadynamics = 0.12, 10 smearing levels, deltah = 0.001 or 0.00001) led to relative differences of order 0.001% to 0.0001%
 
 for (int i = 0; i < 5; ++i)
 {
@@ -94,10 +94,10 @@ double            deltah       {0.001};
 // std::cout << TopChargeClover(Gluon) << std::endl;
 // std::cout << WilsonAction::Action(Gluon) << std::endl;
 TestFieldSmeared[0] = Gluon;
-StoutSmearingAll(TestFieldSmeared, rho_stout);
+StoutSmearingAll(TestFieldSmeared, rho_stout_metadynamics);
 // for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
 // {
-//     StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
+//     StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout_metadynamics);
 // }
 // std::cout << TopChargeClover(TestFieldSmeared[n_smear_meta]) << std::endl;
 // std::cout << WilsonAction::Action(TestFieldSmeared[n_smear_meta]) << std::endl;
@@ -113,10 +113,10 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     FieldFwd = Gluon;
     FieldFwd(current_site, direction) = SU3::Generators::Exp_lambda(group_direction, deltah) * FieldFwd(current_link);
     TestFieldSmeared[0] = FieldFwd;
-    // StoutSmearingAll(TestFieldSmeared, rho_stout);
+    // StoutSmearingAll(TestFieldSmeared, rho_stout_metadynamics);
     for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
     {
-        StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
+        StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout_metadynamics);
     }
     double ChargeNewF        {TopChargeClover(FieldFwd)};
     double ChargeSmearedNewF {TopChargeClover(TestFieldSmeared[n_smear_meta])};
@@ -127,10 +127,10 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     FieldBwd = Gluon;
     FieldBwd(current_site, direction) = SU3::Generators::Exp_lambda(group_direction, -deltah) * FieldBwd(current_link);
     TestFieldSmeared[0] = FieldBwd;
-    // StoutSmearingAll(TestFieldSmeared, rho_stout);
+    // StoutSmearingAll(TestFieldSmeared, rho_stout_metadynamics);
     for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
     {
-        StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout);
+        StoutSmearing4D(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], rho_stout_metadynamics);
     }
     double ChargeNewB        {TopChargeClover(FieldBwd)};
     double ChargeSmearedNewB {TopChargeClover(TestFieldSmeared[n_smear_meta])};
@@ -138,16 +138,16 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     double ActionSmearedNewB {WilsonAction::Action(TestFieldSmeared[n_smear_meta])};
 
     // Calculate the clover charge derivative (the factor i comes in at the end)
-    CalculateClover(Gluon, Clov);
+    CalculateClover<1, 1>(Gluon, Clov);
     Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, Clov, current_site, direction)};
 
     // Calculate the smeared clover charge derivative (here we don't have a factor i until the very end)
     TestFieldSmeared[0] = Gluon;
     for (int smear_count = 0; smear_count < n_smear_meta; ++smear_count)
     {
-        StoutSmearing4DWithConstants(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], Exp_consts[smear_count], rho_stout);
+        StoutSmearing4DWithConstants(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], Exp_consts[smear_count], rho_stout_metadynamics);
     }
-    CalculateClover(TestFieldSmeared[n_smear_meta], Clov);
+    CalculateClover<1, 1>(TestFieldSmeared[n_smear_meta], Clov);
     // Original clover derivative on maximally smeared field
     #pragma omp parallel for
     for (int t = 0; t < Nt; ++t)
@@ -164,8 +164,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     // Stout force recursion
     for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
     {
-        // TODO: Replace global variable rho_stout with parameter?
-        StoutForceRecursion(TestFieldSmeared[smear_count - 1], TestFieldSmeared[smear_count], TopForceFatLink, Exp_consts[smear_count - 1], rho_stout);
+        // TODO: Replace global variable rho_stout_metadynamics with parameter?
+        StoutForceRecursion(TestFieldSmeared[smear_count - 1], TestFieldSmeared[smear_count], TopForceFatLink, Exp_consts[smear_count - 1], rho_stout_metadynamics);
         // std::cout << TopForceFatLink({4,2,6,7,1}) << std::endl;
     }
 
@@ -191,8 +191,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     // Stout force recursion
     for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)
     {
-        // TODO: Replace global variable rho_stout with parameter?
-        StoutForceRecursion(TestFieldSmeared[smear_count - 1], TestFieldSmeared[smear_count], ForceFatLink, Exp_consts[smear_count - 1], rho_stout);
+        // TODO: Replace global variable rho_stout_metadynamics with parameter?
+        StoutForceRecursion(TestFieldSmeared[smear_count - 1], TestFieldSmeared[smear_count], ForceFatLink, Exp_consts[smear_count - 1], rho_stout_metadynamics);
         // std::cout << TopForceFatLink({4,2,6,7,1}) << std::endl;
     }
 
