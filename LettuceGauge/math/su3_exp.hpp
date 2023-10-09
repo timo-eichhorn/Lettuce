@@ -22,7 +22,7 @@ namespace SU3
     struct ExpTaylorBounds
     {
         // TODO: For types other than float and double, these member functions are deleted
-        //       Not sure how this is going to work if we want to use (SIMD) vectors as fundamental types
+        //       Not sure how this is going to work if we want to use (SIMD) vectors as fundamental types (work with underlying scalar type?)
         //       Also, std::numeric_limits simply calls the default constructor for types without specialization (why?)
         static constexpr floatT xi_0() noexcept = delete;
         static constexpr floatT xi_1() noexcept = delete;
@@ -156,33 +156,37 @@ namespace SU3
         // We need a default constructor to be able to create a lattice holding these constants
         bConstants() noexcept = default;
         // TODO: Encapsulate f_i (and h_i?) in a struct?
-        bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2, const bool signflip) noexcept
+        bConstants(const uDerivedConstants& u_derived, const wDerivedConstants& w_derived, const rConstants& r_consts, const std::complex<floatT> f0, const std::complex<floatT> f1, const std::complex<floatT> f2, const floatT c0_max, const bool signflip) noexcept
         {
-            // Manually squaring the expression is slightly faster than using std::pow()
-            b_denom = static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2;
-            b_denom *= b_denom;
-            // Check if b_denom is NaN by checking if 9.0 * u^2 - w^2 is too small
-            if (b_denom < std::numeric_limits<floatT>::min())
+            // The denominator can still be problematic if c1 is too small
+            // The case where w -> 3u as c0 -> c0_min is already covered in ExpConstants/ExpDerivativeConstants
+            // Since c0_max < c1 in the interval (0, 27/4), we check c0_max instead of c1
+            if (c0_max < std::numeric_limits<floatT>::min())
             {
                 b_denom = static_cast<floatT>(0.0);
-                b_10    = b_denom;
-                b_11    = b_denom;
-                b_12    = b_denom;
-                b_20    = b_denom;
-                b_21    = b_denom;
-                b_22    = b_denom;
+                b_10    = static_cast<floatT>(0.0);
+                b_11    = static_cast<floatT>(0.0);
+                b_12    = static_cast<floatT>(0.0);
+                b_20    = static_cast<floatT>(0.0);
+                b_21    = static_cast<floatT>(0.0);
+                b_22    = static_cast<floatT>(0.0);
                 return;
             }
-            b_denom = static_cast<floatT>(0.5) / b_denom;
+            // Manually squaring the expression is slightly faster than using std::pow()
+            b_denom = static_cast<floatT>(9.0) * u_derived.u2 - w_derived.w2;
+            b_denom *= 2 * b_denom;
+            b_denom = static_cast<floatT>(1.0) / b_denom;
             // If c0 -> -c0_max we need to use a symmetry relation to avoid numerical instabilites
             if (signflip)
             {
-                b_10    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_0 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - 2 * (15 * u_derived.u2 + w_derived.w2) * f0);
-                b_11    = -b_denom * std::conj(2 * u_derived.u * r_consts.r1_1 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - 2 * (15 * u_derived.u2 + w_derived.w2) * f1);
-                b_12    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_2 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - 2 * (15 * u_derived.u2 + w_derived.w2) * f2);
-                b_20    = -b_denom * std::conj(r_consts.r1_0 - 3 * u_derived.u * r_consts.r2_0 - 24 * u_derived.u * f0);
-                b_21    =  b_denom * std::conj(r_consts.r1_1 - 3 * u_derived.u * r_consts.r2_1 - 24 * u_derived.u * f1);
-                b_22    = -b_denom * std::conj(r_consts.r1_2 - 3 * u_derived.u * r_consts.r2_2 - 24 * u_derived.u * f2);
+                // Need to be careful here since we have already used the symmetry relations of the f_j
+                // To handle everything correctly we need to invert these relations again for the f_j
+                b_10    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_0 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_0 - 2 * (15 * u_derived.u2 + w_derived.w2) *  std::conj(f0));
+                b_11    = -b_denom * std::conj(2 * u_derived.u * r_consts.r1_1 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_1 - 2 * (15 * u_derived.u2 + w_derived.w2) * -std::conj(f1));
+                b_12    =  b_denom * std::conj(2 * u_derived.u * r_consts.r1_2 + (3 * u_derived.u2 - w_derived.w2) * r_consts.r2_2 - 2 * (15 * u_derived.u2 + w_derived.w2) *  std::conj(f2));
+                b_20    = -b_denom * std::conj(r_consts.r1_0 - 3 * u_derived.u * r_consts.r2_0 - 24 * u_derived.u *  std::conj(f0));
+                b_21    =  b_denom * std::conj(r_consts.r1_1 - 3 * u_derived.u * r_consts.r2_1 - 24 * u_derived.u * -std::conj(f1));
+                b_22    = -b_denom * std::conj(r_consts.r1_2 - 3 * u_derived.u * r_consts.r2_2 - 24 * u_derived.u *  std::conj(f2));
             }
             else
             {
@@ -220,6 +224,10 @@ namespace SU3
         std::complex<floatT> h0;
         std::complex<floatT> h1;
         std::complex<floatT> h2;
+        // TODO: Use f_j instead of h_j?
+        // std::complex<floatT> f0;
+        // std::complex<floatT> f1;
+        // std::complex<floatT> f2;
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
         ExpConstants() noexcept = default;
@@ -231,12 +239,14 @@ namespace SU3
         c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
         c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
         signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
-        // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
+        // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. We can handle this using fmin, which treats NaNs as missing data
+        // Also takes care of rounding errors which might cause c0/c0_max to be greater than 1
         theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
         u_derived (c1, theta),
         w_derived (c1, theta)
         {
-            // TODO: denom can still be 0
+            // The denominator can still be problematic if c1 is too small
+            // Since c0_max < c1 in the interval (0, 27/4), we check c0_max instead of c1
             // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
             if (c0_max < std::numeric_limits<floatT>::min())
             {
@@ -244,6 +254,9 @@ namespace SU3
                 h0    = static_cast<floatT>(1.0);
                 h1    = static_cast<floatT>(0.0);
                 h2    = static_cast<floatT>(0.0);
+                // f0    = static_cast<floatT>(1.0); // = 1.0
+                // f1    = static_cast<floatT>(0.0); // = 0.0
+                // f2    = static_cast<floatT>(0.0); // = 0.0
                 return;
             }
             if (signflip)
@@ -252,6 +265,9 @@ namespace SU3
                 h0    =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
                 h1    = -std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
                 h2    =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+                // f0    =  denom * std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+                // f1    = -denom * std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+                // f2    =  denom * std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
             }
             else
             {
@@ -259,6 +275,9 @@ namespace SU3
                 h0    =  (u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2));
                 h1    =  2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2));
                 h2    =  u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0);
+                // f0    =  denom * ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+                // f1    =  denom * (2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+                // f2    =  denom * (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
             }
         }
     };
@@ -302,60 +321,71 @@ namespace SU3
         //-----
         // We need a default constructor to be able to create a lattice holding these constants
         ExpDerivativeConstants() noexcept = default;
-        explicit ExpDerivativeConstants(const Matrix_3x3& Mat_in) noexcept :
-        Mat       (Mat_in),
-        Mat2      (Mat_in * Mat_in),
-        // We want to avoid negative c0 due to numerical instabilities, so always use the absolute value and remember the sign in signflip
-        c0        (std::abs(static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()))),
-        c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
-        c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
-        signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
-        // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. Need to handle this using fmin, which treats NaNs as missing data
-        theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
-        u_derived (c1, theta),
-        w_derived (c1, theta),
-        xi_0      (return_xi_0(w_derived.w)),
-        xi_1      (return_xi_1(w_derived.w))
-        {
-            // TODO: denom can still be 0
-            // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
-            if (c0_max < std::numeric_limits<floatT>::min())
-            {
-                denom    = static_cast<floatT>(1.0);
-                h0       = static_cast<floatT>(1.0);
-                h1       = static_cast<floatT>(0.0);
-                h2       = static_cast<floatT>(0.0);
-                f0       = denom * h0; // = 1.0
-                f1       = denom * h1; // = 0.0
-                f2       = denom * h2; // = 0.0
-                r_consts = rConstants(u_derived, w_derived, xi_0, xi_1);
-                b_consts = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, signflip);
-                B_1      = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
-                B_2      = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
-                return;
-            }
-            if (signflip)
-            {
-                denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
-                h0       =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
-                h1       = -std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
-                h2       =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
-            }
-            else
-            {
-                denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
-                h0       =  (u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2));
-                h1       =  2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2));
-                h2       =  u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0);
-            }
-            f0           = denom * h0;
-            f1           = denom * h1;
-            f2           = denom * h2;
-            r_consts     = rConstants(u_derived, w_derived, xi_0, xi_1);
-            b_consts     = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, signflip);
-            B_1          = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
-            B_2          = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
-        }
+        // explicit ExpDerivativeConstants(const Matrix_3x3& Mat_in) noexcept :
+        // Mat       (Mat_in),
+        // Mat2      (Mat_in * Mat_in),
+        // // We want to avoid negative c0 due to numerical instabilities, so always use the absolute value and remember the sign in signflip
+        // c0        (std::abs(static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()))),
+        // c1        (static_cast<floatT>(0.5) * std::real(Mat2.trace())),
+        // c0_max    (static_cast<floatT>(2.0) * std::pow(c1 / static_cast<floatT>(3.0), static_cast<floatT>(1.5))),
+        // signflip  (static_cast<floatT>(1.0/3.0) * std::real((Mat_in * Mat2).trace()) < static_cast<floatT>(0.0)),
+        // // On paper c0/c0_max <= 1, but if c0 = c0_max = 0 the division returns -NaN. We can handle this using fmin, which treats NaNs as missing data
+        // // Also takes care of rounding errors which might cause c0/c0_max to be greater than 1
+        // theta     (std::acos(std::fmin(c0/c0_max, static_cast<floatT>(1.0)))),
+        // u_derived (c1, theta),
+        // w_derived (c1, theta),
+        // xi_0      (return_xi_0(w_derived.w)),
+        // xi_1      (return_xi_1(w_derived.w))
+        // {
+        //     // The denominator can still be problematic if c1 is too small
+        //     // Since c0_max < c1 in the interval (0, 27/4), we check c0_max instead of c1
+        //     // TODO: If we check here, do we still need to check during assignment of theta above? Can anything go wrong if we pass incorrect values to u_derived and w_derived?
+        //     if (c0_max < std::numeric_limits<floatT>::min())
+        //     {
+        //         denom    = static_cast<floatT>(1.0);
+        //         h0       = static_cast<floatT>(1.0);
+        //         h1       = static_cast<floatT>(0.0);
+        //         h2       = static_cast<floatT>(0.0);
+        //         f0       = denom * h0; // = 1.0
+        //         f1       = denom * h1; // = 0.0
+        //         f2       = denom * h2; // = 0.0
+        //         // f0       = static_cast<floatT>(1.0); // = 1.0
+        //         // f1       = static_cast<floatT>(0.0); // = 0.0
+        //         // f2       = static_cast<floatT>(0.0); // = 0.0
+        //         r_consts = rConstants(u_derived, w_derived, xi_0, xi_1);
+        //         b_consts = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, c0_max, signflip);
+        //         B_1      = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
+        //         B_2      = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
+        //         return;
+        //     }
+        //     if (signflip)
+        //     {
+        //         denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
+        //         h0       =  std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+        //         h1       = -std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+        //         h2       =  std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+        //         // f0       =  denom * std::conj((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+        //         // f1       = -denom * std::conj(2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+        //         // f2       =  denom * std::conj(u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+        //     }
+        //     else
+        //     {
+        //         denom    =  1 / (9 * u_derived.u2 - w_derived.w2);
+        //         h0       =  (u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2));
+        //         h1       =  2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2));
+        //         h2       =  u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0);
+        //         // f0       =  denom * ((u_derived.u2 - w_derived.w2) * u_derived.exp_2iu + u_derived.exp_miu * (8 * u_derived.u2 * w_derived.cosw + 2 * u_derived.u * w_derived.i_xi0 * (3 * u_derived.u2 + w_derived.w2)));
+        //         // f1       =  denom * (2 * u_derived.u * u_derived.exp_2iu - u_derived.exp_miu * (2 * u_derived.u * w_derived.cosw - w_derived.i_xi0 * (3 * u_derived.u2 - w_derived.w2)));
+        //         // f2       =  denom * (u_derived.exp_2iu - u_derived.exp_miu * (w_derived.cosw + 3 * u_derived.u * w_derived.i_xi0));
+        //     }
+        //     f0           = denom * h0;
+        //     f1           = denom * h1;
+        //     f2           = denom * h2;
+        //     r_consts     = rConstants(u_derived, w_derived, xi_0, xi_1);
+        //     b_consts     = bConstants(u_derived, w_derived, r_consts, f0, f1, f2, c0_max, signflip);
+        //     B_1          = b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2;
+        //     B_2          = b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2;
+        // }
         explicit ExpDerivativeConstants(const ExpConstants& ExpConstants_in) noexcept :
         Mat       (ExpConstants_in.Mat),
         Mat2      (ExpConstants_in.Mat2),
@@ -375,8 +405,11 @@ namespace SU3
         f0        (denom * h0),
         f1        (denom * h1),
         f2        (denom * h2),
+        // f0        (ExpConstants_in.f0),
+        // f1        (ExpConstants_in.f1),
+        // f2        (ExpConstants_in.f2),
         r_consts  (u_derived, w_derived, xi_0, xi_1),
-        b_consts  (u_derived, w_derived, r_consts, f0, f1, f2, signflip),
+        b_consts  (u_derived, w_derived, r_consts, f0, f1, f2, c0_max, signflip),
         B_1       (b_consts.b_10 * Matrix_3x3::Identity() + b_consts.b_11 * Mat + b_consts.b_12 * Mat2),
         B_2       (b_consts.b_20 * Matrix_3x3::Identity() + b_consts.b_21 * Mat + b_consts.b_22 * Mat2)
         {}
@@ -388,19 +421,22 @@ namespace SU3
     {
         ExpConstants exp_consts(Mat);
         return exp_consts.denom * (exp_consts.h0 * Matrix_3x3::Identity() + exp_consts.h1 * exp_consts.Mat + exp_consts.h2 * exp_consts.Mat2);
+        // return exp_consts.f0 * Matrix_3x3::Identity() + exp_consts.f1 * exp_consts.Mat + exp_consts.f2 * exp_consts.Mat2;
     }
     // Version where we reuse already computed ExpConstants
     [[nodiscard]]
     Matrix_SU3 exp(const ExpConstants& exp_consts) noexcept
     {
         return exp_consts.denom * (exp_consts.h0 * Matrix_3x3::Identity() + exp_consts.h1 * exp_consts.Mat + exp_consts.h2 * exp_consts.Mat2);
+        // return exp_consts.f0 * Matrix_3x3::Identity() + exp_consts.f1 * exp_consts.Mat + exp_consts.f2 * exp_consts.Mat2;
     }
     // Version where we reuse already computed ExpDerivativeConstants
-    [[nodiscard]]
-    Matrix_SU3 exp(const ExpDerivativeConstants& expd_consts) noexcept
-    {
-        return expd_consts.denom * (expd_consts.h0 * Matrix_3x3::Identity() + expd_consts.h1 * expd_consts.Mat + expd_consts.h2 * expd_consts.Mat2);
-    }
+    // [[nodiscard]]
+    // Matrix_SU3 exp(const ExpDerivativeConstants& expd_consts) noexcept
+    // {
+    //     return expd_consts.denom * (expd_consts.h0 * Matrix_3x3::Identity() + expd_consts.h1 * expd_consts.Mat + expd_consts.h2 * expd_consts.Mat2);
+    //     // return expd_consts.f0 * Matrix_3x3::Identity() + expd_consts.f1 * expd_consts.Mat + expd_consts.f2 * expd_consts.Mat2;
+    // }
 } // namespace SU3
 
 #endif // LETTUCE_SU3_EXP_HPP
