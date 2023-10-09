@@ -351,6 +351,22 @@ namespace GaugeUpdates
                     return true;
                 }
             }
+
+            void ReversibilityTest(const int n_step) const noexcept
+            {
+                RandomMomentum();
+                double energy_old {Hamiltonian()};
+
+                Integrator(*this, trajectory_length, n_step);
+                ReverseMomenta();
+                Integrator(*this, trajectory_length, n_step);
+
+                double energy_new {Hamiltonian()};
+                std::cout << Lettuce::Color::BoldBlue << "Reversibility test results:\n" << Lettuce::Color::Reset
+                                                      << "    H_old:   " << energy_old << "\n"
+                                                      << "    H_new:   " << energy_new << "\n"
+                                                      << "    ∆δH:     " << energy_new - energy_old << std::endl;
+            }
     };
 } // namespace GaugeUpdates
 
