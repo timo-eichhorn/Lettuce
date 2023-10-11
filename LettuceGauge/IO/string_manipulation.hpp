@@ -62,14 +62,14 @@ void EraseUntil(std::string& str, const std::string& erase, const bool including
     }
 }
 
-// template<typename T>
-// ConvertStringTo(const std::string& str)
-// {
-//     std::istringstream ss(str);
-//     T result;
-//     ss >> result;
-//     return result;
-// }
+template<typename T>
+T ConvertStringTo(const std::string& str)
+{
+    std::istringstream ss(str);
+    T result;
+    ss >> result;
+    return result;
+}
 
 // Following stuff taken from: https://www.cppstories.com/2022/ranges-perf/
 // First version with temporary

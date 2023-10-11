@@ -22,6 +22,7 @@
 #include <typeinfo>
 //----------------------------------------
 // Standard C headers
+#include <cstddef>
 #include <ctime>
 
 //-----
@@ -109,6 +110,23 @@ void Configuration()
     std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
 }
 
+bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
+{
+    std::filesystem::path filepath(filepath_string);
+    if (!std::filesystem::exists(filepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "File " << filepath << " not found!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+    filestream.open(filepath, std::fstream::in);
+    if (filestream.fail())
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Reading from file " << filepath << " failed!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+    return true;
+}
+
 //-----
 // Read parameters from a given filepath
 
@@ -118,18 +136,12 @@ void Configuration()
 //     std::cout << "Read " << token_name << " = " <<  << "\n";
 // }
 
-void ReadParameters(std::string_view parameterfilepath_string)
+void ReadParameters(std::string_view parameterfilepath)
 {
-    std::filesystem::path parameterfilepath {parameterfilepath_string};
-    if (!std::filesystem::exists(parameterfilepath))
+    std::ifstream pstream;
+    if (!OpenFile(pstream, parameterfilepath))
     {
-        std::cerr << Lettuce::Color::BoldRed << "File " << parameterfilepath << " not found!" << Lettuce::Color::Reset << std::endl;
         return;
-    }
-    std::ifstream pstream(parameterfilepath, std::fstream::in);
-    if (!pstream)
-    {
-        std::cerr << Lettuce::Color::BoldRed << "Reading parameters from file " << parameterfilepath << " failed!" << Lettuce::Color::Reset << std::endl;
     }
     // Check for existence and position of expected tokens "START_PARAMS" and "END_PARAMS"
     std::string current_line;
@@ -375,6 +387,55 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "epsilon: "                 << epsilon                                      << "\n";
     log << std::ctime(&end_time)                                                       << "\n";
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
+}
+
+void ResumeRun(const std::string_view parameterfilepath)
+{
+    std::ifstream pstream;
+    if (!OpenFile(pstream, parameterfilepath))
+    {
+        return;
+    }
+    // Read parameters from specified file (use ReadParameter function?)
+    // ...
+    // ReadParameters(parameterfilepath);
+    // Check compatibility of parameters (e.g., lattice volume)
+    // ...
+    // Check final config/measurement number (somehow also check compatibility of measurement and config number)
+    // ...
+    int         current_line_count {0};
+    int         measurement_count  {0};
+    int         update_count       {0};
+    int         final_token_line   {0};
+    std::size_t start_pos          {std::string::npos};
+    std::size_t end_pos            {std::string::npos};
+    std::string current_line;
+    while (std::getline(pstream, current_line))
+    {
+        ++current_line_count;
+        if (current_line.find("[Step") != std::string::npos)
+        {
+            ++measurement_count;
+            final_token_line = current_line_count;
+        }
+    }
+    // Move to the appropriate line in the file and attempt to get the number of updates
+    pstream.clear();
+    pstream.seekg(0, pstream.beg);
+    for (std::size_t ind = 1; ind < final_token_line; ++ind)
+    {
+        pstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+    std::getline(pstream, current_line);
+    // Start search from pos (do not need to cover case where string is not found, since it is already checked above)
+    start_pos = FindTokenEnd(current_line, "[Step ");
+    // Find closing bracket "]" and read measurement count
+    if ((end_pos = current_line.find("]", start_pos)) != std::string::npos)
+    {
+        measurement_count = ConvertStringTo<int>(current_line.substr(start_pos, end_pos - start_pos));
+    }
+    // Read final config and prng state
+    // ...
 }
 
 #endif // LETTUCE_PARAMETER_IO_HPP
