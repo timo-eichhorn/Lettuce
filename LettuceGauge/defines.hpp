@@ -78,7 +78,6 @@ std::string directoryname;                                  // Directory name
 std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
 std::string logfilepath;                                    // Filepath (log)
 std::string parameterfilepath;                              // Filepath (parameters)
-std::string wilsonfilepath;                                 // Filepath (Wilson loops)
 std::string metapotentialfilepath;                          // Filepath (metapotential)
 auto start {std::chrono::system_clock::now()};              // Start time
 floatT beta;                                                // Coupling

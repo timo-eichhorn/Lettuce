@@ -323,11 +323,9 @@ void CreateFiles()
     std::cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
     logfilepath           = directoryname + "/log.txt";
     parameterfilepath     = directoryname + "/parameters.txt";
-    wilsonfilepath        = directoryname + "/wilson.txt";
     metapotentialfilepath = directoryname + "/metapotential.txt";
     std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
     std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
-    std::cout                             << "Filepath (wilson):\t"     << wilsonfilepath                                 << "\n";
     std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n";
     std::cout                             << "Filepath (final):\t"      << checkpointdirectory   << Lettuce::Color::Reset << "\n";
 
@@ -344,10 +342,6 @@ void CreateFiles()
     // parameterfile
 
     SaveParameters(parameterfilepath, start_time_string);
-
-    // wilsonfile
-
-    SaveParameters(wilsonfilepath, start_time_string);
 }
 
 //-----
@@ -436,6 +430,12 @@ void ResumeRun(const std::string_view parameterfilepath)
     }
     // Read final config and prng state
     // ...
+    // Since we probably want to reuse the existing directory, we need to set the following global variables:
+    // directoryname = ;
+    // checkpointdirectory = ;
+    // logfilepath = ;
+    // parameterfilepath = ;
+    // metapotentialfilepath = ;
 }
 
 #endif // LETTUCE_PARAMETER_IO_HPP

@@ -374,7 +374,6 @@ int main(int argc, char** argv)
 
     auto startcalc {std::chrono::system_clock::now()};
     datalog.open(logfilepath, std::fstream::out | std::fstream::app);
-    wilsonlog.open(wilsonfilepath, std::fstream::out | std::fstream::app);
 
     // Commonly used gauge actions
     GaugeAction::WilsonAction.SetBeta(beta);
@@ -682,8 +681,4 @@ int main(int argc, char** argv)
     PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
-
-    PrintFinal(wilsonlog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
-    wilsonlog.close();
-    wilsonlog.clear();
 }
