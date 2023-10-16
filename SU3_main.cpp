@@ -604,8 +604,8 @@ int main(int argc, char** argv)
         // MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
         // New attempt at values for well tempered updates
         MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.1, 50, 1000.0};
-        TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
-        TopBiasPotential.SymmetrizePotentialMaximum();
+        // TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
+        // TopBiasPotential.SymmetrizePotentialMaximum();
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
@@ -626,7 +626,7 @@ int main(int argc, char** argv)
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
             // Perform updates on Gluon (for every MetaD-HMC update perform tempering_nonmetadynamics_sweeps updates on the config without Metadynamics)
-            for (int n_count_nometa = 0; n_count_nometa < tempering_nonmetadynamics_sweeps; ++n_count_nometa)
+            for (int n_count_nobias = 0; n_count_nobias < tempering_nonmetadynamics_sweeps; ++n_count_nobias)
             {
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);

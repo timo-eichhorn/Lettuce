@@ -48,7 +48,6 @@ using floatT = double;
 //-----
 
 int n_run;                                                  // Number of runs
-double n_run_inverse;                                       // Inverse number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
 inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
 inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements

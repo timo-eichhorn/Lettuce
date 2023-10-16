@@ -25,6 +25,62 @@
 #include <cstddef>
 #include <ctime>
 
+template<typename T>
+struct NamedParameter
+{
+    const std::string key;
+    T                 value;
+
+    explicit NamedParameter(std::string_view key_in) noexcept :
+    key(key_in)
+    {}
+    explicit NamedParameter(std::string_view key_in, const T value_in) noexcept :
+    key(key_in), value(value_in)
+    {}
+
+    friend std::ostream& operator<<(std::ostream& stream, const NamedParameter& param)
+    {
+        stream << param.key << " = " << param.value;
+        return stream;
+    }
+};
+
+// List of runtime parameters
+struct ParameterList
+{
+    //--------------------
+    // Physical parameters
+    //--------------------
+    NamedParameter<floatT> beta                             {"beta"};
+    //--------------------
+    // Simulation parameters
+    //--------------------
+    NamedParameter<int>    n_run                            {"n_run"};
+    NamedParameter<int>    expectation_period               {"expectation_period"};
+    // Smearing parameters
+    NamedParameter<int>    n_smear                          {"n_smear"};
+    NamedParameter<int>    n_smear_skip                     {"n_smear_skip"};
+    NamedParameter<floatT> rho_stout                        {"rho_stout"};
+    // Update algorithm parameters
+    NamedParameter<int>    n_metro                          {"n_metro"};
+    NamedParameter<int>    multi_hit                        {"multi_hit"};
+    NamedParameter<int>    n_heatbath                       {"n_heatbath"};
+    NamedParameter<int>    n_hmc                            {"n_hmc"};
+    NamedParameter<double> hmc_trajectory_length            {"hmc_trajectory_length"};
+    NamedParameter<int>    n_orelax                         {"n_orelax"};
+    NamedParameter<int>    n_instanton_update               {"n_instanton_update"};
+    NamedParameter<bool>   metadynamics_enabled             {"metadynamics_enabled"};
+    NamedParameter<bool>   metapotential_updated            {"metapotential_updated"};
+    NamedParameter<bool>   metapotential_well_tempered      {"metapotential_well_tempered"};
+    NamedParameter<int>    n_smear_meta                     {"n_smear_meta"};
+    NamedParameter<floatT> rho_stout_metadynamics           {"rho_stout_metadynamics"};
+    NamedParameter<bool>   tempering_enabled                {"tempering_enabled"};
+    NamedParameter<int>    tempering_nonmetadynamics_sweeps {"tempering_nonmetadynamics_sweeps"};
+    NamedParameter<int>    tempering_swap_period            {"tempering_swap_period"};
+    NamedParameter<double> metro_norm                       {"metro_norm"};
+    NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
+};
+
 //-----
 // Check if specified command line argument exists
 
@@ -87,7 +143,6 @@ void Configuration()
     ValidatedIn("Please enter beta: ", beta);
     ValidatedIn("Please enter n_run: ", n_run);
     ValidatedIn("Please enter expectation_period: ", expectation_period);
-    n_run_inverse = 1.0 / static_cast<double>(n_run);
     if (n_metro != 0 && multi_hit != 0)
     {
         metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
@@ -383,15 +438,43 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
 }
 
+class Loader
+{
+    private:
+        std::filesystem::path dirpath;
+    public:
+        // TODO: What type to use? std::filesystem::path or std::string_view?
+        void SetPath(const std::filesystem::path & dirpath_in)
+        {
+            dirpath = dirpath_in;
+        }
+
+        // Somehow want to support different formats
+        void LoadConfiguration()
+        {
+            //
+        }
+};
+
+// TODO: ResumeRun, ExtendRun, or provide both functions?
 void ResumeRun(const std::string_view parameterfilepath)
 {
+    // Need to write data to the following variables and objects:
+    // - beta
+    // - n_run
+    // - expectation_period
+    // - n_run_inverse
+    // - Gluon (or some other gaugefield)
+    // - global_prng (or some other PRNG)
+    // - n_count (current update count)
+
     std::ifstream pstream;
     if (!OpenFile(pstream, parameterfilepath))
     {
         return;
     }
     // Read parameters from specified file (use ReadParameter function?)
-    // ...
+    ReadParameters(parameterfilepath);
     // ReadParameters(parameterfilepath);
     // Check compatibility of parameters (e.g., lattice volume)
     // ...
