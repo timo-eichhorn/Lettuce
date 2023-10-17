@@ -537,7 +537,7 @@ int main(int argc, char** argv)
                 // n_smear_skip = 16;
                 // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.005);
             }
-            if (n_count % checkpoint_period)
+            if (n_count % checkpoint_period == 0)
             {
                 // Three rotating checkpoints, enable overwrite
                 std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
@@ -593,7 +593,7 @@ int main(int argc, char** argv)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
             }
-            if (n_count % checkpoint_period)
+            if (n_count % checkpoint_period == 0)
             {
                 // Three rotating checkpoints, enable overwrite
                 std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
@@ -674,7 +674,7 @@ int main(int argc, char** argv)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
             }
-            if (n_count % checkpoint_period)
+            if (n_count % checkpoint_period == 0)
             {
                 // Three rotating checkpoints, enable overwrite
                 std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
