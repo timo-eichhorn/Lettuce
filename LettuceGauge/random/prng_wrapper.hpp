@@ -150,9 +150,22 @@ class PRNG4D
         // TODO: Is there a portable way to write the states in binary format?
         // TODO: When using CUDA, we can't write to files from device functions, so (only?) provide functions that save/load state to/from vector?
         // lttc_host
-        void SavePRNGState(const std::string& filename)
+        void SavePRNGState(const std::string& filename, const bool overwrite = false)
         {
-            std::ofstream state_stream(filename);
+            if (std::filesystem::exists(filename))
+            {
+                std::cout << Lettuce::Color::BoldRed << "File " << filename << " already exists!" << Lettuce::Color::Reset << std::endl;
+                if (overwrite)
+                {
+                    std::cout << Lettuce::Color::BoldRed << "Overwriting existing file..." << Lettuce::Color::Reset << std::endl;
+                }
+                else
+                {
+                    std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+                    return;
+                }
+            }
+            std::ofstream state_stream(filename, std::ios::trunc);
             state_stream.imbue(std::locale("C"));
             for (auto& prng : random_generators)
             {
@@ -190,9 +203,22 @@ class PRNG4D
         }
 
         // lttc_host
-        void SaveDistributionState(const std::string& filename)
+        void SaveDistributionState(const std::string& filename, const bool overwrite = false)
         {
-            std::ofstream state_stream(filename);
+            if (std::filesystem::exists(filename))
+            {
+                std::cout << Lettuce::Color::BoldRed << "File " << filename << " already exists!" << Lettuce::Color::Reset << std::endl;
+                if (overwrite)
+                {
+                    std::cout << Lettuce::Color::BoldRed << "Overwriting existing file..." << Lettuce::Color::Reset << std::endl;
+                }
+                else
+                {
+                    std::cerr << Lettuce::Color::BoldRed << "Writing normal distribution state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+                    return;
+                }
+            }
+            std::ofstream state_stream(filename, std::ios::trunc);
             state_stream.imbue(std::locale("C"));
             for (auto& normal_distribution : normal_distributions)
             {
@@ -202,7 +228,7 @@ class PRNG4D
             //-----
             if (!state_stream)
             {
-                std::cerr << Lettuce::Color::BoldRed << "Writing PRNG state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "Writing normal distribution state to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             }
         }
 
@@ -237,10 +263,10 @@ class PRNG4D
         }
 
         // lttc_host
-        void SaveState(const std::string& filename_prng, const std::string& filename_normal_distribution)
+        void SaveState(const std::string& filename_prng, const std::string& filename_normal_distribution, const bool overwrite = false)
         {
-            SavePRNGState(filename_prng);
-            SaveDistributionState(filename_normal_distribution);
+            SavePRNGState(filename_prng, overwrite);
+            SaveDistributionState(filename_normal_distribution, overwrite);
         }
 
         [[nodiscard]]
