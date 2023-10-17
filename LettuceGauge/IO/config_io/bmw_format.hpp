@@ -285,12 +285,13 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
         }
         else
         {
+            std::cerr << Lettuce::Color::BoldRed << "Writing configuration in BMW format to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             return false;
         }
     }
 
     std::ofstream config_ofstream;
-    config_ofstream.open(filename, std::ios::out | std::ios::binary);
+    config_ofstream.open(filename, std::ios::trunc | std::ios::binary);
     const std::size_t     header_block_size {4096};
     char                  header_block[header_block_size];
     int                   header_offset {0};

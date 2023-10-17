@@ -14,6 +14,7 @@
 #include <array>
 #include <chrono>
 #include <complex>
+#include <concepts>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -30,7 +31,7 @@ std::string program_version = "SU(3)_version_1.3";
 //-----
 inline constexpr int Ndim   {4};
 inline constexpr int Ncolor {3};
-static_assert(Ndim == 4,   "Currently only 4 dimensions are supported!");
+static_assert(Ndim   == 4, "Currently only 4 dimensions are supported!");
 static_assert(Ncolor == 3, "Currently only SU(3) is supported!");
 
 inline constexpr int Nt {24};
@@ -45,10 +46,24 @@ inline constexpr T pi {static_cast<T>(3.14159265358979323846L)};
 
 using floatT = double;
 
+// TODO: Better name than algorithm?
+template<typename T>
+concept StencilAlgorithm = requires(T algorithm)
+{
+    {algorithm.stencil_radius} -> std::convertible_to<int>;
+};
+
+// template<StencilAlgorithm T>
+// int ReturnStencil(T algorithm)
+// {
+//     return algorithm.stencil_radius;
+// }
+
 //-----
 
 int n_run;                                                  // Number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
+int checkpoint_period {100};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
 inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
 inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter

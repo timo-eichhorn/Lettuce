@@ -367,8 +367,17 @@ int main(int argc, char** argv)
     CreateFiles();
 
     // Default width of random numbers used in Metropolis update is 0.5
-    floatT        metropolis_epsilon {0.5};
-    constexpr int n_therm            {20};
+    floatT         metropolis_epsilon    {0.5};
+    constexpr int  n_therm               {20};
+    constexpr bool accept_reject_enabled {true};
+    if (!accept_reject_enabled)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Warning! Accept-reject step disabled!" << Lettuce::Color::Reset << std::endl;
+    }
+
+    // For rotating checkpoints
+    int                        checkpoint_count      {0};
+    std::array<std::string, 3> checkpoint_appendices {"_1", "_2", "_3"};
 
     Gluon.SetToIdentity();
 
@@ -455,7 +464,7 @@ int main(int argc, char** argv)
             if constexpr(n_hmc != 0)
             {
                 // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
-                HMC(n_hmc, true);
+                HMC(n_hmc, accept_reject_enabled);
                 // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
                 // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
                 // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
@@ -488,11 +497,11 @@ int main(int argc, char** argv)
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, global_prng, true);
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, true);
                 }
                 else
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, true, global_prng, false);
+                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, false);
                 }
             }
             //-----
@@ -527,6 +536,13 @@ int main(int argc, char** argv)
                 // n_smear = 300;
                 // n_smear_skip = 16;
                 // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.005);
+            }
+            if (n_count % checkpoint_period)
+            {
+                // Three rotating checkpoints, enable overwrite
+                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
+                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
+                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
             }
         }
     }
@@ -563,7 +579,7 @@ int main(int argc, char** argv)
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
             // auto start_update_meta = std::chrono::high_resolution_clock::now();
-            HMC_MetaD(n_hmc, true);
+            HMC_MetaD(n_hmc, accept_reject_enabled);
             // auto end_update_meta = std::chrono::high_resolution_clock::now();
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
@@ -576,6 +592,13 @@ int main(int argc, char** argv)
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
+            }
+            if (n_count % checkpoint_period)
+            {
+                // Three rotating checkpoints, enable overwrite
+                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
+                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
+                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
             }
         }
     }
@@ -633,7 +656,7 @@ int main(int argc, char** argv)
             }
 
             // Perform updates on Gluon_temper
-            HMC_MetaD(n_hmc, true);
+            HMC_MetaD(n_hmc, accept_reject_enabled);
 
             // Propose tempering swap
             if (n_count % tempering_swap_period == 0)
@@ -650,6 +673,14 @@ int main(int argc, char** argv)
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
                 }
+            }
+            if (n_count % checkpoint_period)
+            {
+                // Three rotating checkpoints, enable overwrite
+                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
+                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
+                SaveConfigBMW(Gluon_temper, checkpointdirectory + "/config_temper" + checkpoint_appendix + ".conf", true);
+                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
             }
         }
         datalog_temper.close();

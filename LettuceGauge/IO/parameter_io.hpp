@@ -57,6 +57,7 @@ struct ParameterList
     //--------------------
     NamedParameter<int>    n_run                            {"n_run"};
     NamedParameter<int>    expectation_period               {"expectation_period"};
+    NamedParameter<int>    checkpoint_period                {"checkpoint_period"};
     // Smearing parameters
     NamedParameter<int>    n_smear                          {"n_smear"};
     NamedParameter<int>    n_smear_skip                     {"n_smear_skip"};
@@ -181,6 +182,17 @@ bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
     }
     return true;
 }
+
+// If dirpath contains a file named "lettuce_terminate"
+// void CheckForTermination()
+// {
+//     if std::filesystem::exists()
+//     {
+//         //;
+//         std::cout << Lettuce::Color::BoldRed << "lettuce_terminate file found in directory " << dirpath << Lettuce::Color::Reset << std::endl;
+//         PrintFinal();
+//     }
+// }
 
 //-----
 // Read parameters from a given filepath
@@ -438,23 +450,23 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
 }
 
-class Loader
-{
-    private:
-        std::filesystem::path dirpath;
-    public:
-        // TODO: What type to use? std::filesystem::path or std::string_view?
-        void SetPath(const std::filesystem::path & dirpath_in)
-        {
-            dirpath = dirpath_in;
-        }
+// class Loader
+// {
+//     private:
+//         std::filesystem::path dirpath;
+//     public:
+//         // TODO: What type to use? std::filesystem::path or std::string_view?
+//         void SetPath(const std::filesystem::path & dirpath_in)
+//         {
+//             dirpath = dirpath_in;
+//         }
 
-        // Somehow want to support different formats
-        void LoadConfiguration()
-        {
-            //
-        }
-};
+//         // Somehow want to support different formats
+//         void LoadConfiguration()
+//         {
+//             //
+//         }
+// };
 
 // TODO: ResumeRun, ExtendRun, or provide both functions?
 void ResumeRun(const std::string_view parameterfilepath)

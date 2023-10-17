@@ -131,6 +131,7 @@ bool SaveConfigBridgeText(const GaugeField& U, const std::string& filename, cons
         }
         else
         {
+            std::cerr << Lettuce::Color::BoldRed << "Writing configuration in Bridge++ text format to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             return false;
         }
     }
@@ -138,7 +139,8 @@ bool SaveConfigBridgeText(const GaugeField& U, const std::string& filename, cons
     std::ofstream config_ofstream;
     // TODO: Check what kind of format the Bridge++ code actually uses
     config_ofstream << std::setprecision(16) << std::fixed;
-    config_ofstream.open(filename, std::fstream::out);
+    // config_ofstream.open(filename, std::fstream::out);
+    config_ofstream.open(filename, std::ios::trunc);
     // config_ofstream.setf(std::ios_base::scientific, std::ios_base::floatfield);
     // config_ofstream.precision(14);
 
