@@ -58,6 +58,7 @@ struct ParameterList
     NamedParameter<int>    n_run                            {"n_run"};
     NamedParameter<int>    expectation_period               {"expectation_period"};
     NamedParameter<int>    checkpoint_period                {"checkpoint_period"};
+    NamedParameter<int>    n_checkpoint_backups             {"n_checkpoint_backups"};
     // Smearing parameters
     NamedParameter<int>    n_smear                          {"n_smear"};
     NamedParameter<int>    n_smear_skip                     {"n_smear_skip"};

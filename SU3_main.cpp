@@ -15,6 +15,7 @@
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
 #include "LettuceGauge/IO/config_io/bridge_text_format.hpp"
+#include "LettuceGauge/IO/config_io/checkpoint_writer.hpp"
 #include "LettuceGauge/IO/parameter_io.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -376,8 +377,7 @@ int main(int argc, char** argv)
     }
 
     // For rotating checkpoints
-    int                        checkpoint_count      {0};
-    std::array<std::string, 3> checkpoint_appendices {"_1", "_2", "_3"};
+    CheckpointWriter Checkpointer(n_checkpoint_backups);
 
     Gluon.SetToIdentity();
 
@@ -489,19 +489,23 @@ int main(int argc, char** argv)
             //-----
             if constexpr(n_instanton_update != 0)
             {
-                std::uniform_int_distribution<int> distribution_instanton(0, 1);
-                int                                Q_instanton {distribution_instanton(generator_rand) * 2 - 1};
-                int                                L_half      {Nt/2 - 1};
-                site_coord                         center      {L_half, L_half, L_half, L_half};
-                int                                radius      {5};
+                std::uniform_int_distribution<int>  distribution_instanton(0, 1);
+                int                                 Q_instanton {distribution_instanton(generator_rand) * 2 - 1};
+                int                                 L_half      {Nt/2 - 1};
+                site_coord                          center      {L_half, L_half, L_half, L_half};
+                int                                 radius      {5};
+                GaugeUpdates::InstantonUpdateKernel InstantonUpdate(Gluon, Gluonsmeared1, GaugeAction::WilsonAction, global_prng, center, radius, false);
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, true);
+                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, true);
+                    InstantonUpdate.CreateBPSTInstantons(center, radius);
+                    InstantonUpdate(Q_instanton, accept_reject_enabled);
                 }
                 else
                 {
-                    BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, false);
+                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, false);
+                    InstantonUpdate(Q_instanton, accept_reject_enabled);
                 }
             }
             //-----
@@ -539,10 +543,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                // Three rotating checkpoints, enable overwrite
-                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
-                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
-                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
             }
         }
     }
@@ -595,10 +596,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                // Three rotating checkpoints, enable overwrite
-                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
-                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
-                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
             }
         }
     }
@@ -676,11 +674,8 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                // Three rotating checkpoints, enable overwrite
-                std::string checkpoint_appendix {checkpoint_appendices[checkpoint_count % 3]};
-                SaveConfigBMW(Gluon, checkpointdirectory + "/config" + checkpoint_appendix + ".conf", true);
-                SaveConfigBMW(Gluon_temper, checkpointdirectory + "/config_temper" + checkpoint_appendix + ".conf", true);
-                global_prng.SaveState(checkpointdirectory + "/prng_state" + checkpoint_appendix + ".txt", checkpointdirectory + "/distribution_state" + checkpoint_appendix + ".txt", true);
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
+                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, checkpointdirectory + "/config_temper");
             }
         }
         datalog_temper.close();
@@ -697,7 +692,7 @@ int main(int argc, char** argv)
     //-----
     // Save final configuration and PRNG state
     SaveConfigBMW(Gluon, checkpointdirectory + "/final_config.conf");
-    global_prng.SaveState(checkpointdirectory + "/prng_state.txt", checkpointdirectory + "/distribution_state.txt");
+    global_prng.SaveState(checkpointdirectory + "/final_prng_state.txt", checkpointdirectory + "/final_distribution_state.txt");
 
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 

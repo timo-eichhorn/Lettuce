@@ -21,7 +21,7 @@ namespace WilsonAction
     // Returns unnormalized Wilson gauge action
 
     [[nodiscard]]
-    double Action(const GaugeField& U) noexcept
+    double Action(const GaugeField& U/*, const floatT beta*/) noexcept
     {
         double S {0.0};
 
@@ -292,7 +292,7 @@ namespace WilsonAction
     //-----
 
     [[nodiscard]]
-    double Local(const Matrix_SU3& U, const Matrix_3x3& st) noexcept
+    double Local(const Matrix_SU3& U, const Matrix_3x3& st/*, const floatT beta*/) noexcept
     {
         // return beta/3.0 * std::real((Matrix_SU3::Identity() - U * st.adjoint()).trace());
         // return beta/3.0 * (3.0 - std::real((U * st.adjoint()).trace()));

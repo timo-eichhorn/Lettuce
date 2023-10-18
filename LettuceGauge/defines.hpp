@@ -64,6 +64,7 @@ concept StencilAlgorithm = requires(T algorithm)
 int n_run;                                                  // Number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
 int checkpoint_period {100};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
+int n_checkpoint_backups {3};                               // Number of rotating checkpoints to use
 inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
 inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter
