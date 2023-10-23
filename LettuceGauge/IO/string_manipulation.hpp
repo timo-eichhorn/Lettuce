@@ -62,18 +62,75 @@ void EraseUntil(std::string& str, const std::string& erase, const bool including
     }
 }
 
+// Function template to convert a string to another type
+// TODO: The version below compiles for general types T, but is unsafe since it does not check the validity of the argument
+//       Therefore for now delete the function template and only allow specialized types
+//       In case we want to use it again, don't forget to #include <sstream>
+
+// template<typename T>
+// T ConvertStringTo(const std::string& str)
+// {
+//     std::istringstream ss(str);
+//     T result;
+//     ss >> result;
+//     return result;
+// }
+
 template<typename T>
-T ConvertStringTo(const std::string& str)
+T ConvertStringTo(const std::string& str) = delete;
+
+// Fall back to safer specializations if available
+
+template<>
+int ConvertStringTo(const std::string& str)
 {
-    std::istringstream ss(str);
-    T result;
-    ss >> result;
-    return result;
+    return std::stoi(str);
+}
+
+template<>
+long ConvertStringTo(const std::string& str)
+{
+    return std::stol(str);
+}
+
+template<>
+long long ConvertStringTo(const std::string& str)
+{
+    return std::stoll(str);
+}
+
+template<>
+unsigned long ConvertStringTo(const std::string& str)
+{
+    return std::stoul(str);
+}
+
+template<>
+unsigned long long ConvertStringTo(const std::string& str)
+{
+    return std::stoull(str);
+}
+
+template<>
+float ConvertStringTo(const std::string& str)
+{
+    return std::stof(str);
+}
+
+template<>
+double ConvertStringTo(const std::string& str)
+{
+    return std::stod(str);
+}
+
+template<>
+long double ConvertStringTo(const std::string& str)
+{
+    return std::stold(str);
 }
 
 // Following stuff taken from: https://www.cppstories.com/2022/ranges-perf/
 // First version with temporary
-// TODO: Currently never included anywhere
 
 // std::string trimLeft(const std::string &str)
 // {
