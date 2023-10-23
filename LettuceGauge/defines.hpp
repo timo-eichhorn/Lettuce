@@ -126,21 +126,24 @@ using Local_tensor   = std::array<std::array<Matrix_SU3, 4>, 4>;
 
 // Trick to allow type promotion below
 template<typename T>
-struct identity_t { typedef T type; };
+struct identity_t
+{
+    using type = T;
+};
 
 // Make working with std::complex<> numbers suck less... allow promotion.
-#define COMPLEX_OPS(OP)                                                 \
-  template<typename _Tp>                                               \
-  std::complex<_Tp>                                                     \
-  operator OP(std::complex<_Tp> lhs, const typename identity_t<_Tp>::type & rhs) \
-  {                                                                     \
-    return lhs OP rhs;                                                  \
-  }                                                                     \
-  template<typename _Tp>                                               \
-  std::complex<_Tp>                                                     \
-  operator OP(const typename identity_t<_Tp>::type & lhs, const std::complex<_Tp> & rhs) \
-  {                                                                     \
-    return lhs OP rhs;                                                  \
+#define COMPLEX_OPS(OP)                                                                \
+  template<typename _Tp>                                                               \
+  std::complex<_Tp>                                                                    \
+  operator OP(std::complex<_Tp> lhs, const typename identity_t<_Tp>::type& rhs)        \
+  {                                                                                    \
+    return lhs OP rhs;                                                                 \
+  }                                                                                    \
+  template<typename _Tp>                                                               \
+  std::complex<_Tp>                                                                    \
+  operator OP(const typename identity_t<_Tp>::type& lhs, const std::complex<_Tp>& rhs) \
+  {                                                                                    \
+    return lhs OP rhs;                                                                 \
   }
 COMPLEX_OPS(+)
 COMPLEX_OPS(-)

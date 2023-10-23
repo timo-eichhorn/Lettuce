@@ -61,35 +61,35 @@ class SU2_comp
         }
         // TODO: Implement scalar division operator / and operator /=?
 
-        SU2_comp &operator=(const SU2_comp& Mat) noexcept
+        SU2_comp& operator=(const SU2_comp& Mat) noexcept
         {
             e11 = Mat.e11;
             e12 = Mat.e12;
             return *this;
         }
-        SU2_comp &operator+=(const SU2_comp& Mat) noexcept
+        SU2_comp& operator+=(const SU2_comp& Mat) noexcept
         {
             e11 += Mat.e11;
             e12 += Mat.e12;
             return *this;
         }
-        SU2_comp &operator-=(const SU2_comp& Mat) noexcept
+        SU2_comp& operator-=(const SU2_comp& Mat) noexcept
         {
             e11 -= Mat.e11;
             e12 -= Mat.e12;
             return *this;
         }
-        SU2_comp &operator*=(const SU2_comp& Mat) noexcept
+        SU2_comp& operator*=(const SU2_comp& Mat) noexcept
         {
             *this = *this * Mat;
             return *this;
         }
-        SU2_comp &operator*=(const floatT a) noexcept
+        SU2_comp& operator*=(const floatT a) noexcept
         {
             *this = *this * a;
             return *this;
         }
-        SU2_comp &operator*=(const std::complex<floatT> a) noexcept
+        SU2_comp& operator*=(const std::complex<floatT> a) noexcept
         {
             *this = *this * a;
             return *this;

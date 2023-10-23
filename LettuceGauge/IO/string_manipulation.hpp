@@ -132,28 +132,28 @@ long double ConvertStringTo(const std::string& str)
 // Following stuff taken from: https://www.cppstories.com/2022/ranges-perf/
 // First version with temporary
 
-// std::string trimLeft(const std::string &str)
+// std::string trimLeft(const std::string& str)
 // {
 //     auto tmp = str;
 //     tmp.erase(std::begin(tmp), std::find_if_not(std::begin(tmp), std::end(tmp), isspace));
 //     return tmp;
 // }
 
-// std::string trimRight(const std::string &str)
+// std::string trimRight(const std::string& str)
 // {
 //     auto tmp = str;
 //     tmp.erase(std::find_if_not(std::rbegin(tmp), std::rend(tmp), isspace).base(), std::end(tmp));
 //     return tmp;
 // }
 
-// std::string trim(const std::string &str)
+// std::string trim(const std::string& str)
 // {
 //     return trimLeft(trimRight(str));
 // }
 
 // // Second version without temporary
 
-// std::string trim2(const std::string &str)
+// std::string trim2(const std::string& str)
 // {
 //     auto wsfront = std::find_if_not(str.begin(), str.end(), isspace);
 //     auto wsback  = std::find_if_not(str.rbegin(), str.rend(), isspace).base();
