@@ -362,9 +362,13 @@ int main(int argc, char** argv)
     // iostream not synchronized with corresponding C streams, might cause a problem with C libraries and might not be thread safe
     std::ios_base::sync_with_stdio(false);
     std::cout << std::setprecision(12) << std::fixed;
-    datalog << std::setprecision(12) << std::fixed;
+    datalog   << std::setprecision(12) << std::fixed;
 
-    Configuration();
+    // Get command line arguments in reversed order (that way if a parameter is found multiple times, only the last appearance is considered)
+    std::vector<std::string> command_line_arguments(argv, argv + argc);
+    std::reverse(command_line_arguments.begin(), command_line_arguments.end());
+
+    Configuration(command_line_arguments);
     CreateFiles();
 
     // Default width of random numbers used in Metropolis update is 0.5
@@ -443,7 +447,7 @@ int main(int argc, char** argv)
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
                 //       At the very least, we should probably combine the two actions below into one function
-                Metropolis.AdjustEpsilon(acceptance_count);
+                // Metropolis.AdjustEpsilon(acceptance_count);
                 metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
                 // auto end_update_metro {std::chrono::high_resolution_clock::now()};
@@ -614,7 +618,6 @@ int main(int argc, char** argv)
         // Setup second ofstream for Gluon_temper (Gluon uses the default stream datalog)
         std::ofstream datalog_temper;
         datalog_temper << std::setprecision(12) << std::fixed;
-        std::string logfilepath_temper = directoryname + "/log_temper.txt";
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper

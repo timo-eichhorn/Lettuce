@@ -79,37 +79,36 @@ struct ParameterList
     NamedParameter<bool>   tempering_enabled                {"tempering_enabled"};
     NamedParameter<int>    tempering_nonmetadynamics_sweeps {"tempering_nonmetadynamics_sweeps"};
     NamedParameter<int>    tempering_swap_period            {"tempering_swap_period"};
-    NamedParameter<double> metro_norm                       {"metro_norm"};
     NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
 };
 
 //-----
 // Check if specified command line argument exists
 
-bool CheckCommandLineArgument(char** begin, char** end, const std::string& argument)
+bool CheckForCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view argument)
 {
-    return std::find(begin, end, argument) != end;
+    auto string_contains_argument = [argument](std::string_view s){return s.starts_with(argument);};
+    return std::find_if(command_line_arguments.cbegin(), command_line_arguments.cend(), string_contains_argument) != command_line_arguments.cend();
 }
 
 //-----
 // Get parameter from specified command line argument (if it exists)
 
-std::string ExtractCommandLineArgument(char** begin, char** end, const std::string& argument)
+std::string ExtractCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view token)
 {
-    char** iterator = std::find(begin, end, argument);
-    if (iterator != end and ++iterator != end)
+    for (std::string_view element_view : command_line_arguments)
     {
-        return std::string(*iterator);
+        std::size_t pos {std::string::npos};
+        if ((pos = FindTokenEnd(element_view, token)) != std::string::npos)
+        {
+            return std::string(element_view.substr(pos));
+        }
     }
-    else
-    {
-        return std::string("");
-    }
+    return std::string("");
 }
 
 //-----
 // Function to get user input with error handling
-// TODO: Constrain target to writeable range or something like that
 // TODO: Should probably make clear that this version works for the terminal only
 //       Rename this to ValidatedInTerminal and write alternative version for reading from files?
 
@@ -117,8 +116,9 @@ template<typename T>
 void ValidatedIn(const std::string& message, T& target)
 {
     // Keep count of tries and abort after too many tries (e.g. important when using nohup)
-    int count {0};
-    while (std::cout << Lettuce::Color::BoldBlue << message << Lettuce::Color::Reset << "\n" && !(std::cin >> target) && count < 10)
+    int           count     {0};
+    constexpr int max_count {10};
+    while (std::cout << Lettuce::Color::BoldBlue << message << Lettuce::Color::Reset << "\n" and !(std::cin >> target) and count < max_count)
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -127,13 +127,7 @@ void ValidatedIn(const std::string& message, T& target)
     }
 }
 
-//-----
-// Receives simulation parameters from user input
-// TODO: We should probably wrap all parameters in a struct and also write a single print function we can reuse for both printing
-//       to the terminal and writing to files.
-// TODO: In the future, replace this with a function (or two functions) that can read parameters either from the terminal or from a file
-
-void Configuration()
+void PrintVersionBanner()
 {
     std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
     // TODO: Fix alignment
@@ -141,13 +135,62 @@ void Configuration()
     std::cout << std::left << std::setw(49) << "| SU(3) theory simulation" << "|\n";
     std::cout << std::left << std::setw(49) << "| Current version: " + program_version << "|\n";
     std::cout << "+------------------------------------------------+\n\n" << Lettuce::Color::Reset;
-    // Get simulation parameters from user input
-    ValidatedIn("Please enter beta: ", beta);
-    ValidatedIn("Please enter n_run: ", n_run);
-    ValidatedIn("Please enter expectation_period: ", expectation_period);
-    if (n_metro != 0 && multi_hit != 0)
+}
+
+//-----
+// Receives simulation parameters from user input
+// TODO: We should probably wrap all parameters in a struct and also write a single print function we can reuse for both printing
+//       to the terminal and writing to files.
+// TODO: In the future, replace this with a function (or two functions) that can read parameters either from the terminal or from a file
+
+void Configuration(const std::vector<std::string>& command_line_arguments)
+{
+    PrintVersionBanner();
+    // TODO: Once we use the NamedParameter structs we should probably rewrite the parameter scanning below
+    // If command line arguments are passed, see if parameters are passed that way
+    if (command_line_arguments.size() > 1)
     {
-        metro_norm = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
+        // if (CheckForCommandLineArgument(command_line_arguments, "--extend_run="))
+        // {
+        //     std::string extracted_path = ExtractCommandLineArgument(command_line_arguments, "--extend_run=");
+        //     std::cout << "Extracted path: " << extracted_path << std::endl;
+        //     // TODO: ExtendRun() function that checks if the directory exists and does all the required setup
+        // }
+        // Attempt to read parameters (if one of the conversions from string to the parameter datatype fails, the program crashes)
+        // beta
+        if (CheckForCommandLineArgument(command_line_arguments, "--beta="))
+        {
+            beta = std::stod(ExtractCommandLineArgument(command_line_arguments, "--beta="));
+        }
+        else
+        {
+            ValidatedIn("Please enter beta: ", beta);
+        }
+        // n_run
+        if (CheckForCommandLineArgument(command_line_arguments, "--n_run="))
+        {
+            n_run = std::stoi(ExtractCommandLineArgument(command_line_arguments, "--n_run="));
+        }
+        else
+        {
+            ValidatedIn("Please enter n_run: ", n_run);
+        }
+        // expectation_period
+        if (CheckForCommandLineArgument(command_line_arguments, "--expectation_period="))
+        {
+            expectation_period = std::stoi(ExtractCommandLineArgument(command_line_arguments, "--expectation_period="));
+        }
+        else
+        {
+            ValidatedIn("Please enter expectation_period: ", expectation_period);
+        }
+    }
+    // Otherwise attempt to get simulation parameters from direct user input
+    else
+    {
+        ValidatedIn("Please enter beta: ", beta);
+        ValidatedIn("Please enter n_run: ", n_run);
+        ValidatedIn("Please enter expectation_period: ", expectation_period);
     }
     std::cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
     std::cout << "Ndim is "                        << Ndim << " and Ncolor is " << Ncolor << ".\n";
@@ -368,6 +411,17 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream.clear();
 }
 
+// TODO: Use this function in CreateFiles()
+// void SetPaths(const std::string_view main_directory_path)
+// {
+//     maindirectory         = main_directory_path;
+//     checkpointdirectory   = maindirectory + "/checkpoints";
+//     logfilepath           = maindirectory + "/log.txt";
+//     parameterfilepath     = maindirectory + "/parameters.txt";
+//     metapotentialfilepath = maindirectory + "/metapotential.txt";
+//     logfilepath_temper    = maindirectory + "/log_temper.txt";
+// }
+
 //-----
 // Creates directories and files to store data
 
@@ -375,23 +429,24 @@ void CreateFiles()
 {
     std::string LatticeSizeString    {std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt)};
     std::string betaString           {std::to_string(beta)};
-    std::string directoryname_prefix {"SU(" + std::to_string(Ncolor) + ")_N=" + LatticeSizeString + "_beta=" + betaString};
-    directoryname = directoryname_prefix;
+    std::string maindirectory_prefix {"SU(" + std::to_string(Ncolor) + ")_N=" + LatticeSizeString + "_beta=" + betaString};
+    maindirectory = maindirectory_prefix;
     int append = 1;
     std::string appendString;
-    while (std::filesystem::exists(directoryname))
+    while (std::filesystem::exists(maindirectory))
     {
         appendString  = std::to_string(append);
-        directoryname = directoryname_prefix + " (" + appendString + ")";
+        maindirectory = maindirectory_prefix + " (" + appendString + ")";
         ++append;
     }
-    checkpointdirectory   = directoryname + "/checkpoints"; 
-    std::filesystem::create_directory(directoryname);
+    checkpointdirectory   = maindirectory + "/checkpoints"; 
+    std::filesystem::create_directory(maindirectory);
     std::filesystem::create_directory(checkpointdirectory);
-    std::cout << "\n\n" << "Created directory \"" << directoryname << "\".\n";
-    logfilepath           = directoryname + "/log.txt";
-    parameterfilepath     = directoryname + "/parameters.txt";
-    metapotentialfilepath = directoryname + "/metapotential.txt";
+    std::cout << "\n\n" << "Created directory \"" << maindirectory << "\".\n";
+    logfilepath           = maindirectory + "/log.txt";
+    parameterfilepath     = maindirectory + "/parameters.txt";
+    metapotentialfilepath = maindirectory + "/metapotential.txt";
+    logfilepath_temper    = maindirectory + "/log_temper.txt";
     std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
     std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
     std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n";
@@ -418,6 +473,11 @@ void CreateFiles()
 template<typename floatT>
 void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const uint_fast64_t acceptance_count_metadynamics_hmc, const uint_fast64_t acceptance_count_tempering, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
 {
+    double metro_norm     {1.0};
+    if (n_metro != 0 and multi_hit != 0)
+    {
+        metro_norm     = 1.0 / (Nt * Nx * Ny * Nz * 4.0 * n_metro * multi_hit);
+    }
     double or_norm        {1.0};
     if constexpr(n_orelax != 0)
     {
@@ -469,7 +529,7 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
 //         }
 // };
 
-// TODO: ResumeRun, ExtendRun, or provide both functions?
+// TODO: Provide both ResumeRun() and ExtendRun() functions?
 void ResumeRun(const std::string_view parameterfilepath)
 {
     // Need to write data to the following variables and objects:
@@ -527,7 +587,7 @@ void ResumeRun(const std::string_view parameterfilepath)
     // Read final config and prng state
     // ...
     // Since we probably want to reuse the existing directory, we need to set the following global variables:
-    // directoryname = ;
+    // maindirectory = ;
     // checkpointdirectory = ;
     // logfilepath = ;
     // parameterfilepath = ;

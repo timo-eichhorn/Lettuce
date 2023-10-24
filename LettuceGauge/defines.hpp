@@ -83,17 +83,17 @@ inline constexpr int n_smear_meta {4};                      // Number of smearin
 inline constexpr bool tempering_enabled {false};             // Enable metadynamics updates with tempering or not
 inline constexpr int tempering_nonmetadynamics_sweeps {10};  // Number of non metadynamics update sweeps for every metadynamics update during tempering
 inline constexpr int tempering_swap_period {1};             // Number of update sweeps between parallel tempering swap attempts
-inline double metro_norm {1.0};                             // Norm for Metropolis update. CAUTION: Needs to be set to correct value inside Configuration() function
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
 double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
 double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
-std::string directoryname;                                  // Directory name
+std::string maindirectory;                                  // Main directory containing all other subdirectories and files
 std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
 std::string logfilepath;                                    // Filepath (log)
 std::string parameterfilepath;                              // Filepath (parameters)
 std::string metapotentialfilepath;                          // Filepath (metapotential)
+std::string logfilepath_temper;                             // Filepath (log for run with bias potential during PT-MetaD runs)
 auto start {std::chrono::system_clock::now()};              // Start time
 floatT beta;                                                // Coupling
 std::ofstream datalog;                                      // Output stream to save data
