@@ -54,7 +54,7 @@ bool LoadConfigBridgeText(GaugeField& U, const std::string& filename)
     std::cout << Lettuce::Color::BoldBlue << "Attempting to read configuration in Bridge++ text format from " << filename << ":" << Lettuce::Color::Reset << std::endl;
     if (!std::filesystem::exists(filename))
     {
-        std::cout << Lettuce::Color::BoldRed << "File " << filename << "not found!" << Lettuce::Color::Reset << std::endl;
+        std::cout << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
         return false;
     }
 

@@ -436,6 +436,7 @@ void CreateFiles()
     while (std::filesystem::exists(maindirectory))
     {
         appendString  = std::to_string(append);
+        // TODO: Replace " (" with "_(" after submitting my thesis (don't want to introduce any confusion with similar dirnames now...)
         maindirectory = maindirectory_prefix + " (" + appendString + ")";
         ++append;
     }
