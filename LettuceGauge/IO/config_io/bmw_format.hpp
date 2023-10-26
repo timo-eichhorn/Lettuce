@@ -357,8 +357,6 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
         }
         config_ofstream.write(reinterpret_cast<const char*>(buffer.data()), sizeof(buffer));
     }
-    config_ofstream.close();
-    config_ofstream.clear();
     auto end_write_config {std::chrono::high_resolution_clock::now()};
     if (!config_ofstream)
     {

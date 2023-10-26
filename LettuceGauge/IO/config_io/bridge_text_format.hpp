@@ -162,8 +162,6 @@ bool SaveConfigBridgeText(const GaugeField& U, const std::string& filename, cons
         }
 
     }
-    config_ofstream.close();
-    config_ofstream.clear();
     auto end_write_config {std::chrono::high_resolution_clock::now()};
     if (!config_ofstream)
     {
