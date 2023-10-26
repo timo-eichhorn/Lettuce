@@ -15,7 +15,7 @@
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
 #include "LettuceGauge/IO/config_io/bridge_text_format.hpp"
-#include "LettuceGauge/IO/config_io/checkpoint_writer.hpp"
+#include "LettuceGauge/IO/config_io/checkpoint_manager.hpp"
 #include "LettuceGauge/IO/parameter_io.hpp"
 #include "LettuceGauge/iterators/iterators.hpp"
 #include "LettuceGauge/math/su2.hpp"
@@ -381,9 +381,14 @@ int main(int argc, char** argv)
     }
 
     // For rotating checkpoints
-    CheckpointWriter Checkpointer(checkpointdirectory, n_checkpoint_backups);
+    constexpr bool    create_checkpoint_subdirectories {true};
+    CheckpointManager Checkpointer(checkpointdirectory, n_checkpoint_backups, create_checkpoint_subdirectories);
+    std::cout << "Automatic checkpoint directory in " << Checkpointer.CheckpointDirectory() << std::endl;
 
     Gluon.SetToIdentity();
+
+    // CheckpointManager CheckpointLoader("SU(3)_N=4x4x4x4_beta=1.000000 (1)/checkpoints", n_checkpoint_backups, false);
+    // CheckpointLoader.LoadCheckpoint(LoadConfigBMW, global_prng, Gluon, "final_config.conf", "final_prng_state.txt", "final_distribution_state.txt");
 
     auto startcalc {std::chrono::system_clock::now()};
     datalog.open(logfilepath, std::fstream::out | std::fstream::app);
@@ -547,7 +552,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
             }
         }
     }
@@ -600,7 +605,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
             }
         }
     }
@@ -677,8 +682,8 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
-                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, "config_temper");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, "config_temper.conf");
             }
         }
         datalog_temper.close();

@@ -1,8 +1,8 @@
-#ifndef LETTUCE_CHECKPOINT_WRITER_HPP
-#define LETTUCE_CHECKPOINT_WRITER_HPP
+#ifndef LETTUCE_CHECKPOINT_MANAGER_HPP
+#define LETTUCE_CHECKPOINT_MANAGER_HPP
 
 // Non-standard library headers
-// ...
+#include "../ansi_colors.hpp"
 //----------------------------------------
 // Standard library headers
 // ...
@@ -20,28 +20,37 @@
 //| using multiple rotating checkpoints. Older checkpoints will be automatically    |
 //| moved to their own backup subdirectories which are named according to the       |
 //| scheme 'backup1', 'backup2', ... where higher indices indicate OLDER backups.   |
+//| Additionally, the class also manages loading existing checkpoints, which may be |
+//| useful when restarting/extending previous runs.                                 |
 //+---------------------------------------------------------------------------------+
 
-struct CheckpointWriter
+struct CheckpointManager
 {
+    private:
+        std::filesystem::path checkpoint_directory;
     public:
         // TODO: Make checkpoint_directory non-const?
-        const std::filesystem::path checkpoint_directory;
-        const int                   n_checkpoint_files;
+        const int             n_checkpoint_files;
 
-        CheckpointWriter(const std::filesystem::path checkpoint_directory_in, const int n_checkpoint_files_in) noexcept :
+        CheckpointManager(const std::filesystem::path& checkpoint_directory_in, const int n_checkpoint_files_in, const bool create_subdirectories) noexcept :
         checkpoint_directory(checkpoint_directory_in), n_checkpoint_files(n_checkpoint_files_in)
         {
-            std::error_code err;
-            for (int checkpoint_count = 1; checkpoint_count < n_checkpoint_files; ++checkpoint_count)
+            // No need to create subdirectories when trying to read from existing directories
+            if (create_subdirectories)
             {
-                std::filesystem::path current_backup_path {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_count)};
-                std::filesystem::create_directories(current_backup_path, err);
-                if (err)
-                {
-                    std::cout << Lettuce::Color::Red << "Creating checkpoint backup directory " << current_backup_path << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
-                }
+                CreateSubdirectories();
             }
+        }
+
+        std::filesystem::path CheckpointDirectory() const
+        {
+            return checkpoint_directory;
+        }
+
+        void CheckpointDirectory(const std::filesystem::path& checkpoint_directory_in)
+        {
+            std::cout << "Changing checkpoint directory from " << checkpoint_directory << " to " << checkpoint_directory_in << std::endl;
+            checkpoint_directory = checkpoint_directory_in;
         }
 
         std::string ReturnBackupSubdirectory(const int checkpoint_counter) const
@@ -56,22 +65,37 @@ struct CheckpointWriter
             }
         }
 
-        void RotateFiles(const std::string& current_filename, const std::string& old_filename, const bool copy_file = true) const
+        void CreateSubdirectories() const
         {
-            if (std::filesystem::exists(current_filename))
+            std::cout << "Creating checkpoint backup directories in " << checkpoint_directory << std::endl;
+            std::error_code err;
+            for (int checkpoint_count = 1; checkpoint_count < n_checkpoint_files; ++checkpoint_count)
+            {
+                std::filesystem::path current_backup_path {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_count)};
+                std::filesystem::create_directories(current_backup_path, err);
+                if (err)
+                {
+                    std::cerr << Lettuce::Color::Red << "Creating checkpoint backup directory " << current_backup_path << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
+                }
+            }
+        }
+
+        void RotateFiles(const std::filesystem::path& current_filepath, const std::filesystem::path& old_filepath, const bool copy_file = true) const
+        {
+            if (std::filesystem::exists(current_filepath))
             {
                 std::error_code err;
                 if (copy_file)
                 {
-                    std::filesystem::copy_file(current_filename, old_filename, std::filesystem::copy_options::overwrite_existing, err);
+                    std::filesystem::copy_file(current_filepath, old_filepath, std::filesystem::copy_options::overwrite_existing, err);
                 }
                 else
                 {
-                    std::filesystem::rename(current_filename, old_filename, err);
+                    std::filesystem::rename(current_filepath, old_filepath, err);
                 }
                 if (err)
                 {
-                    std::cout << Lettuce::Color::Red << "Rotating file " << current_filename << " to " << old_filename << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
+                    std::cerr << Lettuce::Color::Red << "Rotating file " << current_filepath << " to " << old_filepath << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
                 }
             }
         }
@@ -119,6 +143,13 @@ struct CheckpointWriter
             SaveFunction(U, checkpoint_directory / filename_config, overwrite);
             prng.SaveState(checkpoint_directory / filename_prng, checkpoint_directory / filename_normal_distribution, overwrite);
         }
+
+        template<typename FuncT, typename prngT>
+        void LoadCheckpoint(FuncT&& LoadFunction, prngT& prng, GaugeField& U, const std::string& filename_config, const std::string& filename_prng, const std::string& filename_normal_distribution) const
+        {
+            LoadFunction(U, checkpoint_directory / filename_config);
+            prng.LoadState(checkpoint_directory / filename_prng, checkpoint_directory / filename_normal_distribution);
+        }
 };
 
-#endif // LETTUCE_CHECKPOINT_WRITER_HPP
+#endif // LETTUCE_CHECKPOINT_MANAGER_HPP
