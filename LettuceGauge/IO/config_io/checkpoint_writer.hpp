@@ -8,32 +8,43 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
-#include <chrono>
 #include <filesystem>
 #include <string>
-#include <thread>
-// #include <string_view>
+#include <system_error>
 //----------------------------------------
 // Standard C headers
 // ...
 
 //+---------------------------------------------------------------------------------+
 //| This file provides a class to save configurations automatically during runs by  |
-//| using multiple rotating checkpoints.                                            |
+//| using multiple rotating checkpoints. Older checkpoints will be automatically    |
+//| moved to their own backup subdirectories which are named according to the       |
+//| scheme 'backup1', 'backup2', ... where higher indices indicate OLDER backups.   |
 //+---------------------------------------------------------------------------------+
 
 struct CheckpointWriter
 {
     public:
-        const int n_checkpoint_files;
-    // private:
-    //           int checkpoint_counter {0};
-    public:
-        CheckpointWriter(const int n_checkpoint_files_in) noexcept :
-        n_checkpoint_files(n_checkpoint_files_in)
-        {}
+        // TODO: Make checkpoint_directory non-const?
+        const std::filesystem::path checkpoint_directory;
+        const int                   n_checkpoint_files;
 
-        std::string ReturnCheckpointAppendix(const int checkpoint_counter) const
+        CheckpointWriter(const std::filesystem::path checkpoint_directory_in, const int n_checkpoint_files_in) noexcept :
+        checkpoint_directory(checkpoint_directory_in), n_checkpoint_files(n_checkpoint_files_in)
+        {
+            std::error_code err;
+            for (int checkpoint_count = 1; checkpoint_count < n_checkpoint_files; ++checkpoint_count)
+            {
+                std::filesystem::path current_backup_path {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_count)};
+                std::filesystem::create_directories(current_backup_path, err);
+                if (err)
+                {
+                    std::cout << Lettuce::Color::Red << "Creating checkpoint backup directory " << current_backup_path << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
+                }
+            }
+        }
+
+        std::string ReturnBackupSubdirectory(const int checkpoint_counter) const
         {
             if (checkpoint_counter == 0)
             {
@@ -41,70 +52,72 @@ struct CheckpointWriter
             }
             else
             {
-                return ".bak" + std::to_string(checkpoint_counter);
+                return "backup" + std::to_string(checkpoint_counter);
             }
         }
 
-        void RotateFiles(std::string_view current_filename, std::string_view old_filename) const
+        void RotateFiles(const std::string& current_filename, const std::string& old_filename, const bool copy_file = true) const
         {
-            std::cout << "Old file:     " << old_filename << std::endl;
-            std::cout << "Current file: " << current_filename << std::endl;
             if (std::filesystem::exists(current_filename))
             {
-                // std::filesystem::copy_file(current_filename, old_filename, std::filesystem::copy_options::overwrite_existing);
-                std::cout << "Copying file " << current_filename << " to file " << old_filename << std::endl;
-                bool tmp = std::filesystem::copy_file(current_filename, old_filename, std::filesystem::copy_options::overwrite_existing);
-                std::cout << "Success status: " << tmp << std::endl;
+                std::error_code err;
+                if (copy_file)
+                {
+                    std::filesystem::copy_file(current_filename, old_filename, std::filesystem::copy_options::overwrite_existing, err);
+                }
+                else
+                {
+                    std::filesystem::rename(current_filename, old_filename, err);
+                }
+                if (err)
+                {
+                    std::cout << Lettuce::Color::Red << "Rotating file " << current_filename << " to " << old_filename << " failed:\n" << err << Lettuce::Color::Reset << std::endl;
+                }
             }
         }
 
         // TODO: Currently this is a pretty redundant wrapper function. Would it make sense to move some stuff out of the SaveFunctions into this function?
-        template<typename FuncT>
-        void SaveCheckpoint(FuncT&& SaveFunction, const GaugeField& U, const std::string& filename, const bool overwrite = false) const
-        {
-            SaveFunction(U, filename, overwrite);
-        }
+        // template<typename FuncT>
+        // void SaveCheckpoint(FuncT&& SaveFunction, const GaugeField& U, const std::string& filename, const bool overwrite = false) const
+        // {
+        //     SaveFunction(U, filename, overwrite);
+        // }
 
-        // The most up-to-date checkpoint is always saved as 'filename', while backups are saved as 'filename.bak1', 'filename.bak2', ...
-        // Note that here the highest number indicates the file is the OLDEST
         template<typename FuncT>
         void AlternatingConfigCheckpoints(FuncT&& SaveFunction, const GaugeField& U, const std::string& filename_config) const
         {
-            // For alternating checkpoints it does not make sense to disable overwrite
-            constexpr bool overwrite {true};
             // Go backwards from n_checkpoint_files to 1 and update the old backup checkpoints
-            // If the file in question exists rename it by changing the index from n to n + 1
-            // In the case that n = n_checkpoint_files delete the file
             for (int checkpoint_counter = n_checkpoint_files - 1; checkpoint_counter > 0; --checkpoint_counter)
             {
-                std::string old_file_appendix     {ReturnCheckpointAppendix(checkpoint_counter)};
-                std::string current_file_appendix {ReturnCheckpointAppendix(checkpoint_counter - 1)};
-                RotateFiles(filename_config + current_file_appendix, filename_config + old_file_appendix);
+                std::filesystem::path old_subdir     {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_counter)};
+                std::filesystem::path current_subdir {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_counter - 1)};
+                // For the last update rename/move the file so we avoid the overwrite warning in the save function below
+                bool copy_file {checkpoint_counter != 1};
+                RotateFiles(current_subdir / filename_config, old_subdir / filename_config, copy_file);
             }
-            SaveFunction(U, filename_config, overwrite);
+            // For alternating checkpoints it does not make sense to disable overwrite
+            constexpr bool overwrite {true};
+            SaveFunction(U, checkpoint_directory / filename_config, overwrite);
         }
 
-        // The most up-to-date checkpoint is always saved as 'filename', while backups are saved as 'filename.bak1', 'filename.bak2', ...
-        // Note that here the highest number indicates the file is the OLDEST
         template<typename FuncT, typename prngT>
         void AlternatingCheckpoints(FuncT&& SaveFunction, prngT& prng, const GaugeField& U, const std::string& filename_config, const std::string& filename_prng, const std::string& filename_normal_distribution) const
         {
-            // For alternating checkpoints it does not make sense to disable overwrite
-            constexpr bool overwrite {true};
             // Go backwards from n_checkpoint_files to 1 and update the old backup checkpoints
-            // If the file in question exists rename it by changing the index from n to n + 1
-            // In the case that n = n_checkpoint_files delete the file
             for (int checkpoint_counter = n_checkpoint_files - 1; checkpoint_counter > 0; --checkpoint_counter)
             {
-                std::string old_file_appendix     {ReturnCheckpointAppendix(checkpoint_counter)};
-                std::string current_file_appendix {ReturnCheckpointAppendix(checkpoint_counter - 1)};
-                RotateFiles(filename_config              + current_file_appendix, filename_config              + old_file_appendix);
-                RotateFiles(filename_prng                + current_file_appendix, filename_prng                + old_file_appendix);
-                RotateFiles(filename_normal_distribution + current_file_appendix, filename_normal_distribution + old_file_appendix);
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                std::filesystem::path old_subdir     {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_counter)};
+                std::filesystem::path current_subdir {checkpoint_directory / ReturnBackupSubdirectory(checkpoint_counter - 1)};
+                // For the last update rename/move the file so we avoid the overwrite warning in the save function below
+                bool copy_file {checkpoint_counter != 1};
+                RotateFiles(current_subdir / filename_config,                old_subdir / filename_config,              copy_file);
+                RotateFiles(current_subdir / filename_prng,                  old_subdir / filename_prng,                copy_file);
+                RotateFiles(current_subdir / filename_normal_distribution,   old_subdir / filename_normal_distribution, copy_file);
             }
-            SaveFunction(U, filename_config, overwrite);
-            prng.SaveState(filename_prng, filename_normal_distribution, overwrite);
+            // For alternating checkpoints it does not make sense to disable overwrite
+            constexpr bool overwrite {true};
+            SaveFunction(U, checkpoint_directory / filename_config, overwrite);
+            prng.SaveState(checkpoint_directory / filename_prng, checkpoint_directory / filename_normal_distribution, overwrite);
         }
 };
 

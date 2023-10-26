@@ -381,7 +381,7 @@ int main(int argc, char** argv)
     }
 
     // For rotating checkpoints
-    CheckpointWriter Checkpointer(n_checkpoint_backups);
+    CheckpointWriter Checkpointer(checkpointdirectory, n_checkpoint_backups);
 
     Gluon.SetToIdentity();
 
@@ -547,7 +547,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
             }
         }
     }
@@ -600,7 +600,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
             }
         }
     }
@@ -677,8 +677,8 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, checkpointdirectory + "/config.conf", checkpointdirectory + "/prng_state", checkpointdirectory + "/distribution_state");
-                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, checkpointdirectory + "/config_temper");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state", "distribution_state");
+                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, "config_temper");
             }
         }
         datalog_temper.close();
