@@ -359,9 +359,8 @@ double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
         F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
         Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
     }
-    // The factor -1/64 comes from the field strength tensor terms (factor -1/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
-    // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4
-    return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
+    // Correct prefactor when using the clover term obtained from FieldStrengthTensor::Clover()
+    return 1.0 / (16.0 * pi<double> * pi<double>) * Q;
 }
 
 [[nodiscard]]
