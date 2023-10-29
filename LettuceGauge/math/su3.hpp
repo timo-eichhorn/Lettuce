@@ -369,46 +369,28 @@ namespace SU3::Projection
     // Projects a single link back on SU(3) via Gram-Schmidt
     void GramSchmidt(Matrix_SU3& Mat) noexcept
     {
-        // floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 0) * std::conj(Mat(0, 0)) + Mat(0, 1) * std::conj(Mat(0, 1)) + Mat(0, 2) * std::conj(Mat(0, 2))))};
-        // for (int n = 0; n < 3; ++n)
-        // {
-        //     Mat(0, n) = norm0 * Mat(0, n);
-        // }
-        // std::complex<floatT> psi {Mat(1, 0) * std::conj(Mat(0, 0)) + Mat(1, 1) * std::conj(Mat(0, 1)) + Mat(1, 2) * std::conj(Mat(0, 2))};
-        // for (int n = 0; n < 3; ++n)
-        // {
-        //     Mat(1, n) =  Mat(1, n) - psi * Mat(0, n);
-        // }
-        // floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(1, 0) * std::conj(Mat(1, 0)) + Mat(1, 1) * std::conj(Mat(1, 1)) + Mat(1, 2) * std::conj(Mat(1, 2))))};
-        // for (int n = 0; n < 3; ++n)
-        // {
-        //     Mat(1, n) = norm1 * Mat(1, n);
-        // }
+        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 0) * std::conj(Mat(0, 0)) + Mat(0, 1) * std::conj(Mat(0, 1)) + Mat(0, 2) * std::conj(Mat(0, 2))))};
+        for (int n = 0; n < 3; ++n)
+        {
+            Mat(0, n) = norm0 * Mat(0, n);
+        }
+        std::complex<floatT> psi {Mat(1, 0) * std::conj(Mat(0, 0)) + Mat(1, 1) * std::conj(Mat(0, 1)) + Mat(1, 2) * std::conj(Mat(0, 2))};
+        for (int n = 0; n < 3; ++n)
+        {
+            Mat(1, n) =  Mat(1, n) - psi * Mat(0, n);
+        }
+        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(1, 0) * std::conj(Mat(1, 0)) + Mat(1, 1) * std::conj(Mat(1, 1)) + Mat(1, 2) * std::conj(Mat(1, 2))))};
+        for (int n = 0; n < 3; ++n)
+        {
+            Mat(1, n) = norm1 * Mat(1, n);
+        }
         // Mat(2, 0) = std::conj(Mat(0, 1) * Mat(1, 2) - Mat(0, 2) * Mat(1, 1));
         // Mat(2, 1) = std::conj(Mat(0, 2) * Mat(1, 0) - Mat(0, 0) * Mat(1, 2));
         // Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(0, 1) * Mat(1, 0));
-        // Per default, Eigen uses a column-major storage order, so the first index is the inner index in terms of the memory layout
-        floatT norm0 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 0) * std::conj(Mat(0, 0)) + Mat(1, 0) * std::conj(Mat(1, 0)) + Mat(2, 0) * std::conj(Mat(2, 0))))};
-        for (int n = 0; n < 3; ++n)
-        {
-            Mat(n, 0) = norm0 * Mat(n, 0);
-        }
-        std::complex<floatT> psi {Mat(0, 1) * std::conj(Mat(0, 0)) + Mat(1, 1) * std::conj(Mat(1, 0)) + Mat(2, 1) * std::conj(Mat(2, 0))};
-        for (int n = 0; n < 3; ++n)
-        {
-            Mat(n, 1) = Mat(n, 1) - psi * Mat(n, 0);
-        }
-        floatT norm1 {static_cast<floatT>(1.0)/std::sqrt(std::real(Mat(0, 1) * std::conj(Mat(0, 1)) + Mat(1, 1) * std::conj(Mat(1, 1)) + Mat(2, 1) * std::conj(Mat(2, 1))))};
-        for (int n = 0; n < 3; ++n)
-        {
-            Mat(n, 1) = norm1 * Mat(n, 1);
-        }
-        Mat(0, 2) = std::conj(Mat(1, 0) * Mat(2, 1) - Mat(2, 0) * Mat(1, 1));
-        Mat(1, 2) = std::conj(Mat(2, 0) * Mat(0, 1) - Mat(0, 0) * Mat(2, 1));
-        Mat(2, 2) = std::conj(Mat(0, 0) * Mat(1, 1) - Mat(1, 0) * Mat(0, 1));
-        // TODO: If RestoreLastColumn() is declared as an inline function, we get the same results as using the lines above,
+        // TODO: Comment from old version using column-major storage order. Still valid?
+        //       If RestoreLastColumn() is declared as an inline function, we get the same results as using the lines above,
         //       but if it is not declared as inline, we get different results. Huhh???
-        // RestoreLastColumn(Mat);
+        RestoreLastRow(Mat);
     }
 
     //-----
@@ -471,6 +453,12 @@ namespace SU3::Projection
     Matrix_3x3 Hermitian(const Matrix_3x3& Mat) noexcept
     {
         return static_cast<floatT>(0.5) * (Mat + Mat.adjoint());
+    }
+
+    [[nodiscard]]
+    Matrix_3x3 Traceless(const Matrix_3x3& Mat) noexcept
+    {
+        return Mat - static_cast<floatT>(1.0/3.0) * Mat.trace() * Matrix_3x3::Identity();
     }
 } // namespace SU3::Projection
 

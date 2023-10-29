@@ -104,6 +104,34 @@ namespace FieldStrengthTensor
             F(current_site, 3, 3).setZero();
         }
     }
+    void MakeComponentsTraceless(FullTensor& F) noexcept
+    {
+        #pragma omp parallel for
+        for (int t = 0; t < Nt; ++t)
+        for (int x = 0; x < Nx; ++x)
+        for (int y = 0; y < Ny; ++y)
+        for (int z = 0; z < Nz; ++z)
+        {
+            site_coord current_site {t, x, y, z};
+            F(current_site, 0, 1) = SU3::Projection::Traceless(F(current_site, 0, 1));
+            F(current_site, 1, 0) = -F(t, x, y, z, 0, 1).adjoint();
+
+            F(current_site, 0, 2) = SU3::Projection::Traceless(F(current_site, 0, 2));
+            F(current_site, 2, 0) = -F(t, x, y, z, 0, 2).adjoint();
+
+            F(current_site, 0, 3) = SU3::Projection::Traceless(F(current_site, 0, 3));
+            F(current_site, 3, 0) = -F(t, x, y, z, 0, 3).adjoint();
+
+            F(current_site, 1, 2) = SU3::Projection::Traceless(F(current_site, 1, 2));
+            F(current_site, 2, 1) = -F(t, x, y, z, 1, 2).adjoint();
+
+            F(current_site, 1, 3) = SU3::Projection::Traceless(F(current_site, 1, 3));
+            F(current_site, 3, 1) = -F(t, x, y, z, 1, 3).adjoint();
+
+            F(current_site, 2, 3) = SU3::Projection::Traceless(F(current_site, 2, 3));
+            F(current_site, 3, 2) = -F(t, x, y, z, 2, 3).adjoint();
+        }
+    }
 } // namespace FieldStrengthTensor
 
 namespace EnergyDensity

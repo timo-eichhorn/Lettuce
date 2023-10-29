@@ -69,6 +69,7 @@ inline int n_smear {10};                                     // Number of smeari
 inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter
 inline floatT rho_stout_metadynamics {0.12};                // Stout smearing parameter for Metadynamics CV
+inline constexpr int n_therm {20};                          // Number of update sweeps before starting actual update loop (the type of update sweeps is specified below)
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {1};                        // Number of heat bath sweeps per total update sweep
@@ -115,9 +116,9 @@ uint_fast64_t acceptance_count_instanton         {0};       // Instanton update 
 //-----
 // NxN_matrix is the same type as SUN_matrix, the different names are only meant to distinguish between
 // SU(N) group elements and NxN matrices mathematically
-using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2>;
+using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2, Eigen::RowMajor>;
 using Matrix_SU2     = Matrix_2x2;
-using Matrix_3x3     = Eigen::Matrix<std::complex<floatT>, 3, 3>;
+using Matrix_3x3     = Eigen::Matrix<std::complex<floatT>, 3, 3, Eigen::RowMajor>;
 using Matrix_SU3     = Matrix_3x3;
 using Local_tensor   = std::array<std::array<Matrix_SU3, 4>, 4>;
 
