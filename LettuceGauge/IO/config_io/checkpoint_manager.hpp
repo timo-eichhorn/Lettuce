@@ -9,6 +9,7 @@
 //----------------------------------------
 // Standard C++ headers
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <system_error>
 //----------------------------------------
@@ -149,6 +150,11 @@ struct CheckpointManager
         {
             LoadFunction(U, checkpoint_directory / filename_config);
             prng.LoadState(checkpoint_directory / filename_prng, checkpoint_directory / filename_normal_distribution);
+        }
+
+        void CreateCompletedFile(const std::filesystem::path& completed_filepath)
+        {
+            std::ofstream completed_stream(completed_filepath / "completed_run", std::fstream::out);
         }
 };
 

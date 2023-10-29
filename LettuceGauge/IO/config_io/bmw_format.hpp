@@ -34,7 +34,7 @@
 //|    - Storage order is: t, z, y, x, mu (from slowest to fastest)                 |
 //|    - The directions are ordered as: x, y, z, t (from slowest to fastest)        |
 //|    - Each link takes up 96 bytes (first two rows in double precision), and the  |
-//|      order of entries is:                                                       |
+//|      order of entries is row-major:                                             |
 //|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
 //|      Re(U(2, 1)) Im(U(2, 1)) Re(U(2, 2)) Im(U(2, 2)) Re(U(2, 3)) Im(U(2, 3))    |
 //|    - The entries are stored in big-endian format                                |
@@ -62,7 +62,7 @@ struct Checksum_Adler64
         std::uint64_t sum_b {0};
         std::uint64_t revi;
         revi = (number_of_blocks_in_total - block_id) * static_cast<unsigned int>(2 * block_size_in_64bit_units);
-        for(int i = 0; i < block_size_in_64bit_units; ++i)
+        for (int i = 0; i < block_size_in_64bit_units; ++i)
         {
             std::uint64_t d0 {data[i] >> 32};
             std::uint64_t d1 {data[i] & 0xffffffff};
@@ -87,7 +87,7 @@ struct Checksum_Adler64
     {
         if (final == Adler64_prime)
         {
-            std::cout << Lettuce::Color::BoldRed << "Invalid value for final in Checksum_Adler64 struct! Make sure to call Finalize() first!" << Lettuce::Color::Reset << std::endl;
+            std::cerr << Lettuce::Color::BoldRed << "Invalid value for final in Checksum_Adler64 struct! Make sure to call Finalize() first!" << Lettuce::Color::Reset << std::endl;
             // TODO: Perhaps better an exception here?
             // return std::to_string(-1);
         }
@@ -98,8 +98,6 @@ struct Checksum_Adler64
         return hex_stream.str();
     }
 };
-
-
 
 template<typename T>
 void SwapEndianness(T* in) noexcept

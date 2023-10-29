@@ -128,6 +128,15 @@ class PRNG4D
         //     }
         // }
 
+        // void SkipAhead(unsigned long long skip_distance) noexcept
+        // {
+        //     for (std::size_t index = 0; index < size; ++index)
+        //     {
+        //         unsigned long long total_skip_distance {index * skip_distance};
+        //         random_generators[index].skip(total_skip_distance);
+        //     }
+        // }
+
         // (Re)seed all PRNGs with a custom seed source
         template<typename seed_sourceT>
         void SeedPRNGs(seed_sourceT&& seed_source) noexcept
@@ -190,7 +199,7 @@ class PRNG4D
             //-----
             std::ifstream state_stream(filename);
             state_stream.imbue(std::locale("C"));
-            for(auto& prng : random_generators)
+            for (auto& prng : random_generators)
             {
                 state_stream >> prng;
             }
@@ -243,7 +252,7 @@ class PRNG4D
             //-----
             std::ifstream state_stream(filename);
             state_stream.imbue(std::locale("C"));
-            for(auto& normal_distribution : normal_distributions)
+            for (auto& normal_distribution : normal_distributions)
             {
                 state_stream >> normal_distribution;
             }
