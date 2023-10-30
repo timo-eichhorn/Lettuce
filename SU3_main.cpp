@@ -336,9 +336,11 @@ int main(int argc, char** argv)
     std::cout << "Automatic checkpoint directory in " << Checkpointer.CheckpointDirectory() << std::endl;
 
     Gluon.SetToIdentity();
-
-    // CheckpointManager CheckpointLoader("SU(3)_N=4x4x4x4_beta=1.000000 (1)/checkpoints", n_checkpoint_backups, false);
-    // CheckpointLoader.LoadCheckpoint(LoadConfigBMW, global_prng, Gluon, "final_config.conf", "final_prng_state.txt", "final_distribution_state.txt");
+    if (extend_run)
+    {
+        LoadConfigBMW(Gluon, old_maindirectory + "/checkpoints/final_config.conf");
+        global_prng.LoadState(old_maindirectory + "/checkpoints/final_prng_state.txt", old_maindirectory + "/checkpoints/final_distribution_state.txt");
+    }
 
     auto startcalc {std::chrono::system_clock::now()};
     datalog.open(logfilepath, std::fstream::out | std::fstream::app);

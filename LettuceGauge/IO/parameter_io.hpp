@@ -82,6 +82,126 @@ struct ParameterList
     NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
 };
 
+void ExtendRun(const std::filesystem::path& old_run_directory)
+{
+    // TODO: This function currently only supports conventional runs, not MetaD or PT-MetaD runs
+    //       Need to also check for metapotential.txt and log_temper.txt in those cases
+    std::filesystem::path old_completedfilepath {old_run_directory / "completed_run"};
+    std::filesystem::path old_parameterfilepath {old_run_directory / "parameters.txt"};
+    std::filesystem::path old_logfilepath       {old_run_directory / "log.txt"};
+    if (not std::filesystem::exists(old_run_directory))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_run_directory << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    if (not std::filesystem::exists(old_completedfilepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_completedfilepath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    if (not std::filesystem::exists(old_parameterfilepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_parameterfilepath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    if (not std::filesystem::exists(old_logfilepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_logfilepath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    // Check for final checkpoints
+    std::filesystem::path old_configpath       {old_run_directory / "checkpoints" / "final_config.conf"};
+    std::filesystem::path old_prngstatepath    {old_run_directory / "checkpoints" / "final_prng_state.txt"};
+    std::filesystem::path old_distributionpath {old_run_directory / "checkpoints" / "final_distribution_state.txt"};
+    if (not std::filesystem::exists(old_configpath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_configpath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    if (not std::filesystem::exists(old_prngstatepath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_prngstatepath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    if (not std::filesystem::exists(old_distributionpath))
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_distributionpath << Lettuce::Color::Reset << std::endl;
+        return;
+    }
+    // Required files seem to exists, so proceed by setting the required global parameters
+    std::cout << Lettuce::Color::BoldBlue << "Extending run found in path: " << old_run_directory << Lettuce::Color::Reset << std::endl;
+    old_maindirectory = old_run_directory;
+    extend_run = true;
+    // Skip thermalization
+    n_therm = 0;
+    // TODO: At this point we should probably 
+}
+
+// TODO: Provide both ResumeRun() and ExtendRun() functions?
+// void ResumeRun(const std::string_view parameterfilepath)
+// {
+//     // Need to write data to the following variables and objects:
+//     // - beta
+//     // - n_run
+//     // - expectation_period
+//     // - n_run_inverse
+//     // - Gluon (or some other gaugefield)
+//     // - global_prng (or some other PRNG)
+//     // - n_count (current update count)
+
+//     std::ifstream pstream;
+//     if (!OpenFile(pstream, parameterfilepath))
+//     {
+//         return;
+//     }
+//     // Read parameters from specified file (use ReadParameter function?)
+//     ReadParameters(parameterfilepath);
+//     // ReadParameters(parameterfilepath);
+//     // Check compatibility of parameters (e.g., lattice volume)
+//     // ...
+//     // Check final config/measurement number (somehow also check compatibility of measurement and config number)
+//     // ...
+//     int         current_line_count {0};
+//     int         measurement_count  {0};
+//     int         update_count       {0};
+//     int         final_token_line   {0};
+//     std::size_t start_pos          {std::string::npos};
+//     std::size_t end_pos            {std::string::npos};
+//     std::string current_line;
+//     while (std::getline(pstream, current_line))
+//     {
+//         ++current_line_count;
+//         if (current_line.find("[Step") != std::string::npos)
+//         {
+//             ++measurement_count;
+//             final_token_line = current_line_count;
+//         }
+//     }
+//     // Move to the appropriate line in the file and attempt to get the number of updates
+//     pstream.clear();
+//     pstream.seekg(0, pstream.beg);
+//     for (std::size_t ind = 1; ind < final_token_line; ++ind)
+//     {
+//         pstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+//     }
+//     std::getline(pstream, current_line);
+//     // Start search from pos (do not need to cover case where string is not found, since it is already checked above)
+//     start_pos = FindTokenEnd(current_line, "[Step ");
+//     // Find closing bracket "]" and read measurement count
+//     if ((end_pos = current_line.find("]", start_pos)) != std::string::npos)
+//     {
+//         measurement_count = ConvertStringTo<int>(current_line.substr(start_pos, end_pos - start_pos));
+//     }
+//     // Read final config and prng state
+//     // ...
+//     // Since we probably want to reuse the existing directory, we need to set the following global variables:
+//     // maindirectory = ;
+//     // checkpointdirectory = ;
+//     // logfilepath = ;
+//     // parameterfilepath = ;
+//     // metapotentialfilepath = ;
+// }
+
 //-----
 // Check if specified command line argument exists
 
@@ -150,12 +270,12 @@ void Configuration(const std::vector<std::string>& command_line_arguments)
     // If command line arguments are passed, see if parameters are passed that way
     if (command_line_arguments.size() > 1)
     {
-        // if (CheckForCommandLineArgument(command_line_arguments, "--extend_run="))
-        // {
-        //     std::string extracted_path = ExtractCommandLineArgument(command_line_arguments, "--extend_run=");
-        //     std::cout << "Extracted path: " << extracted_path << std::endl;
-        //     // TODO: ExtendRun() function that checks if the directory exists and does all the required setup
-        // }
+        if (CheckForCommandLineArgument(command_line_arguments, "--extend_run="))
+        {
+            std::string extracted_path = ExtractCommandLineArgument(command_line_arguments, "--extend_run=");
+            // Check if the directory exists and perform all the required setup
+            ExtendRun(extracted_path);
+        }
         // Attempt to read parameters (if one of the conversions from string to the parameter datatype fails, the program crashes)
         // beta
         if (CheckForCommandLineArgument(command_line_arguments, "--beta="))
@@ -510,89 +630,6 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     log << "epsilon: "                 << epsilon                                      << "\n";
     log << std::ctime(&end_time)                                                       << "\n";
     log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
-}
-
-// class Loader
-// {
-//     private:
-//         std::filesystem::path dirpath;
-//     public:
-//         // TODO: What type to use? std::filesystem::path or std::string_view?
-//         void SetPath(const std::filesystem::path & dirpath_in)
-//         {
-//             dirpath = dirpath_in;
-//         }
-
-//         // Somehow want to support different formats
-//         void LoadConfiguration()
-//         {
-//             //
-//         }
-// };
-
-// TODO: Provide both ResumeRun() and ExtendRun() functions?
-void ResumeRun(const std::string_view parameterfilepath)
-{
-    // Need to write data to the following variables and objects:
-    // - beta
-    // - n_run
-    // - expectation_period
-    // - n_run_inverse
-    // - Gluon (or some other gaugefield)
-    // - global_prng (or some other PRNG)
-    // - n_count (current update count)
-
-    std::ifstream pstream;
-    if (!OpenFile(pstream, parameterfilepath))
-    {
-        return;
-    }
-    // Read parameters from specified file (use ReadParameter function?)
-    ReadParameters(parameterfilepath);
-    // ReadParameters(parameterfilepath);
-    // Check compatibility of parameters (e.g., lattice volume)
-    // ...
-    // Check final config/measurement number (somehow also check compatibility of measurement and config number)
-    // ...
-    int         current_line_count {0};
-    int         measurement_count  {0};
-    int         update_count       {0};
-    int         final_token_line   {0};
-    std::size_t start_pos          {std::string::npos};
-    std::size_t end_pos            {std::string::npos};
-    std::string current_line;
-    while (std::getline(pstream, current_line))
-    {
-        ++current_line_count;
-        if (current_line.find("[Step") != std::string::npos)
-        {
-            ++measurement_count;
-            final_token_line = current_line_count;
-        }
-    }
-    // Move to the appropriate line in the file and attempt to get the number of updates
-    pstream.clear();
-    pstream.seekg(0, pstream.beg);
-    for (std::size_t ind = 1; ind < final_token_line; ++ind)
-    {
-        pstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    }
-    std::getline(pstream, current_line);
-    // Start search from pos (do not need to cover case where string is not found, since it is already checked above)
-    start_pos = FindTokenEnd(current_line, "[Step ");
-    // Find closing bracket "]" and read measurement count
-    if ((end_pos = current_line.find("]", start_pos)) != std::string::npos)
-    {
-        measurement_count = ConvertStringTo<int>(current_line.substr(start_pos, end_pos - start_pos));
-    }
-    // Read final config and prng state
-    // ...
-    // Since we probably want to reuse the existing directory, we need to set the following global variables:
-    // maindirectory = ;
-    // checkpointdirectory = ;
-    // logfilepath = ;
-    // parameterfilepath = ;
-    // metapotentialfilepath = ;
 }
 
 #endif // LETTUCE_PARAMETER_IO_HPP

@@ -63,19 +63,20 @@ concept StencilAlgorithm = requires(T algorithm)
 
 int n_run;                                                  // Number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-int checkpoint_period {100};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
-int n_checkpoint_backups {3};                               // Number of rotating checkpoints to use
+int checkpoint_period {500};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
+int n_checkpoint_backups {2};                               // Number of rotating checkpoints to use
 inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
 inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter
 inline floatT rho_stout_metadynamics {0.12};                // Stout smearing parameter for Metadynamics CV
-inline constexpr int n_therm {20};                          // Number of update sweeps before starting actual update loop (the type of update sweeps is specified below)
+inline bool extend_run {false};                             // Set to true only if extending an existing run (among other things skips thermalization)
+inline int n_therm {20};                                     // Number of update sweeps before starting actual update loop (the type of update sweeps is specified below)
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
-inline constexpr int n_heatbath {1};                        // Number of heat bath sweeps per total update sweep
-inline constexpr int n_hmc {0};                             // Number of integration steps per HMC update
+inline constexpr int n_heatbath {0};                        // Number of heat bath sweeps per total update sweep
+inline constexpr int n_hmc {5};                             // Number of integration steps per HMC update
 inline constexpr double hmc_trajectory_length {1.0};        // Trajectory length of a single HMC update
-inline constexpr int n_orelax {4};                          // Number of overrelaxation sweeps per total update sweep
+inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
 inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
@@ -89,6 +90,7 @@ double DeltaH;                                              // Energy change dur
 double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
+std::string old_maindirectory;                              // Main directory of previous run we wish to extend
 std::string maindirectory;                                  // Main directory containing all other subdirectories and files
 std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
 std::string logfilepath;                                    // Filepath (log)
