@@ -118,7 +118,10 @@ Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
     tmp << buffer[0] + i<floatT> * buffer[1], buffer[2] + i<floatT> * buffer[3], buffer[4] + i<floatT> * buffer[5],
            buffer[6] + i<floatT> * buffer[7], buffer[8] + i<floatT> * buffer[9], buffer[10] + i<floatT> * buffer[11],
            0.0, 0.0, 0.0;
-    SU3::Projection::RestoreLastRow(tmp);
+    // TODO: For whatever reason if we include the restoration of the last row here, the results are slightly different from the
+    //       usual projection, which means that a configuration is not restored exactly. Instead, we have to restore the last row
+    //       outside of this function, as done below in LoadConfigBMW(). The reason is still a complete mystery to me...
+    // SU3::Projection::RestoreLastRow(tmp);
     return tmp;
 }
 
@@ -233,7 +236,9 @@ bool LoadConfigBMW(GaugeField& U, const std::string& filename)
                 // TODO: Assumes that the machine is little endian (which is most likely true for modern systems), should probably check somehow to be sure
                 SwapEndianness(buffer[mu_permuted].data() + i);
             }
-            U({t, x, y, z, mu}) = ReconstructMatBMW(buffer[mu_permuted]);
+            U(current_site, mu) = ReconstructMatBMW(buffer[mu_permuted]);
+            // Need to restore last row here and not inside ReconstructMatBMW() since it leads to different results for some reason
+            SU3::Projection::RestoreLastRow(U(current_site, mu));
         }
         std::uint64_t site_abs_value {static_cast<std::uint64_t>(((current_site.t * Nz + current_site.z) * Ny + current_site.y) * Nx + current_site.x)};
         checksum_new.Add(reinterpret_cast<std::uint64_t*>(buffer.data()), site_abs_value, U.Volume(), 4 * 12);
