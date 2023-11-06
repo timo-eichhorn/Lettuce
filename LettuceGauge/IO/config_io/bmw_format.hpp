@@ -38,6 +38,10 @@
 //|      Re(U(1, 1)) Im(U(1, 1)) Re(U(1, 2)) Im(U(1, 2)) Re(U(1, 3)) Im(U(1, 3))    |
 //|      Re(U(2, 1)) Im(U(2, 1)) Re(U(2, 2)) Im(U(2, 2)) Re(U(2, 3)) Im(U(2, 3))    |
 //|    - The entries are stored in big-endian format                                |
+//| Additionally, alternative functions are provided that use a modified BMW format |
+//| storing ALL THREE rows instead of only the first two rows to guarantee exact    |
+//| reproducability of the configurations (the restoration of the last row via      |
+//| projection is not guaranteed to be exact from experience).                      |
 //+---------------------------------------------------------------------------------+
 
 // TODO: Lot's of cleanup still left to do here...
@@ -111,6 +115,9 @@ void SwapEndianness(T* in) noexcept
     }
 }
 
+//-----
+// Functions for conventional BMW format (first two rows/12 reals)
+
 Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
 {
     // BMW format stores only the first two rows
@@ -130,7 +137,6 @@ std::array<double, 12> DeconstructMatBMW(const Matrix_SU3& link) noexcept
     // BMW format stores only the first two rows
     return {std::real(link(0, 0)), std::imag(link(0, 0)), std::real(link(0, 1)), std::imag(link(0, 1)), std::real(link(0, 2)), std::imag(link(0, 2)),
             std::real(link(1, 0)), std::imag(link(1, 0)), std::real(link(1, 1)), std::imag(link(1, 1)), std::real(link(1, 2)), std::imag(link(1, 2))};
-
 }
 
 bool LoadConfigBMW(GaugeField& U, const std::string& filename)
@@ -355,6 +361,266 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
         buffer = DeconstructMatBMW(tmp);
         // Swap to big endian (assuming the host machine is little endian, TODO: should probably check though, see above)
         for (int i = 0; i < 12; ++i)
+        {
+            SwapEndianness(buffer.data() + i);
+        }
+        config_ofstream.write(reinterpret_cast<const char*>(buffer.data()), sizeof(buffer));
+    }
+    auto end_write_config {std::chrono::high_resolution_clock::now()};
+    if (!config_ofstream)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "Writing config to file " << filename << " failed!" << Lettuce::Color::BoldRed << std::endl;
+        return false;
+    }
+    std::chrono::duration<double> write_time_header {end_write_header - start_write_header};
+    std::chrono::duration<double> write_time_config {end_write_config - start_write_config};
+    std::cout << indent_whitespace << "Time for writing header: " << write_time_header.count() << "\n";
+    std::cout << indent_whitespace << "Time for writing config: " << write_time_config.count() << std::endl;
+    return true;
+}
+
+//-----
+// Functions for modified BMW format (all three rows/18 reals)
+// TODO: Use slightly different header line (#BMW18 instead of #BMW) to distinguish between two formats?
+
+Matrix_SU3 ReconstructMatBMWFull(const std::array<double, 18>& buffer) noexcept
+{
+    // BMW format stores only the first two rows
+    Matrix_SU3 tmp;
+    tmp << buffer[0]  + i<floatT> * buffer[1],  buffer[2]  + i<floatT> * buffer[3],  buffer[4]  + i<floatT> * buffer[5],
+           buffer[6]  + i<floatT> * buffer[7],  buffer[8]  + i<floatT> * buffer[9],  buffer[10] + i<floatT> * buffer[11],
+           buffer[12] + i<floatT> * buffer[13], buffer[14] + i<floatT> * buffer[15], buffer[16] + i<floatT> * buffer[17];
+    return tmp;
+}
+
+std::array<double, 18> DeconstructMatBMWFull(const Matrix_SU3& link) noexcept
+{
+    // BMW format stores only the first two rows
+    return {std::real(link(0, 0)), std::imag(link(0, 0)), std::real(link(0, 1)), std::imag(link(0, 1)), std::real(link(0, 2)), std::imag(link(0, 2)),
+            std::real(link(1, 0)), std::imag(link(1, 0)), std::real(link(1, 1)), std::imag(link(1, 1)), std::real(link(1, 2)), std::imag(link(1, 2)),
+            std::real(link(2, 0)), std::imag(link(2, 0)), std::real(link(2, 1)), std::imag(link(2, 1)), std::real(link(2, 2)), std::imag(link(2, 2))};
+}
+
+bool LoadConfigBMWFull(GaugeField& U, const std::string& filename)
+{
+    // TODO: Reorder for better alignment?
+    // std::ifstream         config_stream;
+    const std::size_t     header_block_size {4096};
+    const std::size_t     object_size {1};
+    char                  header_block[header_block_size];
+    site_coord            lattice_lengths {0, 0, 0, 0};
+    char                  checksum_read_tmp[32];
+    // char                  checksum_new[32];
+    Checksum_Adler64      checksum_new;
+    int                   header_characters_read {0};
+
+    // Attempt to open file and check stream status
+    // config_stream.open(filename, std::fstream::in);
+    // if (config_stream.fail())
+    // {
+    //     std::cout << Lettuce::Color::BoldRed << "Error while opening file " << filename << "!" << Lettuce::Color::Reset << std::endl;
+    //     // return false;
+    //     return;
+    // }
+
+    std::cout << Lettuce::Color::BoldBlue << "Attempting to read configuration in modified BMW18 format from " << filename << ":" << Lettuce::Color::Reset << std::endl;
+    if (!std::filesystem::exists(filename))
+    {
+        std::cout << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+
+    const char* filename_cstr   = filename.c_str();
+    std::FILE*  file            = std::fopen(filename_cstr, "r");
+    std::string indent_whitespace {"    "};
+    auto        start_read_header {std::chrono::high_resolution_clock::now()};
+
+    // Read header block and check if file matches expected format
+    // config_stream.read(reinterpret_cast<char*>(), header_block_size)
+    std::size_t successful_reads   = std::fread(header_block, object_size, header_block_size, file);
+    // BMW format stores the lattice lenghts in the following order: (x, y, z, t)
+    std::size_t successful_assigns = std::sscanf(header_block, "#BMW %d %d %d %d %31s %n", &lattice_lengths.x, &lattice_lengths.y, &lattice_lengths.z, &lattice_lengths.t, checksum_read_tmp, &header_characters_read);
+    if (successful_reads != header_block_size or successful_assigns < 5)
+    {
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Header block does not match expected format!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+
+    // Check if lattice shape in file matches the current lattice shape
+    bool lengths_match {lattice_lengths == U.Shape()};
+    if (not lengths_match)
+    {
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Lattice shapes do not match!\n";
+        std::cout                            << indent_whitespace << "Current shape: " << U.Shape() << "\n";
+        std::cout                            << indent_whitespace << "Shape in file: " << lattice_lengths << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+    std::cout << Lettuce::Color::BoldBlue << indent_whitespace << "Reading lattice from " << filename << "..." << Lettuce::Color::Reset << std::endl;
+    auto end_read_header {std::chrono::high_resolution_clock::now()};
+
+    auto start_read_config {std::chrono::high_resolution_clock::now()};
+    // std::array<double, 4 * 12> buffer;
+    // TODO: Array of array might cause problems since there can be padding between the arrays... (problematic below where we add to checksum)
+    std::array<std::array<double, 18>, 4> buffer;
+    // BMW format link order corresponds to array[Nt][Nz][Ny][Nx], i.e., t is the slowest and x the fastest index
+    for (int t = 0; t < Nt; ++t)
+    for (int z = 0; z < Nz; ++z)
+    for (int y = 0; y < Ny; ++y)
+    for (int x = 0; x < Nx; ++x)
+    // This version is not really faster... (remember to change buffer size to 48 above!)
+    // {
+    //     // Read all four mu-directions at once
+    //     std::fread(&buffer, sizeof(double), 48, file);
+    //     for (int i = 0; i < 48; ++i)
+    //     {
+    //         SwapEndianness(buffer + i);
+    //     }
+    //     U({t, x, y, z, 1}) = ReconstructMatBMW(buffer);
+    //     U({t, x, y, z, 2}) = ReconstructMatBMW(buffer + 12);
+    //     U({t, x, y, z, 3}) = ReconstructMatBMW(buffer + 24);
+    //     U({t, x, y, z, 0}) = ReconstructMatBMW(buffer + 36);
+    // }
+
+    // for (auto mu : {1, 2, 3, 0})
+    // {
+    //     std::fread(buffer.data(), sizeof(double), 12, file);
+    //     for (int i = 0; i < 12; ++i)
+    //     {
+    //         SwapEndianness(buffer.data() + i);
+    //     }
+    //     std::uint64_t site_abs_value {static_cast<std::uint64_t>(((x * Ny + y) * Nz + z) * Nt + t)};
+    //     checksum_new.Add(reinterpret_cast<std::uint64_t*>(buffer.data()), site_abs_value, U.Volume(), 4 * 12);
+    //     U({t, x, y, z, mu}) = ReconstructMatBMW(buffer);
+    // }
+    {
+        site_coord current_site {t, x, y, z};
+        for (auto mu : {1, 2, 3, 0})
+        {
+            int mu_permuted {(mu + 3) % 4};
+            // int memory_offset {mu_permuted * 12};
+            std::fread(buffer[mu_permuted].data(), sizeof(double), 18, file);
+            for (int i = 0; i < 18; ++i)
+            {
+                // TODO: Assumes that the machine is little endian (which is most likely true for modern systems), should probably check somehow to be sure
+                SwapEndianness(buffer[mu_permuted].data() + i);
+            }
+            U(current_site, mu) = ReconstructMatBMWFull(buffer[mu_permuted]);
+        }
+        std::uint64_t site_abs_value {static_cast<std::uint64_t>(((current_site.t * Nz + current_site.z) * Ny + current_site.y) * Nx + current_site.x)};
+        checksum_new.Add(reinterpret_cast<std::uint64_t*>(buffer.data()), site_abs_value, U.Volume(), 4 * 18);
+    }
+    checksum_new.Finalize();
+    std::string checksum_read_string = checksum_read_tmp;
+    if (checksum_read_string == checksum_new.ReturnString())
+    {
+        std::cout << indent_whitespace << Lettuce::Color::BoldGreen << "Checksums match!" << std::endl;
+    }
+    else
+    {
+        std::cout << indent_whitespace << Lettuce::Color::BoldRed << "Checksums do not match!" << std::endl;
+    }
+    std::cout << indent_whitespace << "Checksum (from file):    " << checksum_read_string << std::endl;
+    std::cout << indent_whitespace << "Checksum (recalculated): " << checksum_new.ReturnString() << Lettuce::Color::Reset << std::endl;
+    auto end_read_config {std::chrono::high_resolution_clock::now()};
+    std::chrono::duration<double> read_time_header {end_read_header - start_read_header};
+    std::chrono::duration<double> read_time_config {end_read_config - start_read_config};
+    std::cout << indent_whitespace << "Time for reading header: " << read_time_header.count() << "\n";
+    std::cout << indent_whitespace << "Time for reading config: " << read_time_config.count() << std::endl;
+
+    bool InGroup {SU3::Tests::IsGroupElement(U)};
+    if (InGroup)
+    {
+        std::cout << Lettuce::Color::BoldGreen << indent_whitespace << "All elements are in SU(3)!" << Lettuce::Color::Reset << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Not all elements are in SU(3)!" << Lettuce::Color::Reset << std::endl;
+        return false;
+    }
+}
+
+bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const bool overwrite = false)
+{
+    // If file already exists, abort
+    std::cout << Lettuce::Color::BoldBlue << "Attempting to write configuration in modified BMW18 format to " << filename << ":" << Lettuce::Color::Reset << std::endl;
+    const std::string indent_whitespace {"    "};
+    if (std::filesystem::exists(filename))
+    {
+        std::cout << indent_whitespace << Lettuce::Color::BoldRed << "File " << filename << " already exists!" << Lettuce::Color::Reset << std::endl;
+        if (overwrite)
+        {
+            std::cout << indent_whitespace << Lettuce::Color::BoldRed << "Overwriting existing file..." << Lettuce::Color::Reset << std::endl;
+        }
+        else
+        {
+            std::cerr << Lettuce::Color::BoldRed << "Writing configuration in modified BMW18 format to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+            return false;
+        }
+    }
+
+    std::ofstream config_ofstream;
+    config_ofstream.open(filename, std::ios::trunc | std::ios::binary);
+    const std::size_t     header_block_size {4096};
+    char                  header_block[header_block_size];
+    int                   header_offset {0};
+    Checksum_Adler64      checksum;
+
+    // Write header
+    auto start_write_header {std::chrono::high_resolution_clock::now()};
+    // Calculate checksum
+    for (int t = 0; t < Nt; ++t)
+    for (int z = 0; z < Nz; ++z)
+    for (int y = 0; y < Ny; ++y)
+    for (int x = 0; x < Nx; ++x)
+    {
+        std::uint64_t buffer[4 * 18];
+        site_coord current_site {t, x, y, z};
+        // Direction order: x, y, z, t
+        for (auto mu : {1, 2, 3, 0})
+        {
+            // BMW order:     x, y, z, t
+            // Lettuce order: t, x, y, z
+            // Get the matching BMW direction index which we shall call mu_permuted
+            int mu_permuted {(mu + 3) % 4};
+            // Reunitarize/project copy of link
+            Matrix_SU3 tmp {U(current_site, mu)};
+            // SU3::Projection::GramSchmidt(tmp);
+            std::memcpy(buffer + mu_permuted * 18, DeconstructMatBMWFull(tmp).data(), 144);
+        }
+        std::uint64_t site_abs_value {static_cast<std::uint64_t>(((current_site.t * Nz + current_site.z) * Ny + current_site.y) * Nx + current_site.x)};
+        checksum.Add(buffer, site_abs_value, U.Volume(), 4 * 18);
+    }
+    checksum.Finalize();
+    std::string checksum_string {checksum.ReturnString()};
+    std::cout << indent_whitespace << "Checksum: " << checksum_string << std::endl;
+    // Fill header with newline characters
+    std::memset(header_block, '\n', header_block_size);
+    // First header line
+    site_coord lattice_lengths {U.Shape()};
+    header_offset = std::sprintf(header_block, "#BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    // Additional header comments
+    // TODO: Insert git hash here
+    header_offset += std::sprintf(header_block + header_offset, "\nGenerated with Lettuce\n");
+    // TODO: Check if header length is exceeded (perhaps better if we work with a string here instead of a char array?)
+    // Write header to file
+    config_ofstream.write(header_block, header_block_size);
+    auto end_write_header {std::chrono::high_resolution_clock::now()};
+
+    // Write links
+    auto start_write_config {std::chrono::high_resolution_clock::now()};
+    std::array<double, 18> buffer;
+    for (int t = 0; t < Nt; ++t)
+    for (int z = 0; z < Nz; ++z)
+    for (int y = 0; y < Ny; ++y)
+    for (int x = 0; x < Nx; ++x)
+    for (auto mu : {1, 2, 3, 0})
+    {
+        Matrix_SU3 tmp {U({t, x, y, z, mu})};
+        // SU3::Projection::GramSchmidt(tmp);
+        buffer = DeconstructMatBMWFull(tmp);
+        // Swap to big endian (assuming the host machine is little endian, TODO: should probably check though, see above)
+        for (int i = 0; i < 18; ++i)
         {
             SwapEndianness(buffer.data() + i);
         }
