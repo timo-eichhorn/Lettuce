@@ -338,7 +338,7 @@ int main(int argc, char** argv)
     Gluon.SetToIdentity();
     if (extend_run)
     {
-        LoadConfigBMW(Gluon, old_maindirectory + "/checkpoints/final_config.conf");
+        LoadConfigBMWFull(Gluon, old_maindirectory + "/checkpoints/final_config.conf");
         global_prng.LoadState(old_maindirectory + "/checkpoints/final_prng_state.txt", old_maindirectory + "/checkpoints/final_distribution_state.txt");
     }
 
@@ -504,7 +504,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
             }
         }
     }
@@ -557,7 +557,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
             }
         }
     }
@@ -634,8 +634,8 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMW, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
-                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMW, Gluon_temper, "config_temper.conf");
+                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMWFull, Gluon_temper, "config_temper.conf");
             }
         }
         datalog_temper.close();
@@ -651,7 +651,7 @@ int main(int argc, char** argv)
 
     //-----
     // Save final configuration and PRNG state
-    SaveConfigBMW(Gluon, checkpointdirectory + "/final_config.conf");
+    SaveConfigBMWFull(Gluon, checkpointdirectory + "/final_config.conf");
     global_prng.SaveState(checkpointdirectory + "/final_prng_state.txt", checkpointdirectory + "/final_distribution_state.txt");
 
     // Print acceptance rates, PRNG width, and required time to terminal and to files

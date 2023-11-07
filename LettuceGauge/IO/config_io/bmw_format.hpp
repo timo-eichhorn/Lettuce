@@ -41,7 +41,8 @@
 //| Additionally, alternative functions are provided that use a modified BMW format |
 //| storing ALL THREE rows instead of only the first two rows to guarantee exact    |
 //| reproducability of the configurations (the restoration of the last row via      |
-//| projection is not guaranteed to be exact from experience).                      |
+//| projection is not guaranteed to be exact from experience). To distinguish this  |
+//| format from the pervious one, the header line is required to start with #18BMW. |
 //+---------------------------------------------------------------------------------+
 
 // TODO: Lot's of cleanup still left to do here...
@@ -381,7 +382,6 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
 
 //-----
 // Functions for modified BMW format (all three rows/18 reals)
-// TODO: Use slightly different header line (#BMW18 instead of #BMW) to distinguish between two formats?
 
 Matrix_SU3 ReconstructMatBMWFull(const std::array<double, 18>& buffer) noexcept
 {
@@ -423,7 +423,7 @@ bool LoadConfigBMWFull(GaugeField& U, const std::string& filename)
     //     return;
     // }
 
-    std::cout << Lettuce::Color::BoldBlue << "Attempting to read configuration in modified BMW18 format from " << filename << ":" << Lettuce::Color::Reset << std::endl;
+    std::cout << Lettuce::Color::BoldBlue << "Attempting to read configuration in modified 18BMW format from " << filename << ":" << Lettuce::Color::Reset << std::endl;
     if (!std::filesystem::exists(filename))
     {
         std::cout << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
@@ -439,7 +439,7 @@ bool LoadConfigBMWFull(GaugeField& U, const std::string& filename)
     // config_stream.read(reinterpret_cast<char*>(), header_block_size)
     std::size_t successful_reads   = std::fread(header_block, object_size, header_block_size, file);
     // BMW format stores the lattice lenghts in the following order: (x, y, z, t)
-    std::size_t successful_assigns = std::sscanf(header_block, "#BMW %d %d %d %d %31s %n", &lattice_lengths.x, &lattice_lengths.y, &lattice_lengths.z, &lattice_lengths.t, checksum_read_tmp, &header_characters_read);
+    std::size_t successful_assigns = std::sscanf(header_block, "#18BMW %d %d %d %d %31s %n", &lattice_lengths.x, &lattice_lengths.y, &lattice_lengths.z, &lattice_lengths.t, checksum_read_tmp, &header_characters_read);
     if (successful_reads != header_block_size or successful_assigns < 5)
     {
         std::cout << Lettuce::Color::BoldRed << indent_whitespace << "Header block does not match expected format!" << Lettuce::Color::Reset << std::endl;
@@ -543,7 +543,7 @@ bool LoadConfigBMWFull(GaugeField& U, const std::string& filename)
 bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const bool overwrite = false)
 {
     // If file already exists, abort
-    std::cout << Lettuce::Color::BoldBlue << "Attempting to write configuration in modified BMW18 format to " << filename << ":" << Lettuce::Color::Reset << std::endl;
+    std::cout << Lettuce::Color::BoldBlue << "Attempting to write configuration in modified 18BMW format to " << filename << ":" << Lettuce::Color::Reset << std::endl;
     const std::string indent_whitespace {"    "};
     if (std::filesystem::exists(filename))
     {
@@ -554,7 +554,7 @@ bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const b
         }
         else
         {
-            std::cerr << Lettuce::Color::BoldRed << "Writing configuration in modified BMW18 format to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+            std::cerr << Lettuce::Color::BoldRed << "Writing configuration in modified 18BMW format to file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
             return false;
         }
     }
@@ -598,7 +598,7 @@ bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const b
     std::memset(header_block, '\n', header_block_size);
     // First header line
     site_coord lattice_lengths {U.Shape()};
-    header_offset = std::sprintf(header_block, "#BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    header_offset = std::sprintf(header_block, "#18BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
     // Additional header comments
     // TODO: Insert git hash here
     header_offset += std::sprintf(header_block + header_offset, "\nGenerated with Lettuce\n");
