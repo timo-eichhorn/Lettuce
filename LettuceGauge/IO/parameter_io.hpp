@@ -547,7 +547,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
 
 void CreateFiles()
 {
-    std::string LatticeSizeString    {std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz) + "x" + std::to_string(Nt)};
+    std::string LatticeSizeString    {std::to_string(Nt) + "x" + std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz)};
     std::string betaString           {std::to_string(beta)};
     std::string maindirectory_prefix {"SU(" + std::to_string(Ncolor) + ")_N=" + LatticeSizeString + "_beta=" + betaString};
     maindirectory = maindirectory_prefix;
