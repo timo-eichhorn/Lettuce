@@ -277,6 +277,15 @@ namespace GaugeAction
     // Symanzik (Tree level): c_rect = -1/12
     // Iwasaki              : c_rect = -0.331
     // DBW2                 : c_rect = -1.4088
+    // inline constexpr double c_plaq_Wilson       {1.0};
+    // inline constexpr double c_rect_Wilson       {0.0};
+    // inline constexpr double c_plaq_LüscherWeisz {1.0 + 8.0 * 1.0/12.0};
+    // inline constexpr double c_rect_LüscherWeisz {-1.0/12.0};
+    // inline constexpr double c_plaq_Iwasaki      {1.0 + 8.0 * 0.331};
+    // inline constexpr double c_rect_Iwasaki      {-0.331};
+    // inline constexpr double c_plaq_DBW2         {1.0 + 8.0 * 1.4088};
+    // inline constexpr double c_rect_DBW2         {-1.4088};
+
     // -----
     // using Wilson            = Rectangular<1, 1.0                 ,  0.0>;
     // using SymanzikTreeLevel = Rectangular<2, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0>;

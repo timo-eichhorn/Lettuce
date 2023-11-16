@@ -322,6 +322,8 @@ int main(int argc, char** argv)
     Configuration(command_line_arguments);
     CreateFiles();
 
+    // omp_set_schedule(omp_sched_static);
+
     // Default width of random numbers used in Metropolis update is 0.5
     floatT         metropolis_epsilon    {0.5};
     constexpr bool accept_reject_enabled {true};
@@ -351,16 +353,19 @@ int main(int argc, char** argv)
     GaugeAction::IwasakiAction.SetBeta(beta);
     GaugeAction::DBW2Action.SetBeta(beta);
 
+    auto SimulatedAction = GaugeAction::WilsonAction;
+    std::cout << "SimulatedAction parameters: " << SimulatedAction.stencil_radius << ", " << SimulatedAction.c_plaq << ", " << SimulatedAction.c_rect << std::endl;
+
     // Initialize update functors
-    HeatbathKernel                     Heatbath(Gluon, GaugeAction::DBW2Action, global_prng);
-    // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, GaugeAction::WilsonAction, global_prng);
-    OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, GaugeAction::DBW2Action);
+    HeatbathKernel                     Heatbath(Gluon, SimulatedAction, global_prng);
+    // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, SimulatedAction, global_prng);
+    OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, SimulatedAction);
     Integrators::HMC::OMF_4            OMF_4_Integrator;
     // Integrators::HMC::Leapfrog_OMF_4   LFRG_OMF_4_Integrator;
     // Integrators::HMC::OMF_2_OMF_4      OMF_2_OMF_4_Integrator;
-    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
+    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
     // double ghmc_mixing_angle           {0.25 * pi<floatT>};
-    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, GaugeAction::WilsonAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
+    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -400,7 +405,7 @@ int main(int argc, char** argv)
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
                 // auto start_update_metro {std::chrono::high_resolution_clock::now()};
-                MetropolisKernel Metropolis(Gluon, GaugeAction::DBW2Action, global_prng, multi_hit, metropolis_epsilon);
+                MetropolisKernel Metropolis(Gluon, SimulatedAction, global_prng, multi_hit, metropolis_epsilon);
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
                 //       At the very least, we should probably combine the two actions below into one function
@@ -435,10 +440,10 @@ int main(int argc, char** argv)
             if constexpr(n_orelax != 0)
             {
                 // auto start_update_or = std::chrono::high_resolution_clock::now();
-                // double action_before {GaugeAction::WilsonAction.Action(Gluon)};
+                // double action_before {SimulatedAction.Action(Gluon)};
                 // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
-                // double action_after {GaugeAction::WilsonAction.Action(Gluon)};
+                // double action_after {SimulatedAction.Action(Gluon)};
                 // std::cout << "Action (before): " << action_before << std::endl;
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
@@ -455,7 +460,7 @@ int main(int argc, char** argv)
                 int                                 L_half      {Nt/2 - 1};
                 site_coord                          center      {L_half, L_half, L_half, L_half};
                 int                                 radius      {5};
-                GaugeUpdates::InstantonUpdateKernel InstantonUpdate(Gluon, Gluonsmeared1, GaugeAction::WilsonAction, global_prng, center, radius, false);
+                GaugeUpdates::InstantonUpdateKernel InstantonUpdate(Gluon, Gluonsmeared1, SimulatedAction, global_prng, center, radius, false);
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
@@ -524,9 +529,9 @@ int main(int argc, char** argv)
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
-        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, GaugeAction::DBW2Action, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, SimulatedAction, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -578,7 +583,7 @@ int main(int argc, char** argv)
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper
-        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length);
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
 
         // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
         // Original default values
@@ -590,7 +595,7 @@ int main(int argc, char** argv)
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, GaugeAction::DBW2Action, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
         GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng, rho_stout_metadynamics);
 
