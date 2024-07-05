@@ -32,6 +32,8 @@
 //|      Re(U(3, 1)) Im(U(3, 1)) Re(U(3, 2)) Im(U(3, 2)) Re(U(3, 3)) Im(U(3, 3))    |
 //+---------------------------------------------------------------------------------+
 
+// TODO: Precision not always sufficient? Slightly different results (in last digit) when loading and smearing config compared to directly smearing generated config
+
 // bool CheckFormatBridgeText(const std::string& filename)
 // {
 //     // TODO: Implement
@@ -58,8 +60,8 @@ bool LoadConfigBridgeText(GaugeField& U, const std::string& filename)
         return false;
     }
 
-    // Count the total linenumber using std::count (add one to the final result since we only counted the number of '\n' characters)
-    std::size_t linecount = std::count(std::istreambuf_iterator<char>(config_stream), std::istreambuf_iterator<char>(), '\n') + 1;
+    // Count the total linenumber using std::count (would usually have to add one to the final result since we only counted the number of '\n' characters, but there is an additional empty line at the end of the file in this format)
+    std::size_t linecount = std::count(std::istreambuf_iterator<char>(config_stream), std::istreambuf_iterator<char>(), '\n');
     // Check if number of lines in file is compatible with current lattice volume (unfortunately we can not check the lengths since the Bridge++ text format does not contain any information about the exact shape)
     bool lengths_match {U.Volume() * 4 * 18 == linecount};
     std::string indent_whitespace {"    "};
