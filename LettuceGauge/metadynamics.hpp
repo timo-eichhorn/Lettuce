@@ -277,7 +277,7 @@ public:
 
     double ReturnDerivative(const double CV) const noexcept
     {
-        int bin_index {BinIndexFromCV(CV)};
+        // int bin_index {BinIndexFromCV(CV)};
         // Casting to unsigned int means we check for values that are in the range [0, edge_number - 1)
         // Values equal to edge_number - 1 are not allowed, since we interpolate between the bin_index and bin_index + 1
         // Effectively means that our potential is limited to the interval [CV_min, CV_max)

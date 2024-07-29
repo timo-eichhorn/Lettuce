@@ -148,7 +148,6 @@ bool SaveConfigBridgeText(const GaugeField& U, const std::string& filename, cons
 
     // Write links
     auto start_write_config {std::chrono::high_resolution_clock::now()};
-    std::array<double, 12> buffer;
     for (int t = 0; t < Nt; ++t)
     for (int z = 0; z < Nz; ++z)
     for (int y = 0; y < Ny; ++y)

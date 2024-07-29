@@ -1,8 +1,6 @@
 // Pure SU(3) theory
 // Command line flags: -DFIXED_SEED
 
-// #define EIGEN_USE_MKL_ALL
-
 // Non-standard library headers
 // Include these three header files first in this order
 // TODO: Should probably check all includes and add the appropriate includes to all files
@@ -66,11 +64,6 @@
 #include <ctime>
 
 //-----
-
-// GaugeField     Gluon         {Nt, Nx, Ny, Nz};
-// GaugeField     Gluonsmeared1 {Nt, Nx, Ny, Nz};
-// GaugeField     Gluonsmeared2 {Nt, Nx, Ny, Nz};
-// GaugeField     Gluonchain    {Nt, Nx, Ny, Nz};
 
 GaugeField                   Gluon;
 GaugeField                   Gluonsmeared1;
@@ -324,7 +317,7 @@ int main(int argc, char** argv)
 
     // omp_set_schedule(omp_sched_static);
 
-    // Default width of random numbers used in Metropolis update is 0.5
+    // Default width of random numbers used in Metropolis of 0.5 probably not optimal and parameter-dependent, so tune on case-by-case basis
     floatT         metropolis_epsilon    {0.5};
     constexpr bool accept_reject_enabled {true};
     if (!accept_reject_enabled)
