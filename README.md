@@ -4,10 +4,10 @@
 
 This repository contains code for carrying out multi-threaded CPU simulations of 4-dimensional SU(3) gauge theory. The primary motivation behind this code is to test different algorithms aimed at alleviating the problem of topological freezing. Some of the results from simulations performed using this code can be found in the following two papers:
 
-- [2307.04742](https://arxiv.org/abs/2307.04742) - *Parallel Tempered Metadynamics: Overcoming potential barriers without surfing or tunneling*
-- [2210.11453](https://arxiv.org/abs/2210.11453) - *Topology changing update algorithms for SU(3) gauge theory*
+- [[2307.04742](https://arxiv.org/abs/2307.04742)] - *Parallel Tempered Metadynamics: Overcoming potential barriers without surfing or tunneling*
+- [[2210.11453](https://arxiv.org/abs/2210.11453)] - *Topology changing update algorithms for SU(3) gauge theory*
 
-Note that **the code is currently undergoing a complete rewrite** (to support simulations with dynamical fermions, GPU offloading, and other), and the main branch may soon be designated as a legacy branch. The current version lacks tests and contains several areas under active development. Still, if you have any questions, feel free to reach out to me.
+Note that **the code is currently undergoing a complete rewrite** (to support simulations with dynamical fermions, GPU offloading, and other gauge groups), and the main branch may soon be designated as a legacy branch. The current version lacks tests and contains several areas under active development. Still, if you have any questions, feel free to reach out to me.
 
 ## Requirements
 
