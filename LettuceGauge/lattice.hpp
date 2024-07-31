@@ -16,11 +16,6 @@
 #include <cstddef>
 
 //----------------------------------------
-// Provides classes that hold the underlying lattices
-
-// Struct holding the lattice
-// Can be indexed with individual coordinates (t, x, y, z, mu)
-// Can also take a link_coord struct as coordinates
 
 // This class is a minimal wrapper around an array containing a gauge field, to be used in the GaugeField4D and GaugeField4DSmeared classes
 // It should never be used by itself, hence everything is private
@@ -40,46 +35,42 @@ class GaugeFieldRaw
 
         std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
         static constexpr std::size_t size {size_};
-        // Default constructor
+
         GaugeFieldRaw() noexcept = default;
-        // Default destructor
+
         ~GaugeFieldRaw() = default;
-        // Copy constructor
+
         GaugeFieldRaw(const GaugeFieldRaw& field_in) noexcept
         {
             // std::cout << "Copy constructor of GaugeFieldRaw used!" << std::endl;
-            // TODO: static_assert complains about non-integral constant expression
-            // TODO: Check if this is faster than the OpenMP version, also check if it is somehow possible to use std::execution::par_unseq (compiler complained last time)
-            // static_assert(size == field_in.size, "Can't construct GaugeFieldRaw from another instance with different size!");
             #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
                 gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
             }
-            // std::copy(field_in.gaugefield_raw.get(), field_in.gaugefield_raw.get() + field_in.size, gaugefield_raw.get());
         }
-        // Copy assignment
+
         // We don't need assignment chaining, so return void instead of GaugeFieldRaw&
         void operator=(const GaugeFieldRaw& field_in) noexcept
         {
             // std::cout << "Copy assignment of GaugeFieldRaw used!" << std::endl;
-            // static_assert(size == field_in.size, "Can't copy GaugeFieldRaw from another instance with different size!");
             #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
                 gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
             }
-            // std::copy(field_in.gaugefield_raw.get(), field_in.gaugefield_raw.get() + field_in.size, gaugefield_raw.get());
         }
-        //
+
         gaugeT& operator[](const std::size_t ind) noexcept
         {
             return gaugefield_raw[ind];
         }
+
         gaugeT operator[](const std::size_t ind) const noexcept
         {
             return gaugefield_raw[ind];
         }
+
         // Implement swap by swapping the underlying pointers
         friend void Swap(GaugeFieldRaw& field1, GaugeFieldRaw& field2) noexcept
         {
@@ -92,9 +83,7 @@ class GaugeFieldRaw
 };
 
 // This class acts as a general container for gauge fields in 4 dimensions
-// The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
-// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
 template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class GaugeField4D
 {
@@ -104,19 +93,18 @@ class GaugeField4D
         static constexpr int         Ny     {Ny_};
         static constexpr int         Nz     {Nz_};
         static constexpr int         Nmu    {4};
-        // Promote single length to size_t so the product doesn't overflow
+        // Promote single length to size_t so the product doesn't overflow even if std::size_t would be big enough
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
         GaugeFieldRaw<V_link, gaugeT> gaugefield;
     public:
-        // Constructor with four arguments (one length for each direction)
         GaugeField4D() noexcept
         {
             std::cout << "Creating GaugeField4D with volume: " << V << std::endl;
         }
         // // Delete default constructor
         // GaugeField4D() = delete;
-        // Destructor
+
         ~GaugeField4D()
         {
             std::cout << "Deleting GaugeField4D with volume: " << V << std::endl;
@@ -136,31 +124,15 @@ class GaugeField4D
         //             gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
         //         }
         //     }
+
         // Copy assignment
         // We don't need assignment chaining, so return void instead of GaugeField4D&
-        // TODO: Is this okay performance wise?
         void operator=(const GaugeField4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
             // Check for self-assignments
             if (this != &field_in)
             {
-                // Check for compatible sizes
-                // TODO: Check std::is_same(gaugeT, gaugeT)? How to get type, need to introduce additionale typedef above?
-                if (Nt != field_in.Nt or Nx != field_in.Nx or Ny != field_in.Ny or Nz != field_in.Nz or Nmu != field_in.Nmu)
-                {
-                    std::cerr << "Warning: Trying to use copy assignment operator on two arrays with different sizes!" << std::endl;
-                }
-                // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
-                // #pragma omp parallel for
-                // for (int t = 0; t < Nt; ++t)
-                // for (int x = 0; x < Nx; ++x)
-                // for (int y = 0; y < Ny; ++y)
-                // for (int z = 0; z < Nz; ++z)
-                // for (int mu = 0; mu < Nmu; ++mu)
-                // {
-                //     gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
-                // }
                 gaugefield = field_in.gaugefield;
             }
         }
@@ -194,17 +166,7 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(coord)];
         }
-        // Access gauge links via 5 ints
-        [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
-        gaugeT& operator()(const int t, const int x, const int y, const int z, const int mu) noexcept
-        {
-            return gaugefield[LinearCoordinate(t, x, y, z, mu)];
-        }
-        [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
-        gaugeT operator()(const int t, const int x, const int y, const int z, const int mu) const noexcept
-        {
-            return gaugefield[LinearCoordinate(t, x, y, z, mu)];
-        }
+
         void SetToIdentity() noexcept
         {
             #pragma omp parallel for
@@ -281,6 +243,7 @@ class GaugeField4D
             }
             Swap(U1.gaugefield, U2.gaugefield);
         }
+
         // Move site coordinates
         template<int dist>
         [[nodiscard]]
@@ -425,9 +388,7 @@ class GaugeField4D
 };
 
 // This class acts as a general container for multiple gauge fields in 4 dimensions (mainly meant to be used for smearing/calculation of smeared forces)
-// The lattice lengths and the precise representation of the gauge group elements are template parameters to keep things general
 // The [] operator provides access to the different smearing levels, i.e., it returns a reference to a GaugeField4D (which can the be accessed and manipulated in the usual way)
-// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
 template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class GaugeField4DSmeared
 {
@@ -441,7 +402,6 @@ class GaugeField4DSmeared
         // Promote single length to size_t so the product doesn't overflow
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
-        // std::unique_ptr<GaugeFieldRaw<V_link, gaugeT>[]> gaugefield {std::make_unique<GaugeFieldRaw<V_link, gaugeT>[]>(Nsmear)};
         std::unique_ptr<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]> gaugefield {std::make_unique<GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>[]>(Nsmear)};
     public:
         // Constructor with Nsmear as argument
@@ -451,24 +411,21 @@ class GaugeField4DSmeared
             std::cout << "Creating GaugeField4DSmeared (Nsmear = " << Nsmear << ") with volume: " << V << std::endl;
             // gaugefield.resize(V);
         }
-        // Delete default constructor
+
         GaugeField4DSmeared() = delete;
-        // Destructor
+
         ~GaugeField4DSmeared()
         {
             std::cout << "Deleting GaugeField4DSmeared (Nsmear = " << Nsmear << ") with volume: " << V << std::endl;
         }
+
         // Overload operator for access to individual smearing levels
         [[nodiscard]]
-        // GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) noexcept
         GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>& operator[](const int n) noexcept
         {
             return gaugefield[n];
         }
-        // TODO: Do we want to return a potentially huge object like this by value?
-        //       Can we return by const reference, or should we just leave this out?
         [[nodiscard]]
-        // const GaugeFieldRaw<V_link, gaugeT>& operator[](const int n) const noexcept
         const GaugeField4D<Nt, Nx, Ny, Nz, gaugeT>& operator[](const int n) const noexcept
         {
             return gaugefield[n];
@@ -481,7 +438,6 @@ class GaugeField4DSmeared
 
 // This class acts as a general container for a (4x4)-component tensor in 4 dimensions
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
-// TODO: Add layoutT as template? Generally it would be desirable to have a flexible memory layout
 template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
 class FullTensor4D
 {
@@ -502,42 +458,20 @@ class FullTensor4D
         {
             std::cout << "Creating FullTensor4D with volume: " << V << std::endl;
         }
-        // // Delete default constructor
-        // FullTensor4D() = delete;
-        // Destructor
+
         ~FullTensor4D()
         {
             std::cout << "Deleting FullTensor4D with volume: " << V << std::endl;
         }
-        // Copy constructor
-        // FullTensor4D(const FullTensor4D& field_in) noexcept :
-        //     Nt(field_in.Nt), Nx(field_in.Nx), Ny(field_in.Ny), Nz(field_in.Nz), V(field_in.Nt * field_in.Nx * field_in.Ny * field_in.Nz * field_in.Nmu)
-        //     {
-        //         #pragma omp parallel for
-        //         for (int t = 0; t < Nt; ++t)
-        //         for (int x = 0; x < Nx; ++x)
-        //         for (int y = 0; y < Ny; ++y)
-        //         for (int z = 0; z < Nz; ++z)
-        //         for (int mu = 0; mu < Nmu; ++mu)
-        //         {
-        //             gaugefield[LinearCoordinate(t, x, y, z, mu)] = field_in.gaugefield[LinearCoordinate(t, x, y, z, mu)];
-        //         }
-        //     }
+
         // Copy assignment
         // We don't need assignment chaining, so return void instead of FullTensor4D&
-        // TODO: Is this okay? Correctness, performance?
         void operator=(const FullTensor4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of FullTensor4D used" << std::endl;
             // Check for self-assignments
             if (this != &field_in)
             {
-                // Check for compatible sizes
-                // TODO: Check std::is_same(gaugeT, gaugeT)? How to get type, need to introduce additionale typedef above?
-                if (Nt != field_in.Nt or Nx != field_in.Nx or Ny != field_in.Ny or Nz != field_in.Nz or Nmu != field_in.Nmu or Nnu != field_in.Nnu)
-                {
-                    std::cerr << "Warning: Trying to use copy assignment operator on two arrays with different sizes!" << std::endl;
-                }
                 // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)

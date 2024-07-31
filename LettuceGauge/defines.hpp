@@ -24,11 +24,8 @@
 // Standard C headers
 // ...
 
-//-----
-
 std::string program_version = "SU(3)_version_1.3";
 
-//-----
 inline constexpr int Ndim   {4};
 inline constexpr int Ncolor {3};
 static_assert(Ndim   == 4, "Currently only 4 dimensions are supported!");
@@ -46,30 +43,21 @@ inline constexpr T pi {static_cast<T>(3.14159265358979323846L)};
 
 using floatT = double;
 
-// TODO: Better name than algorithm?
-template<typename T>
-concept StencilAlgorithm = requires(T algorithm)
-{
-    {algorithm.stencil_radius} -> std::convertible_to<int>;
-};
+// Various global parameters (yes this is ugly)
 
-// template<StencilAlgorithm T>
-// int ReturnStencil(T algorithm)
-// {
-//     return algorithm.stencil_radius;
-// }
-
-//-----
-
+// Run parameters
 int n_run;                                                  // Number of runs
 int expectation_period;                                     // Number of updates between calculation of expectation values
-int checkpoint_period {500};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
-int n_checkpoint_backups {2};                               // Number of rotating checkpoints to use
-inline int n_smear {10};                                     // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
-inline int n_smear_skip {10};                                // Number of smearing steps to skip between measurements
+floatT beta;                                                // Coupling
+inline int n_smear {10};                                    // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
+inline int n_smear_skip {10};                               // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter
 inline floatT rho_stout_metadynamics {0.12};                // Stout smearing parameter for Metadynamics CV
+// Checkpointing
+int checkpoint_period {500};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
+int n_checkpoint_backups {2};                               // Number of rotating checkpoints to use
 inline bool extend_run {false};                             // Set to true only if extending an existing run (among other things skips thermalization)
+// Update algorithm related parameters
 inline int n_therm {20};                                     // Number of update sweeps before starting actual update loop (the type of update sweeps is specified below)
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
@@ -90,6 +78,7 @@ double DeltaH;                                              // Energy change dur
 double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
 double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
 double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
+// Directory and logfile paths
 std::string old_maindirectory;                              // Main directory of previous run we wish to extend
 std::string maindirectory;                                  // Main directory containing all other subdirectories and files
 std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
@@ -98,9 +87,9 @@ std::string parameterfilepath;                              // Filepath (paramet
 std::string metapotentialfilepath;                          // Filepath (metapotential)
 std::string logfilepath_temper;                             // Filepath (log for run with bias potential during PT-MetaD runs)
 auto start {std::chrono::system_clock::now()};              // Start time
-floatT beta;                                                // Coupling
 std::ofstream datalog;                                      // Output stream to save data
 std::ofstream wilsonlog;                                    // Output stream to save data (Wilson loops)
+// PRNG stuff
 pcg_extras::seed_seq_from<std::random_device> seed_source;  // Seed source to seed PRNGs
 #ifdef FIXED_SEED                                           // PRNG for random coordinates and probabilites
 pcg64 generator_rand(1);
@@ -108,6 +97,7 @@ pcg64 generator_rand(1);
 pcg64 generator_rand(seed_source);
 #endif
 PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(generator_rand);
+// For tracking various acceptance rates of update algorithms
 uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
 uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
 uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
@@ -115,19 +105,14 @@ uint_fast64_t acceptance_count_metadynamics_hmc  {0};       // MetaD-HMC accepta
 uint_fast64_t acceptance_count_tempering         {0};       // Parallel tempering swap acceptance rate
 uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
 
-//-----
-// NxN_matrix is the same type as SUN_matrix, the different names are only meant to distinguish between
-// SU(N) group elements and NxN matrices mathematically
+// Matrix_NxN is the same type as MatrixSUN, but the different names may be useful to explicitly indicate which objects are group elements and which are not
 using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2, Eigen::RowMajor>;
 using Matrix_SU2     = Matrix_2x2;
 using Matrix_3x3     = Eigen::Matrix<std::complex<floatT>, 3, 3, Eigen::RowMajor>;
 using Matrix_SU3     = Matrix_3x3;
 using Local_tensor   = std::array<std::array<Matrix_SU3, 4>, 4>;
 
-//-----
-// Better complex numbers?
-
-// Trick to allow type promotion below
+// Trick to allow type promotion below (for less annoying complex numbers)
 template<typename T>
 struct identity_t
 {
@@ -155,7 +140,6 @@ COMPLEX_OPS(/)
 #undef COMPLEX_OPS
 
 // For some reason there is no inbuilt sign function???
-
 template<typename T>
 [[nodiscard]]
 constexpr int sign(T x)

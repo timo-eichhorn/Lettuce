@@ -19,10 +19,19 @@ Since all dependencies are already included in the repository as header files, y
 ```
 make
 ```
-Optionally, the flag "FIXED_SEED" may be set during compilation to seed the inbuilt PRNG class (used for the update algorithms) with a fixed seed:
+Optionally, the flag 'FIXED_SEED' may be set during compilation to seed the inbuilt PRNG class (used for the update algorithms) with a fixed seed:
 ```
 make FLGS=-DFIXED_SEED
 ```
+The following parameters need to be known/set at compile-time:
+- Lattice extents (Nt, Nx, Ny, Nz)
+- Update algorithm parameters (which type of update algorithms, sweep number, ...):
+  - Number of update sweeps per algorithm (Metropolis (and number of subsequent hits per link), heat bath, overrelaxation, HMC, ...)
+  - Use of Metadynamics and related parameters (number of smearing steps for CV, should the bias potential be updated, ...)
+  - Use of Parallel Tempered Metadynamics and related parameters (how many updates to perform on the measurement stream, tempering swap proposal frequency)
+    Note that it only makes sense to set the 'tempering_enabled' parameter to true if 'metadynamics_enabled' is also set to true
+
+The parameters can be found in LettuceGauge/defines.hpp
 
 ## Citing Lettuce
 

@@ -45,42 +45,42 @@ struct NamedParameter
     }
 };
 
-// List of runtime parameters
-struct ParameterList
-{
-    //--------------------
-    // Physical parameters
-    //--------------------
-    NamedParameter<floatT> beta                             {"beta"};
-    //--------------------
-    // Simulation parameters
-    //--------------------
-    NamedParameter<int>    n_run                            {"n_run"};
-    NamedParameter<int>    expectation_period               {"expectation_period"};
-    NamedParameter<int>    checkpoint_period                {"checkpoint_period"};
-    NamedParameter<int>    n_checkpoint_backups             {"n_checkpoint_backups"};
-    // Smearing parameters
-    NamedParameter<int>    n_smear                          {"n_smear"};
-    NamedParameter<int>    n_smear_skip                     {"n_smear_skip"};
-    NamedParameter<floatT> rho_stout                        {"rho_stout"};
-    // Update algorithm parameters
-    NamedParameter<int>    n_metro                          {"n_metro"};
-    NamedParameter<int>    multi_hit                        {"multi_hit"};
-    NamedParameter<int>    n_heatbath                       {"n_heatbath"};
-    NamedParameter<int>    n_hmc                            {"n_hmc"};
-    NamedParameter<double> hmc_trajectory_length            {"hmc_trajectory_length"};
-    NamedParameter<int>    n_orelax                         {"n_orelax"};
-    NamedParameter<int>    n_instanton_update               {"n_instanton_update"};
-    NamedParameter<bool>   metadynamics_enabled             {"metadynamics_enabled"};
-    NamedParameter<bool>   metapotential_updated            {"metapotential_updated"};
-    NamedParameter<bool>   metapotential_well_tempered      {"metapotential_well_tempered"};
-    NamedParameter<int>    n_smear_meta                     {"n_smear_meta"};
-    NamedParameter<floatT> rho_stout_metadynamics           {"rho_stout_metadynamics"};
-    NamedParameter<bool>   tempering_enabled                {"tempering_enabled"};
-    NamedParameter<int>    tempering_nonmetadynamics_sweeps {"tempering_nonmetadynamics_sweeps"};
-    NamedParameter<int>    tempering_swap_period            {"tempering_swap_period"};
-    NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
-};
+// // List of runtime parameters
+// struct ParameterList
+// {
+//     //--------------------
+//     // Physical parameters
+//     //--------------------
+//     NamedParameter<floatT> beta                             {"beta"};
+//     //--------------------
+//     // Simulation parameters
+//     //--------------------
+//     NamedParameter<int>    n_run                            {"n_run"};
+//     NamedParameter<int>    expectation_period               {"expectation_period"};
+//     NamedParameter<int>    checkpoint_period                {"checkpoint_period"};
+//     NamedParameter<int>    n_checkpoint_backups             {"n_checkpoint_backups"};
+//     // Smearing parameters
+//     NamedParameter<int>    n_smear                          {"n_smear"};
+//     NamedParameter<int>    n_smear_skip                     {"n_smear_skip"};
+//     NamedParameter<floatT> rho_stout                        {"rho_stout"};
+//     // Update algorithm parameters
+//     NamedParameter<int>    n_metro                          {"n_metro"};
+//     NamedParameter<int>    multi_hit                        {"multi_hit"};
+//     NamedParameter<int>    n_heatbath                       {"n_heatbath"};
+//     NamedParameter<int>    n_hmc                            {"n_hmc"};
+//     NamedParameter<double> hmc_trajectory_length            {"hmc_trajectory_length"};
+//     NamedParameter<int>    n_orelax                         {"n_orelax"};
+//     NamedParameter<int>    n_instanton_update               {"n_instanton_update"};
+//     NamedParameter<bool>   metadynamics_enabled             {"metadynamics_enabled"};
+//     NamedParameter<bool>   metapotential_updated            {"metapotential_updated"};
+//     NamedParameter<bool>   metapotential_well_tempered      {"metapotential_well_tempered"};
+//     NamedParameter<int>    n_smear_meta                     {"n_smear_meta"};
+//     NamedParameter<floatT> rho_stout_metadynamics           {"rho_stout_metadynamics"};
+//     NamedParameter<bool>   tempering_enabled                {"tempering_enabled"};
+//     NamedParameter<int>    tempering_nonmetadynamics_sweeps {"tempering_nonmetadynamics_sweeps"};
+//     NamedParameter<int>    tempering_swap_period            {"tempering_swap_period"};
+//     NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
+// };
 
 void ExtendRun(const std::filesystem::path& old_run_directory)
 {
@@ -134,7 +134,6 @@ void ExtendRun(const std::filesystem::path& old_run_directory)
     extend_run = true;
     // Skip thermalization
     n_therm = 0;
-    // TODO: At this point we should probably 
 }
 
 // TODO: Provide both ResumeRun() and ExtendRun() functions?
