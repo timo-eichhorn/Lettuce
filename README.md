@@ -1,9 +1,9 @@
 # Lettuce
 
-## Description
-
-- [Gitlab repository](https://gitlab.com/timo_eichhorn/lettuce]
+- [Gitlab repository](https://gitlab.com/timo_eichhorn/lettuce)
 - [Github repository](https://github.com/timo-eichhorn/Lettuce)
+
+## Description
 
 This repository contains code for carrying out multi-threaded CPU simulations of 4-dimensional SU(3) gauge theory. The primary motivation behind this code is to test different algorithms aimed at alleviating the problem of topological freezing. Some of the results from simulations performed using this code can be found in the following two papers:
 
