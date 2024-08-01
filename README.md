@@ -2,6 +2,9 @@
 
 ## Description
 
+- [Gitlab repository](https://gitlab.com/timo_eichhorn/lettuce]
+- [Github repository](https://github.com/timo-eichhorn/Lettuce)
+
 This repository contains code for carrying out multi-threaded CPU simulations of 4-dimensional SU(3) gauge theory. The primary motivation behind this code is to test different algorithms aimed at alleviating the problem of topological freezing. Some of the results from simulations performed using this code can be found in the following two papers:
 
 - [[2307.04742](https://arxiv.org/abs/2307.04742)] - *Parallel Tempered Metadynamics: Overcoming potential barriers without surfing or tunneling*
