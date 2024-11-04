@@ -39,6 +39,46 @@ namespace Integrators::HMC
         }
     };
     //-----
+    // Repelling-Attracting HMC (RAHMC) variant of the leapfrog integrator, including a new friction term
+    // cf. 2403.04607
+    struct Leapfrog_friction_slow
+    {
+        template<typename HMCFunctor>
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
+        {
+            // Calculate stepsize epsilon from n_step
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            // Perform integration
+            // Momentum updates are not merged in the loop
+            // However, the trajectory is split up into the first half with negative friction parameter, and the second half with positive friction parameter
+            floatT friction_term = 0.01;
+            int    n_step_half   = n_step / 2;
+            for (int step_count = 0; step_count < n_step_half; ++step_count)
+            {
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateFields(epsilon);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+            }
+            if (n_step % 2 != 0 and n_step != 0)
+            {
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateFields(epsilon);
+                friction_term = -friction_term;
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+            }
+            else
+            {
+                friction_term = -friction_term;
+            }
+            for (int step_count = 0; step_count < n_step_half; ++step_count)
+            {
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateFields(epsilon);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+            }
+        }
+    };
+    //-----
     // Omelyan-Mryglod-Folk second order minimum norm integrator (improved leapfrog)
     // cf. hep-lat/0505020
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
