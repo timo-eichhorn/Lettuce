@@ -51,20 +51,21 @@ namespace Integrators::HMC
             // Perform integration
             // Momentum updates are not merged in the loop
             // However, the trajectory is split up into the first half with negative friction parameter, and the second half with positive friction parameter
-            floatT friction_term = 0.01;
-            int    n_step_half   = n_step / 2;
+            floatT         friction_term         = 0.01;
+            int            n_step_half           = n_step / 2;
+            constexpr bool friction_without_kick = true;
             for (int step_count = 0; step_count < n_step_half; ++step_count)
             {
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term,     friction_without_kick);
                 HMC.UpdateFields(epsilon);
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term, not friction_without_kick);
             }
             if (n_step % 2 != 0 and n_step != 0)
             {
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term,     friction_without_kick);
                 HMC.UpdateFields(epsilon);
                 friction_term = -friction_term;
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term, not friction_without_kick);
             }
             else
             {
@@ -72,9 +73,9 @@ namespace Integrators::HMC
             }
             for (int step_count = 0; step_count < n_step_half; ++step_count)
             {
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term,     friction_without_kick);
                 HMC.UpdateFields(epsilon);
-                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term);
+                HMC.UpdateMomentaFriction(0.5 * epsilon, friction_term, not friction_without_kick);
             }
         }
     };
@@ -224,8 +225,6 @@ namespace Integrators::HMC
     //-----
     // Repelling-Attracting HMC (RAHMC) variant of the OMF4 integrator, including a new friction term
     // cf. 2403.04607
-    // TODO: There are quite large violations of the reversibility even for relatively small friction parameters (0.01-0.05)
-    //       Not sure if there is still a bug, or if there are issues with using the OMF4 integrator (since the RAHMC should be reversible)
     struct OMF_4_friction_slow
     {
         template<typename HMCFunctor>
@@ -244,40 +243,41 @@ namespace Integrators::HMC
             // Momentum updates are not merged in the loop
             // However, the trajectory is split up into the first half with negative friction parameter, and the second half with positive friction parameter
             // TODO: In theory can reduce number of required exp computations, but probably neglegible overhead here
-            floatT friction_term = 0.01;
-            int    n_step_half   = n_step / 2;
+            floatT         friction_term         = 0.01;
+            int            n_step_half           = n_step / 2;
+            constexpr bool friction_without_kick = true;
             for (int step_count = 0; step_count < n_step_half; ++step_count)
             {
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term,     friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term,     friction_without_kick);
                 HMC.UpdateFields(delta);
 
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term,     friction_without_kick);
                 HMC.UpdateFields(nu);
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term, not friction_without_kick);
 
                 HMC.UpdateFields(delta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term, not friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term, not friction_without_kick);
             }
             if (n_step % 2 != 0 and n_step != 0)
             {
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term,     friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term,     friction_without_kick);
                 HMC.UpdateFields(delta);
 
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term,     friction_without_kick);
                 HMC.UpdateFields(nu);
                 friction_term = -friction_term; // In this case need to change sign of friction term in the middle of the integrator step
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term, not friction_without_kick);
 
                 HMC.UpdateFields(delta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term, not friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term, not friction_without_kick);
             }
             else
             {
@@ -285,19 +285,19 @@ namespace Integrators::HMC
             }
             for (int step_count = 0; step_count < n_step_half; ++step_count)
             {
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term,     friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term,     friction_without_kick);
                 HMC.UpdateFields(delta);
 
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term,     friction_without_kick);
                 HMC.UpdateFields(nu);
-                HMC.UpdateMomentaFriction(mu, friction_term);
+                HMC.UpdateMomentaFriction(mu, friction_term, not friction_without_kick);
 
                 HMC.UpdateFields(delta);
-                HMC.UpdateMomentaFriction(gamma, friction_term);
+                HMC.UpdateMomentaFriction(gamma, friction_term, not friction_without_kick);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomentaFriction(alpha, friction_term);
+                HMC.UpdateMomentaFriction(alpha, friction_term, not friction_without_kick);
             }
         // Don't think this is necessary here, just like for the standard HMC (momenta are resampled at start of every trajectory)
         // HMC.ReverseMomenta();
@@ -393,18 +393,35 @@ namespace GaugeUpdates
             //-----
             // Update momenta with friction term for HMC
 
-            void UpdateMomentaFriction(const floatT epsilon, const floatT friction_term) const noexcept
+            void UpdateMomentaFriction(const floatT epsilon, const floatT friction_term, const bool friction_without_kick) const noexcept
             {
-                #pragma omp parallel for
-                for (int t = 0; t < Nt; ++t)
-                for (int x = 0; x < Nx; ++x)
-                for (int y = 0; y < Ny; ++y)
-                for (int z = 0; z < Nz; ++z)
-                for (int mu = 0; mu < 4; ++mu)
+                if (friction_without_kick)
                 {
-                    link_coord current_link {t, x, y, z, mu};
-                    Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
-                    Momentum(current_link) = std::exp(-friction_term * epsilon) * Momentum(current_link) + epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp);
+                    #pragma omp parallel for
+                    for (int t = 0; t < Nt; ++t)
+                    for (int x = 0; x < Nx; ++x)
+                    for (int y = 0; y < Ny; ++y)
+                    for (int z = 0; z < Nz; ++z)
+                    for (int mu = 0; mu < 4; ++mu)
+                    {
+                        link_coord current_link {t, x, y, z, mu};
+                        Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
+                        Momentum(current_link) = std::exp(-friction_term * epsilon) * Momentum(current_link) + epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp);
+                    }
+                }
+                else
+                {
+                    #pragma omp parallel for
+                    for (int t = 0; t < Nt; ++t)
+                    for (int x = 0; x < Nx; ++x)
+                    for (int y = 0; y < Ny; ++y)
+                    for (int z = 0; z < Nz; ++z)
+                    for (int mu = 0; mu < 4; ++mu)
+                    {
+                        link_coord current_link {t, x, y, z, mu};
+                        Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
+                        Momentum(current_link) = std::exp(-friction_term * epsilon) * (Momentum(current_link) + epsilon * beta / 6.0 * SU3::Projection::Algebra(tmp));
+                    }
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
