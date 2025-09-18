@@ -46,7 +46,7 @@ all:    build
 build:
 		$(CXX) $(SRC) $(COMMON_FLGS) $(ARCH_FLGS) -o $(OUT)
 cluster:
-		$(MAKE) build ARCH_FLGS="-march=broadwell -mtune=broadwell"
+		$(MAKE) build ARCH_FLGS="-march=broadwell -mtune=broadwell -static"
 compass:
 		$(MAKE) build ARCH_FLGS="-march=alderlake -mtune=alderlake"
 pleiades:

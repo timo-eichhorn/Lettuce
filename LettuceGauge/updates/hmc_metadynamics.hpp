@@ -16,6 +16,7 @@
 // Standard C++ headers
 #include <complex>
 #include <random>
+#include <vector>
 //----------------------------------------
 // Standard C headers
 // ...
@@ -237,6 +238,14 @@ namespace Integrators::HMC
     };
 } // namespace Integrators::HMC
 
+// std::chrono::duration<double> smearing_time;
+// std::chrono::duration<double> clover_time;
+// std::chrono::duration<double> deriv_time;
+// std::chrono::duration<double> cderiv_time;
+// std::chrono::duration<double> recursion_time;
+// std::chrono::duration<double> momentum_update_time;
+// std::chrono::duration<double> fields_update_time;
+
 namespace GaugeUpdates
 {
     struct HMCMetaDData
@@ -251,7 +260,7 @@ namespace GaugeUpdates
     };
 
     // TODO: Currently the kernel uses the global parameter n_smear_meta
-    //       Should probably create a paramter either in HMCMetaDData or the kernel itself
+    //       Should probably create a parameter either in HMCMetaDData or the kernel itself
     template<typename IntegratorT, typename ActionT, typename prngT>
     struct HMCMetaDKernel
     {
@@ -275,6 +284,11 @@ namespace GaugeUpdates
             double             trajectory_length;
             double             rho_stout_cv;
         private:
+            // struct EmptyCVPathBufferT {};
+            // using  CVPathBufferT = std::conditional_t<metadynamics_path_update_enabled, std::vector<double>, EmptyCVPathBufferT>;
+            // [[no_unique_address]] CVPathBufferT cv_path_samples;
+            using CVPathBufferT = std::vector<double>;
+            CVPathBufferT cv_path_samples;
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
@@ -362,24 +376,25 @@ namespace GaugeUpdates
                     StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout_cv);
                 }
                 // auto end_smearing = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> smearing_time {end_smearing - start_smearing};
-                // std::cout << "Time for smearing: " << smearing_time.count() << std::endl;
+                // smearing_time += end_smearing - start_smearing;
                 // Now we need the derivative of the metapotential and the contribution of the clover term
                 // Calculate clover term on field that was smeared the most
                 // auto start_clover = std::chrono::high_resolution_clock::now();
                 CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
                 // auto end_clover = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> clover_time {end_clover - start_clover};
-                // std::cout << "Time for clover: " << clover_time.count() << std::endl;
+                // clover_time += end_clover - start_clover;
                 // Calculate derivative of metapotential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
                 // auto start_deriv = std::chrono::high_resolution_clock::now();
                 double CV_old {TopChargeClover(MetadynamicsData.Clover)};
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
+                if constexpr(metadynamics_path_update_enabled)
+                {
+                    cv_path_samples.push_back(CV_old);
+                }
                 // auto end_deriv = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> deriv_time {end_deriv - start_deriv};
-                // std::cout << "Time for deriv: " << deriv_time.count() << std::endl;
+                // deriv_time += end_deriv - start_deriv;
                 // Calculate clover derivative
                 // auto start_cderiv = std::chrono::high_resolution_clock::now();
                 #pragma omp parallel for
@@ -395,8 +410,7 @@ namespace GaugeUpdates
                     MetadynamicsData.ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover, current_site, mu);
                 }
                 // auto end_cderiv = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> cderiv_time {end_cderiv - start_cderiv};
-                // std::cout << "Time for cderiv: " << cderiv_time.count() << std::endl;
+                // cderiv_time += end_cderiv - start_cderiv;
                 // std::cout << "Clover derivative:\n" << ForceFatLink({4,2,6,7,1}) << std::endl;
                 // std::cout << "Momenta (Clover derivative) lie in algebra: " << SU3::Tests::Testsu3All(ForceFatLink, 1e-12) << std::endl;
                 // Finally perform the stout force recursion
@@ -408,8 +422,7 @@ namespace GaugeUpdates
                     // std::cout << ForceFatLink({4,2,6,7,1}) << std::endl;
                 }
                 // auto end_recursion = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> recursion_time {end_recursion - start_recursion};
-                // std::cout << "Time for recursion: " << recursion_time.count() << std::endl;
+                // recursion_time += end_recursion - start_recursion;
             }
 
             //-----
@@ -418,6 +431,7 @@ namespace GaugeUpdates
             void UpdateMomenta(const floatT epsilon) noexcept
             {
                 CalculateTopologicalForce();
+                // auto start_momentum_update = std::chrono::high_resolution_clock::now();
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
@@ -429,6 +443,8 @@ namespace GaugeUpdates
                     Matrix_3x3 tmp {Action.Staple(U, current_link) * U(current_link).adjoint()};
                     Momentum(current_link) += epsilon * (beta / 6.0 * SU3::Projection::Algebra(tmp) + MetadynamicsData.ForceFatLink(current_link));
                 }
+                // auto end_momentum_update = std::chrono::high_resolution_clock::now();
+                // momentum_update_time += end_momentum_update - start_momentum_update;
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
 
@@ -469,6 +485,7 @@ namespace GaugeUpdates
 
             void UpdateFields(const floatT epsilon) const noexcept
             {
+                // auto start_fields_update = std::chrono::high_resolution_clock::now();
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
@@ -482,6 +499,8 @@ namespace GaugeUpdates
                     U({t, x, y, z, mu}) = tmp_mat * U({t, x, y, z, mu});
                     SU3::Projection::GramSchmidt(U({t, x, y, z, mu}));
                 }
+                // auto end_fields_update = std::chrono::high_resolution_clock::now();
+                // fields_update_time += end_fields_update - start_fields_update;
                 // std::cout << "new test: " << TestSU3All(U, 1e-8) << std::endl;
                 // std::cout << "new test: " << U[1][3][4][7][2].determinant() << "\n" << U[1][3][4][7][2] * U[1][3][4][7][2].adjoint() << "\n" << std::endl;
                 // std::cout << "Fields lie in group: " << SU3::TestSU3All(U, 1e-12) << std::endl;
@@ -507,7 +526,7 @@ namespace GaugeUpdates
         public:
             explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}
 
 
@@ -519,14 +538,37 @@ namespace GaugeUpdates
                 RandomMomentum();
                 double CV_old     {MetaCharge()};
                 double energy_old {Hamiltonian() + Metapotential.ReturnPotential(CV_old)};
+
+                // Use reserve instead of resize so we can use push_back inside the loop
+                // That way there is no need to explicitly track the current step number
+                cv_path_samples.reserve(metadynamics_path_update_enabled ? IntegratorT::NumberOfMomentumUpdates(n_step) : 1);
+
                 // Perform integration with chosen integrator
                 Integrator(*this, trajectory_length, n_step);
                 //-----
                 // Calculate energy after time evolution
                 double CV_new     {MetaCharge()};
+                if constexpr(metadynamics_path_update_enabled)
+                {
+                    cv_path_samples.push_back(MetaCharge());
+                }
+                else
+                {
+                    cv_path_samples[0] = CV_new;
+                }
                 double energy_new {Hamiltonian() + Metapotential.ReturnPotential(CV_new)};
                 // TODO: Probably shouldnt use a global variable for DeltaH?
                 DeltaH = energy_new - energy_old;
+                // std::cout << "Time for smearing:          " << smearing_time.count() << std::endl;
+                // std::cout << "Time for clover:            " << clover_time.count() << std::endl;
+                // std::cout << "Time for derivative:        " << deriv_time.count() << std::endl;
+                // std::cout << "Time for clover derivative: " << cderiv_time.count() << std::endl;
+                // std::cout << "Time for stout recursion:   " << recursion_time.count() << std::endl;
+                // std::cout << "Time for momentum updates:  " << momentum_update_time.count() << std::endl;
+                // std::cout << "Time for fields updates:    " << fields_update_time.count() << std::endl;
+                // std::cout << "============================\n" << std::endl;
+
+                // TODO: The bias potential should be updated at the end of the trajectory even for rejected proposals (using the original configuration's CV)
                 if (metropolis_step)
                 {
                     double p {std::exp(-energy_new + energy_old)};
@@ -537,17 +579,12 @@ namespace GaugeUpdates
                         Metapotential.SetCV_current(CV_new);
                         if constexpr(metapotential_updated)
                         {
-                            // TODO: Move this to potential class?
-                            if constexpr(metapotential_well_tempered)
-                            {
-                                Metapotential.UpdatePotentialWellTempered(CV_new);
-                                Metapotential.UpdatePotentialWellTempered(-CV_new);
-                            }
-                            else
-                            {
-                                Metapotential.UpdatePotential(CV_new);
-                                Metapotential.UpdatePotential(-CV_new);
-                            }
+                            Metapotential.UpdatePotentialSymmetric(cv_path_samples);
+                            // Metapotential.UpdatePotentialSymmetric(CV_new);
+                        }
+                        if constexpr(metadynamics_path_update_enabled)
+                        {
+                            cv_path_samples.clear();
                         }
                         acceptance_count_metadynamics_hmc += 1;
                         return true;
@@ -555,6 +592,10 @@ namespace GaugeUpdates
                     else
                     {
                         Metapotential.SetCV_current(CV_old);
+                        if constexpr(metadynamics_path_update_enabled)
+                        {
+                            cv_path_samples.clear();
+                        }
                         U = U_copy;
                         return false;
                     }
@@ -564,16 +605,11 @@ namespace GaugeUpdates
                     Metapotential.SetCV_current(CV_new);
                     if constexpr(metapotential_updated)
                     {
-                        if constexpr(metapotential_well_tempered)
-                        {
-                            Metapotential.UpdatePotentialWellTempered(CV_new);
-                            Metapotential.UpdatePotentialWellTempered(-CV_new);
-                        }
-                        else
-                        {
-                            Metapotential.UpdatePotential(CV_new);
-                            Metapotential.UpdatePotential(-CV_new);
-                        }
+                        Metapotential.UpdatePotentialSymmetric(cv_path_samples);
+                    }
+                    if constexpr(metadynamics_path_update_enabled)
+                    {
+                        cv_path_samples.clear();
                     }
                     datalog << "DeltaH: " << DeltaH << std::endl;
                     return true;

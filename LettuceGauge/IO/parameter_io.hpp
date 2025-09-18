@@ -311,22 +311,23 @@ void Configuration(const std::vector<std::string>& command_line_arguments)
         ValidatedIn("Please enter n_run: ", n_run);
         ValidatedIn("Please enter expectation_period: ", expectation_period);
     }
-    std::cout << "\n" << "Gauge field precision: " << typeid(floatT).name() << "\n";
-    std::cout << "Ndim is "                        << Ndim << " and Ncolor is " << Ncolor << ".\n";
-    std::cout << "beta is "                        << beta << ".\n";
-    std::cout << "n_run is "                       << n_run << " and expectation_period is " << expectation_period << ".\n";
-    std::cout << "n_metro is "                     << n_metro << ".\n";
-    std::cout << "multi_hit is "                   << multi_hit << ".\n";
-    std::cout << "metro_target_acceptance is "     << metro_target_acceptance << ".\n";
-    std::cout << "n_heatbath is "                  << n_heatbath << ".\n";
-    std::cout << "n_hmc is "                       << n_hmc << ".\n";
-    std::cout << "hmc_trajectory_length is "       << hmc_trajectory_length << ".\n";
-    std::cout << "n_orelax is "                    << n_orelax << ".\n";
-    std::cout << "n_instanton_update is "          << n_instanton_update << ".\n";
-    std::cout << "metadynamics_enabled is "        << metadynamics_enabled << ".\n";
-    std::cout << "metapotential_updated is "       << metapotential_updated << ".\n";
-    std::cout << "metapotential_well_tempered is " << metapotential_well_tempered << ".\n";
-    std::cout << "tempering_enabled is "           << tempering_enabled      << ".\n";
+    std::cout << "\n" << "Gauge field precision: "      << typeid(floatT).name() << "\n";
+    std::cout << "Ndim is "                             << Ndim << " and Ncolor is " << Ncolor << ".\n";
+    std::cout << "beta is "                             << beta << ".\n";
+    std::cout << "n_run is "                            << n_run << " and expectation_period is " << expectation_period << ".\n";
+    std::cout << "n_metro is "                          << n_metro << ".\n";
+    std::cout << "multi_hit is "                        << multi_hit << ".\n";
+    std::cout << "metro_target_acceptance is "          << metro_target_acceptance << ".\n";
+    std::cout << "n_heatbath is "                       << n_heatbath << ".\n";
+    std::cout << "n_hmc is "                            << n_hmc << ".\n";
+    std::cout << "hmc_trajectory_length is "            << hmc_trajectory_length << ".\n";
+    std::cout << "n_orelax is "                         << n_orelax << ".\n";
+    std::cout << "n_instanton_update is "               << n_instanton_update << ".\n";
+    std::cout << "metadynamics_enabled is "             << metadynamics_enabled << ".\n";
+    std::cout << "metapotential_updated is "            << metapotential_updated << ".\n";
+    std::cout << "metapotential_well_tempered is "      << metapotential_well_tempered << ".\n";
+    std::cout << "metadynamics_path_update_enabled is " << metadynamics_path_update_enabled << ".\n";
+    std::cout << "tempering_enabled is "                << tempering_enabled      << ".\n";
 }
 
 bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
@@ -521,6 +522,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";
     stream << "metapotential_updated = "            << metapotential_updated            << "\n";
     stream << "metapotential_well_tempered = "      << metapotential_well_tempered      << "\n";
+    stream << "metadynamics_path_update_enabled = " << metadynamics_path_update_enabled << "\n";
     stream << "n_smear_meta = "                     << n_smear_meta                     << "\n";
     stream << "tempering_enabled = "                << tempering_enabled                << "\n";
     stream << "tempering_nonmetadynamics_sweeps = " << tempering_nonmetadynamics_sweeps << "\n";

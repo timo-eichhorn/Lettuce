@@ -118,8 +118,12 @@ public:
         // if (static_cast<unsigned int>(bin_index) < static_cast<unsigned int>(edge_number - 1))
         // {
         //     double interpolation_constant {(CV - CVFromBinIndex(bin_index)) * bin_width_inverse};
+        // // Regular
         //     bin_count[bin_index]     += weight * (1.0 - interpolation_constant);
-        //     bin_count[bin_index + 1] += weight * interpolation_constant;            
+        //     bin_count[bin_index + 1] += weight * interpolation_constant;
+        // // Well-tempered
+        //     bin_count[bin_index]     += std::exp(-bin_count[bin_index]     / well_tempered_parameter) * weight * (1.0 - interpolation_constant);
+        //     bin_count[bin_index + 1] += std::exp(-bin_count[bin_index + 1] / well_tempered_parameter) * weight * interpolation_constant;
         // }
 
         // Gaussian histogram
@@ -129,7 +133,14 @@ public:
             for (int bin_index = 0; bin_index < edge_number; ++bin_index)
             {
                 double CV_current_bin {CVFromBinIndex(bin_index)};
-                bin_count[bin_index] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2));
+                if constexpr(metapotential_well_tempered)
+                {
+                    bin_count[bin_index] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2) - bin_count[bin_index] / well_tempered_parameter);
+                }
+                else
+                {
+                    bin_count[bin_index] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2));
+                }
             }
         }
         else
@@ -138,36 +149,27 @@ public:
         }
     }
 
-    void UpdatePotentialWellTempered(const double CV) noexcept
+
+    void UpdatePotential(const std::vector<double>& CV_vec) noexcept
     {
-        // Get the index to the left of the current CV value
-        int bin_index {BinIndexFromCV(CV)};
-
-        // // Linearly interpolating histogram
-        // // Casting to unsigned int means we check for values that are in the range [0, edge_number - 1)
-        // // Values equal to edge_number - 1 are not allowed when using linear interpolation, since we interpolate between the bin_index and bin_index + 1
-        // // Effectively means that our potential is limited to the interval [CV_min, CV_max) when using linear interpolation
-        // if (static_cast<unsigned int>(bin_index) < static_cast<unsigned int>(edge_number - 1))
-        // {
-        //     double interpolation_constant {(CV - CVFromBinIndex(bin_index)) * bin_width_inverse};
-        //     bin_count[bin_index]     += std::exp(-bin_count[bin_index]     / well_tempered_parameter) * weight * (1.0 - interpolation_constant);
-        //     bin_count[bin_index + 1] += std::exp(-bin_count[bin_index + 1] / well_tempered_parameter) * weight * interpolation_constant;            
-        // }
-
-        // Gaussian histogram
-        // Casting to unsigned int means we only allow index values that are in the range [0, edge_number)
-        if (static_cast<unsigned int>(bin_index) < static_cast<unsigned int>(edge_number))
+        for (const double CV : CV_vec)
         {
-            for (int bin_index = 0; bin_index < edge_number; ++bin_index)
-            {
-                double CV_current_bin {CVFromBinIndex(bin_index)};
-                // TODO: Test if well-tempered parameter works correctly
-                bin_count[bin_index] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * std::pow(CV - CV_current_bin, 2) - bin_count[bin_index] / well_tempered_parameter);
-            }
+            UpdatePotential(CV);
         }
-        else
+    }
+
+    void UpdatePotentialSymmetric(const double CV) noexcept
+    {
+        UpdatePotential( CV);
+        UpdatePotential(-CV);
+    }
+
+    void UpdatePotentialSymmetric(const std::vector<double>& CV_vec) noexcept
+    {
+        for (const double CV : CV_vec)
         {
-            exceeded_count += 1;
+            UpdatePotential( CV);
+            UpdatePotential(-CV);
         }
     }
 
@@ -296,7 +298,7 @@ public:
         // {
         //     return;
         // }
-        // TODO: Test if this works correctly
+        // TODO: Should probably delete the code above and use a symmetric derivative below
         return bin_width_inverse * (ReturnPotential(CV + bin_width) - ReturnPotential(CV));
     }
 

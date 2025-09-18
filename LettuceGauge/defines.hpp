@@ -69,6 +69,7 @@ inline constexpr int n_instanton_update {0};                // Number of instant
 inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
 inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr bool metapotential_well_tempered {false};   // If true, use well tempered Metadynamics instead of standard Metadynamics updates
+inline constexpr bool metadynamics_path_update_enabled {true};
 inline constexpr int n_smear_meta {4};                      // Number of smearing steps for topological charge used in Metadynamics
 inline constexpr bool tempering_enabled {false};             // Enable metadynamics updates with tempering or not
 inline constexpr int tempering_nonmetadynamics_sweeps {10};  // Number of non metadynamics update sweeps for every metadynamics update during tempering

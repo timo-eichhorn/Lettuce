@@ -21,6 +21,11 @@ namespace Integrators::HMC
     // Leapfrog integrator for HMC
     struct Leapfrog
     {
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (n_step + 1) : 0;
+        }
+
         template<typename HMCFunctor>
         void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
@@ -85,6 +90,11 @@ namespace Integrators::HMC
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
     struct OMF_2_slow
     {
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (3 * n_step) : 0;
+        }
+
         template<typename HMCFunctor>
         void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
@@ -110,6 +120,11 @@ namespace Integrators::HMC
     // cf. hep-lat/0505020
     struct OMF_2
     {
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (2 * n_step + 1) : 0;
+        }
+
         template<typename HMCFunctor>
         void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
@@ -141,6 +156,11 @@ namespace Integrators::HMC
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
     struct OMF_4_slow
     {
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (6 * n_step) : 0;
+        }
+
         template<typename HMCFunctor>
         void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
@@ -178,6 +198,11 @@ namespace Integrators::HMC
     // cf. hep-lat/0505020
     struct OMF_4
     {
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (5 * n_step + 1) : 0;
+        }
+
         template<typename HMCFunctor>
         void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
         {
