@@ -568,6 +568,11 @@ namespace GaugeUpdates
                 // std::cout << "Time for fields updates:    " << fields_update_time.count() << std::endl;
                 // std::cout << "============================\n" << std::endl;
 
+                std::ofstream hmclog;
+                hmclog.open(hmclogfilepath, std::fstream::out | std::fstream::app);
+                std::copy(std::cbegin(cv_path_samples), std::prev(std::cend(cv_path_samples)), std::ostream_iterator<double>(hmclog, " "));
+                hmclog << cv_path_samples.back() << "\n";
+
                 // TODO: The bias potential should be updated at the end of the trajectory even for rejected proposals (using the original configuration's CV)
                 if (metropolis_step)
                 {

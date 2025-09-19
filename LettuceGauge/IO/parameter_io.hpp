@@ -567,12 +567,14 @@ void CreateFiles()
     std::cout << "\n\n" << "Created directory \"" << maindirectory << "\".\n";
     logfilepath           = maindirectory + "/log.txt";
     parameterfilepath     = maindirectory + "/parameters.txt";
+    hmclogfilepath        = maindirectory + "/hmc_log.txt";
     metapotentialfilepath = maindirectory + "/metapotential.txt";
     logfilepath_temper    = maindirectory + "/log_temper.txt";
-    std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n";
-    std::cout                             << "Filepath (parameters):\t" << parameterfilepath                              << "\n";
-    std::cout                             << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n";
-    std::cout                             << "Filepath (final):\t"      << checkpointdirectory   << Lettuce::Color::Reset << "\n";
+    std::cout << Lettuce::Color::BoldBlue << "Filepath (log):\t\t"      << logfilepath                                    << "\n"
+                                          << "Filepath (parameters):\t" << parameterfilepath                              << "\n"
+                                          << "Filepath (hmc log):\t"    << hmclogfilepath                                 << "\n"
+                                          << "Filepath (metadyn):\t"    << metapotentialfilepath                          << "\n"
+                                          << "Filepath (final):\t"      << checkpointdirectory   << Lettuce::Color::Reset << "\n";
 
     //-----
     // Writes parameters to files

@@ -66,8 +66,8 @@ inline constexpr int n_hmc {5};                             // Number of integra
 inline constexpr double hmc_trajectory_length {1.0};        // Trajectory length of a single HMC update
 inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
-inline constexpr bool metadynamics_enabled {false};          // Enable metadynamics updates or not
-inline constexpr bool metapotential_updated {false};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
+inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not
+inline constexpr bool metapotential_updated {true};         // If true, update the metapotential with every update, if false, simulate with a static metapotential
 inline constexpr bool metapotential_well_tempered {false};   // If true, use well tempered Metadynamics instead of standard Metadynamics updates
 inline constexpr bool metadynamics_path_update_enabled {true};
 inline constexpr int n_smear_meta {4};                      // Number of smearing steps for topological charge used in Metadynamics
@@ -85,6 +85,7 @@ std::string maindirectory;                                  // Main directory co
 std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
 std::string logfilepath;                                    // Filepath (log)
 std::string parameterfilepath;                              // Filepath (parameters)
+std::string hmclogfilepath;                                 // Filepath (HMC log)
 std::string metapotentialfilepath;                          // Filepath (metapotential)
 std::string logfilepath_temper;                             // Filepath (log for run with bias potential during PT-MetaD runs)
 auto start {std::chrono::system_clock::now()};              // Start time
