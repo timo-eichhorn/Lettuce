@@ -119,7 +119,7 @@ void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_s
 }
 
 // Calculate Lambda
-void CalculateLambda(const GaugeField& U, const GaugeField& Sigma, const GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, GaugeField& Lambda, const floatT smear_param) noexcept
+void CalculateLambda(const GaugeField& U, const GaugeField& Sigma, const GaugeField4D<Nt, Nx, Ny, Nz, SU3::ExpConstants>& Exp_consts, GaugeField& Lambda/*, const floatT smear_param*/) noexcept
 {
     Matrix_3x3 st;
     Matrix_3x3 A;
@@ -168,7 +168,7 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
     // Precompute Lambda for whole lattice, since values get used multiple times
     // Exp_consts should already be known from stout smearing (if StoutSmearing4DWithConstants was used instead of the normal stout smearing function)
     static GaugeField Lambda;
-    CalculateLambda(U, Sigma, Exp_consts, Lambda, smear_param);
+    CalculateLambda(U, Sigma, Exp_consts, Lambda/*, smear_param*/);
     // Recursively calculate Sigma (stout force at smearing level n - 1) from Sigma_prev (stout force at smearing level n)
     // Since we only need the local contribution from Sigma, we do not need two arrays for Sigma and Sigma_prev and can simply update Sigma in place
     // Lambda contains contributions from Sigma_prev, but as long as we call CalculateLambda() first everything is correct
