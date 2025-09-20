@@ -23,6 +23,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 
 class MetaBiasPotential
 {
@@ -33,7 +34,7 @@ private:
     int bin_number;
     int grid_point_number;
     double bin_width, bin_width_inverse, weight, well_tempered_parameter, threshold_weight;
-    uint_fast64_t exceeded_count;
+    std::uint_fast64_t exceeded_count;
     std::ofstream bias_ostream;
     std::ifstream bias_istream;
 public:
@@ -95,7 +96,6 @@ public:
 
     double CVFromBinIndex(const int index) const noexcept
     {
-        // TODO: Replace with: return CV_min + (index + 0.5) * bin_width;?
         return CV_min + index * bin_width;
     }
 
@@ -223,7 +223,7 @@ public:
         std::transform(bias_grid.begin(), bias_grid.end(), penalty_potential.begin(), bias_grid.begin(), std::plus<double>());
         bias_ostream.open(filename, std::fstream::out | std::fstream::app);
         std::copy(penalty_potential.cbegin(), std::prev(penalty_potential.cend()), std::ostream_iterator<double>(bias_ostream, ","));
-        bias_ostream << bias_grid.back() << "\n";
+        bias_ostream << penalty_potential.back() << "\n";
         bias_ostream.close();
         bias_ostream.clear();
     }
@@ -278,11 +278,10 @@ public:
         // {
         //     return;
         // }
-        // TODO: Should probably delete the code above and use a symmetric derivative below
-        //       const double h = bin_width;
-        //       const double left  = std::max(CV_min, std::min(CV - 0.5*h, CV_max - h));
-        //       return bin_width_inverse * (ReturnPotential(left + h) - ReturnPotential(left));
-        return bin_width_inverse * (ReturnPotential(CV + bin_width) - ReturnPotential(CV));
+        // Use symmetric finite difference
+        const double h = 0.5 * bin_width;
+        return bin_width_inverse * (ReturnPotential(CV + h) - ReturnPotential(CV - h));
+        // return bin_width_inverse * (ReturnPotential(CV + bin_width) - ReturnPotential(CV));
     }
 
     void SetWeight(const double weight_in) noexcept
@@ -350,13 +349,13 @@ public:
     {
         if (!std::filesystem::exists(filename))
         {
-            std::cerr << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << std::endl;
+            std::cerr << Lettuce::Color::BoldRed << "File " << filename << " not found!" << Lettuce::Color::Reset << "\n";
             return false;
         }
         bias_istream.open(filename, std::fstream::in);
         if (!bias_istream)
         {
-            std::cerr << Lettuce::Color::BoldRed << "Reading potential from file " << filename << " failed!" << Lettuce::Color::Reset << std::endl;
+            std::cerr << Lettuce::Color::BoldRed << "Reading potential from file " << filename << " failed!" << Lettuce::Color::Reset << "\n";
         }
         std::string current_line;
         // Count the total linenumber using std::count (add one to the final result since we only counted the number of '\n' characters)
@@ -426,7 +425,7 @@ public:
             // Warn, but still proceed if 'END_METADYN_PARAMS' is not found
             if (!end_token_found)
             {
-                std::cerr << Lettuce::Color::BoldRed << "END_METADYN_PARAMS not found!" << Lettuce::Color::Reset << std::endl;
+                std::cerr << Lettuce::Color::BoldRed << "END_METADYN_PARAMS not found!" << Lettuce::Color::Reset << "\n";
             }
             // Iterate to the last two lines of the file (linecount - 3, since we still want to read in the second to last line)
             bias_istream.clear();

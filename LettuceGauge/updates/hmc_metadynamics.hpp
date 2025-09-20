@@ -541,7 +541,16 @@ namespace GaugeUpdates
 
                 // Use reserve instead of resize so we can use push_back inside the loop
                 // That way there is no need to explicitly track the current step number
-                cv_path_samples.reserve(metadynamics_path_update_enabled ? IntegratorT::NumberOfMomentumUpdates(n_step) : 1);
+                if constexpr(metadynamics_path_update_enabled)
+                {
+                    cv_path_samples.clear();
+                    cv_path_samples.reserve(IntegratorT::NumberOfMomentumUpdates(n_step) + 1);
+                }
+                else
+                {
+                    cv_path_samples.resize(1);
+                }
+                // cv_path_samples.reserve(metadynamics_path_update_enabled ? IntegratorT::NumberOfMomentumUpdates(n_step) : 1);
 
                 // Perform integration with chosen integrator
                 Integrator(*this, trajectory_length, n_step);
@@ -550,7 +559,7 @@ namespace GaugeUpdates
                 double CV_new     {MetaCharge()};
                 if constexpr(metadynamics_path_update_enabled)
                 {
-                    cv_path_samples.push_back(MetaCharge());
+                    cv_path_samples.push_back(CV_new);
                 }
                 else
                 {
@@ -587,20 +596,20 @@ namespace GaugeUpdates
                             Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                             // Metapotential.UpdatePotentialSymmetric(CV_new);
                         }
-                        if constexpr(metadynamics_path_update_enabled)
-                        {
-                            cv_path_samples.clear();
-                        }
+                        // if constexpr(metadynamics_path_update_enabled)
+                        // {
+                        //     cv_path_samples.clear();
+                        // }
                         acceptance_count_metadynamics_hmc += 1;
                         return true;
                     }
                     else
                     {
                         Metapotential.SetCV_current(CV_old);
-                        if constexpr(metadynamics_path_update_enabled)
-                        {
-                            cv_path_samples.clear();
-                        }
+                        // if constexpr(metadynamics_path_update_enabled)
+                        // {
+                        //     cv_path_samples.clear();
+                        // }
                         U = U_copy;
                         return false;
                     }
@@ -612,10 +621,10 @@ namespace GaugeUpdates
                     {
                         Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                     }
-                    if constexpr(metadynamics_path_update_enabled)
-                    {
-                        cv_path_samples.clear();
-                    }
+                    // if constexpr(metadynamics_path_update_enabled)
+                    // {
+                    //     cv_path_samples.clear();
+                    // }
                     datalog << "DeltaH: " << DeltaH << std::endl;
                     return true;
                 }

@@ -514,7 +514,7 @@ int main(int argc, char** argv)
         // Original default values
         // MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
         // New attempt at values for well tempered updates
-        double meta_weight = metapotential_well_tempered ? 0.5 : 0.025;
+        double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
         MetaBiasPotential TopBiasPotential{-8, 8, 800, meta_weight, 25, 1000.0};
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
