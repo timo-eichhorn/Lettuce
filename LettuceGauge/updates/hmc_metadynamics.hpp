@@ -529,7 +529,6 @@ namespace GaugeUpdates
             U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}
 
-
             bool operator()(const int n_step, const bool metropolis_step) noexcept
             {
                 // Copy old field so we can restore it in case the update gets rejected

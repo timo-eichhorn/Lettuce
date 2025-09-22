@@ -94,11 +94,12 @@ void ExtendRun(const std::filesystem::path& old_run_directory)
         std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_run_directory << Lettuce::Color::Reset << std::endl;
         return;
     }
-    if (not std::filesystem::exists(old_completedfilepath))
-    {
-        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_completedfilepath << Lettuce::Color::Reset << std::endl;
-        return;
-    }
+    // TODO: Only needed for actually extending completed runs, not for resuming runs
+    // if (not std::filesystem::exists(old_completedfilepath))
+    // {
+    //     std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_completedfilepath << Lettuce::Color::Reset << std::endl;
+    //     return;
+    // }
     if (not std::filesystem::exists(old_parameterfilepath))
     {
         std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_parameterfilepath << Lettuce::Color::Reset << std::endl;
@@ -113,22 +114,23 @@ void ExtendRun(const std::filesystem::path& old_run_directory)
     std::filesystem::path old_configpath       {old_run_directory / "checkpoints" / "final_config.conf"};
     std::filesystem::path old_prngstatepath    {old_run_directory / "checkpoints" / "final_prng_state.txt"};
     std::filesystem::path old_distributionpath {old_run_directory / "checkpoints" / "final_distribution_state.txt"};
-    if (not std::filesystem::exists(old_configpath))
-    {
-        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_configpath << Lettuce::Color::Reset << std::endl;
-        return;
-    }
-    if (not std::filesystem::exists(old_prngstatepath))
-    {
-        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_prngstatepath << Lettuce::Color::Reset << std::endl;
-        return;
-    }
-    if (not std::filesystem::exists(old_distributionpath))
-    {
-        std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_distributionpath << Lettuce::Color::Reset << std::endl;
-        return;
-    }
-    // Required files seem to exists, so proceed by setting the required global parameters
+    // TODO: This would only work with extending a complete run, not when resuming an incomplete one
+    // if (not std::filesystem::exists(old_configpath))
+    // {
+    //     std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_configpath << Lettuce::Color::Reset << std::endl;
+    //     return;
+    // }
+    // if (not std::filesystem::exists(old_prngstatepath))
+    // {
+    //     std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_prngstatepath << Lettuce::Color::Reset << std::endl;
+    //     return;
+    // }
+    // if (not std::filesystem::exists(old_distributionpath))
+    // {
+    //     std::cerr << Lettuce::Color::BoldRed << "Could not find " << old_distributionpath << Lettuce::Color::Reset << std::endl;
+    //     return;
+    // }
+    // Required files seem to exist, so proceed by setting the required global parameters
     std::cout << Lettuce::Color::BoldBlue << "Extending run found in path: " << old_run_directory << Lettuce::Color::Reset << std::endl;
     old_maindirectory = old_run_directory;
     extend_run = true;
