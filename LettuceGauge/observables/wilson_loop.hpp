@@ -36,7 +36,7 @@ Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, cons
         site_coord tmp_site     {current_site};
         Matrix_3x3 link_product {U(tmp_site, mu)};
         // Since we already initialized link_product as U(current_site, mu), the loop starts from 1
-        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
+        for (unsigned int mu_count = 1; mu_count < dist_mu; ++mu_count)
         {
             tmp_site = U.Move<1>(tmp_site, mu);
             link_product *= U(tmp_site, mu);
@@ -48,7 +48,7 @@ Matrix_3x3 LineProduct(const GaugeField& U, const site_coord& current_site, cons
         site_coord tmp_site     {U.Move<-1>(current_site, mu)};
         Matrix_3x3 link_product {U(tmp_site, mu).adjoint()};
         // Since we already initialized link_product as U(current_site - mu, mu), the loop starts from 1
-        for (int mu_count = 1; mu_count < dist_mu; ++mu_count)
+        for (unsigned int mu_count = 1; mu_count < dist_mu; ++mu_count)
         {
             tmp_site = U.Move<-1>(tmp_site, mu);
             link_product *= U(tmp_site, mu).adjoint();
