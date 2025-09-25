@@ -366,8 +366,6 @@ int main(int argc, char** argv)
     // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, SimulatedAction, global_prng);
     OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, SimulatedAction);
     Integrators::HMC::OMF_4            OMF_4_Integrator;
-    // Integrators::HMC::Leapfrog_OMF_4   LFRG_OMF_4_Integrator;
-    // Integrators::HMC::OMF_2_OMF_4      OMF_2_OMF_4_Integrator;
     GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
     // double ghmc_mixing_angle           {0.25 * pi<floatT>};
     // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);

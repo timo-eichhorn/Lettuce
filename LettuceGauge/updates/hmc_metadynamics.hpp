@@ -549,7 +549,6 @@ namespace GaugeUpdates
                 {
                     cv_path_samples.resize(1);
                 }
-                // cv_path_samples.reserve(metadynamics_path_update_enabled ? IntegratorT::NumberOfMomentumUpdates(n_step) : 1);
 
                 // Perform integration with chosen integrator
                 Integrator(*this, trajectory_length, n_step);
@@ -584,34 +583,29 @@ namespace GaugeUpdates
                 // TODO: The bias potential should be updated at the end of the trajectory even for rejected proposals (using the original configuration's CV)
                 if (metropolis_step)
                 {
-                    double p {std::exp(-energy_new + energy_old)};
-                    double q {prng.UniformReal()};
+                    double p        {std::exp(-energy_new + energy_old)};
+                    double q        {prng.UniformReal()};
+                    bool   accepted {q <= p};
                     // datalog << "DeltaH: " << DeltaH << std::endl;
-                    if (q <= p)
+                    if (accepted)
                     {
                         Metapotential.SetCV_current(CV_new);
                         if constexpr(metapotential_updated)
                         {
                             Metapotential.UpdatePotentialSymmetric(cv_path_samples);
-                            // Metapotential.UpdatePotentialSymmetric(CV_new);
                         }
-                        // if constexpr(metadynamics_path_update_enabled)
-                        // {
-                        //     cv_path_samples.clear();
-                        // }
                         acceptance_count_metadynamics_hmc += 1;
-                        return true;
                     }
                     else
                     {
                         Metapotential.SetCV_current(CV_old);
-                        // if constexpr(metadynamics_path_update_enabled)
-                        // {
-                        //     cv_path_samples.clear();
-                        // }
+                        if constexpr(metapotential_updated)
+                        {
+                            Metapotential.UpdatePotentialSymmetric(CV_old);
+                        }
                         U = U_copy;
-                        return false;
                     }
+                    return accepted;
                 }
                 else
                 {
@@ -620,10 +614,6 @@ namespace GaugeUpdates
                     {
                         Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                     }
-                    // if constexpr(metadynamics_path_update_enabled)
-                    // {
-                    //     cv_path_samples.clear();
-                    // }
                     datalog << "DeltaH: " << DeltaH << std::endl;
                     return true;
                 }
