@@ -383,7 +383,7 @@ int main(int argc, char** argv)
             for (int n_count = 0; n_count < n_therm; ++n_count)
             {
                 // auto start_therm_hmc {std::chrono::high_resolution_clock::now()};
-                HMC(10, false);
+                HMC(2 * n_hmc, false);
                 // auto end_therm_hmc {std::chrono::high_resolution_clock::now()};
                 // std::chrono::duration<double> hmc_therm_time {end_therm_hmc - start_therm_hmc};
                 // std::cout << "Time for thermalization sweep (HMC): " << hmc_therm_time.count() << std::endl;
@@ -543,7 +543,7 @@ int main(int argc, char** argv)
         {
             // Iterator::Checkerboard(Heatbath, 1);
             // Iterator::Checkerboard(OverrelaxationSubgroup, 4);
-            HMC(10, false);
+            HMC(2 * n_hmc, false);
         }
         datalog << "[HMC end thermalization]\n" << std::endl;
 
@@ -610,7 +610,7 @@ int main(int argc, char** argv)
         {
             Iterator::Checkerboard4(Heatbath, n_heatbath);
             Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
-            HMC_temper(10, false);
+            HMC_temper(2 * n_hmc, false);
         }
         datalog << "[HMC end thermalization]\n" << std::endl;
 
