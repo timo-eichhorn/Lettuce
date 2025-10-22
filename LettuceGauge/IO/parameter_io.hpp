@@ -72,7 +72,7 @@ struct NamedParameter
 //     NamedParameter<int>    n_orelax                         {"n_orelax"};
 //     NamedParameter<int>    n_instanton_update               {"n_instanton_update"};
 //     NamedParameter<bool>   metadynamics_enabled             {"metadynamics_enabled"};
-//     NamedParameter<bool>   metapotential_updated            {"metapotential_updated"};
+//     NamedParameter<bool>   metapotential_update_stride      {"metapotential_update_stride"};
 //     NamedParameter<bool>   metapotential_well_tempered      {"metapotential_well_tempered"};
 //     NamedParameter<int>    n_smear_meta                     {"n_smear_meta"};
 //     NamedParameter<floatT> rho_stout_metadynamics           {"rho_stout_metadynamics"};
@@ -326,7 +326,7 @@ void Configuration(const std::vector<std::string>& command_line_arguments)
     std::cout << "n_orelax is "                         << n_orelax << ".\n";
     std::cout << "n_instanton_update is "               << n_instanton_update << ".\n";
     std::cout << "metadynamics_enabled is "             << metadynamics_enabled << ".\n";
-    std::cout << "metapotential_updated is "            << metapotential_updated << ".\n";
+    std::cout << "metapotential_update_stride is "      << metapotential_update_stride << ".\n";
     std::cout << "metapotential_well_tempered is "      << metapotential_well_tempered << ".\n";
     std::cout << "metadynamics_path_update_enabled is " << metadynamics_path_update_enabled << ".\n";
     std::cout << "tempering_enabled is "                << tempering_enabled      << ".\n";
@@ -522,7 +522,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
     stream << "n_orelax = "                         << n_orelax                         << "\n";
     stream << "n_instanton_update = "               << n_instanton_update               << "\n";
     stream << "metadynamics_enabled = "             << metadynamics_enabled             << "\n";
-    stream << "metapotential_updated = "            << metapotential_updated            << "\n";
+    stream << "metapotential_update_stride = "      << metapotential_update_stride      << "\n";
     stream << "metapotential_well_tempered = "      << metapotential_well_tempered      << "\n";
     stream << "metadynamics_path_update_enabled = " << metadynamics_path_update_enabled << "\n";
     stream << "n_smear_meta = "                     << n_smear_meta                     << "\n";

@@ -558,7 +558,7 @@ int main(int argc, char** argv)
             if (n_count % expectation_period == 0)
             {
                 Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear, rho_stout);
-                if constexpr(metapotential_updated)
+                if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
@@ -636,7 +636,7 @@ int main(int argc, char** argv)
             {
                 Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
                 Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear, rho_stout);
-                if constexpr(metapotential_updated)
+                if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);

@@ -590,7 +590,8 @@ namespace GaugeUpdates
                     if (accepted)
                     {
                         Metapotential.SetCV_current(CV_new);
-                        if constexpr(metapotential_updated)
+                        // TODO: Implement support for metapotential_update_stride > 1! Maybe best to move to bias potential class itself
+                        if constexpr(metapotential_update_stride >= 1)
                         {
                             Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                         }
@@ -599,7 +600,7 @@ namespace GaugeUpdates
                     else
                     {
                         Metapotential.SetCV_current(CV_old);
-                        if constexpr(metapotential_updated)
+                        if constexpr(metapotential_update_stride >= 1)
                         {
                             Metapotential.UpdatePotentialSymmetric(CV_old);
                         }
@@ -610,7 +611,7 @@ namespace GaugeUpdates
                 else
                 {
                     Metapotential.SetCV_current(CV_new);
-                    if constexpr(metapotential_updated)
+                    if constexpr(metapotential_update_stride >= 1)
                     {
                         Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                     }
