@@ -41,6 +41,18 @@ private:
     double              well_tempered_parameter;
     double              threshold_weight;
     std::uint_fast64_t  exceeded_count{0};
+
+    [[nodiscard]]
+    int BinIndexFromCV(const double CV) const noexcept
+    {
+        return static_cast<int>(std::floor((CV - CV_min) * bin_width_inverse));
+    }
+
+    [[nodiscard]]
+    double CVFromBinIndex(const int index) const noexcept
+    {
+        return CV_min + index * bin_width;
+    }
 public:
     MetaBiasPotential(const double CV_min_in, const double CV_max_in, const int bin_number_in, const double weight_in, const double well_tempered_parameter_in, const double threshold_weight_in) :
     CV_min(CV_min_in),
@@ -73,18 +85,6 @@ public:
                   << "  well_tempered_parameter: " << well_tempered_parameter << "\n"
                   << "  threshold_weight:        " << threshold_weight        << "\n"
                   << "  exceeded_count:          " << exceeded_count          << "\n" << std::endl;
-    }
-
-    [[nodiscard]]
-    int BinIndexFromCV(const double CV) const noexcept
-    {
-        return static_cast<int>(std::floor((CV - CV_min) * bin_width_inverse));
-    }
-
-    [[nodiscard]]
-    double CVFromBinIndex(const int index) const noexcept
-    {
-        return CV_min + index * bin_width;
     }
 
     template<typename FuncT>
