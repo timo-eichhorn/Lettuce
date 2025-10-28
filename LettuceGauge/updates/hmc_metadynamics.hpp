@@ -261,7 +261,7 @@ namespace GaugeUpdates
 
     // TODO: Currently the kernel uses the global parameter n_smear_meta
     //       Should probably create a parameter either in HMCMetaDData or the kernel itself
-    template<typename IntegratorT, typename ActionT, typename prngT>
+    template<typename IntegratorT, typename ActionT, typename prngT, typename BiasPotentialT> //requires(std::same_as<BiasPotentialT, MetaBiasPotential> or std::same_as<BiasPotentialT, VariationalBiasPotential>)
     struct HMCMetaDKernel
     {
         private:
@@ -274,7 +274,7 @@ namespace GaugeUpdates
             // Metadynamics
             // double n_smear_meta;
             // double rho_stout_meta;
-            MetaBiasPotential& Metapotential;
+            BiasPotentialT& Metapotential;
             // FullTensor                                             Clover;
             // GaugeFieldSmeared                                      SmearedFields;
             // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
@@ -524,7 +524,7 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, BiasPotentialT& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
             U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}

@@ -20,6 +20,7 @@
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
 #include "LettuceGauge/metadynamics.hpp"
+#include "LettuceGauge/variational_bias.hpp"
 // #include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
@@ -289,7 +290,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
+template<typename BiasPotentialT>
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const BiasPotentialT& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
     Observables(Gluon, Gluonchain, logstream, n_count, n_smear, smearing_parameter, false);
@@ -358,7 +360,7 @@ int main(int argc, char** argv)
     GaugeAction::IwasakiAction.SetBeta(beta);
     GaugeAction::DBW2Action.SetBeta(beta);
 
-    auto SimulatedAction = GaugeAction::WilsonAction;
+    auto SimulatedAction = GaugeAction::DBW2Action;
     std::cout << "SimulatedAction parameters: " << SimulatedAction.stencil_radius << ", " << SimulatedAction.c_plaq << ", " << SimulatedAction.c_rect << std::endl;
 
     // Initialize update functors
@@ -524,14 +526,21 @@ int main(int argc, char** argv)
         // Original default values
         // MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
         // New attempt at values for well tempered updates
-        double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
+        // double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
+        // MetaBiasPotential TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.SymmetrizePotentialMaximum();
+
+        // TODO: Seems like the batch size has to be quite large?
+        // With OMF4: 6 + 5 * (n_hmc - 1) momentum updates/CV evaluations
+        int batch_size_ves = 40 * (6 + 5 * (n_hmc - 1));
+        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, 0.2, batch_size_ves};
+
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
+
 
         // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, SimulatedAction, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);

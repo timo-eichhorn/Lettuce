@@ -31,10 +31,10 @@ inline constexpr int Ncolor {3};
 static_assert(Ndim   == 4, "Currently only 4 dimensions are supported!");
 static_assert(Ncolor == 3, "Currently only SU(3) is supported!");
 
-inline constexpr int Nt {24};
-inline constexpr int Nx {24};
-inline constexpr int Ny {24};
-inline constexpr int Nz {24};
+inline constexpr int Nt {16};
+inline constexpr int Nx {16};
+inline constexpr int Ny {16};
+inline constexpr int Nz {16};
 
 template<typename T>
 inline constexpr std::complex<T> i(0, 1);
@@ -62,8 +62,8 @@ inline int n_therm {20};                                     // Number of update
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {0};                        // Number of heat bath sweeps per total update sweep
-inline constexpr int n_hmc {5};                             // Number of integration steps per HMC update
-inline constexpr double hmc_trajectory_length {1.0};        // Trajectory length of a single HMC update
+inline constexpr int n_hmc {20};                             // Number of integration steps per HMC update
+inline constexpr double hmc_trajectory_length {4.0};        // Trajectory length of a single HMC update
 inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not

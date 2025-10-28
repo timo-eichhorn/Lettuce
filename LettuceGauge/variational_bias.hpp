@@ -356,6 +356,10 @@ public:
             ofs.open(filename, std::fstream::out | std::fstream::app);
         }
 
+        ofs << "alpha_1:"                   << functional_basis.parameters[0] << "\n"
+            << "alpha_2:"                   << functional_basis.parameters[1] << "\n"
+            << "alpha_1_avg:"               << averaged_parameters[0]         << "\n"
+            << "alpha_2_avg:"               << averaged_parameters[1]         << "\n";
         const double grid_distance = (CV_max - CV_min) / static_cast<double>(grid_points - 1);
         for (int i = 0; i < grid_points - 1; ++i)
         {
