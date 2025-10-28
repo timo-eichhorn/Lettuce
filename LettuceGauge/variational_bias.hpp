@@ -21,12 +21,12 @@
 
 // Need to store previous measurements, along with actions to allow for weighting the measurements correctly?
 
-// TODO: In theory we could allow an arbitrary functional basis, but restrict to following basis for now:
-//       alpha_1 * Q^2 + alpha_2 * sin^2(const * Q)
+// In theory we could allow an arbitrary functional basis, but restrict to following basis for now:
+// alpha_1 * Q^2 + alpha_2 * sin^2(const * Q)
 struct SimpleBasis
 {
-    using ParametersT = std::array<double, 2>;
     // TODO: Replace with vector when allowing for general number of parameters
+    using ParametersT = std::array<double, 2>;
     ParametersT             parameters             {0.0, 0.0};
     static constexpr double renormalization_factor {0.84};
 
@@ -40,6 +40,19 @@ struct SimpleBasis
     static std::string GetName()
     {
         return "Quadratic_Sin^2_" + std::to_string(renormalization_factor);
+    }
+
+    [[nodiscard]]
+    double f0(const double CV) const noexcept
+    {
+        return CV * CV;
+    }
+
+    [[nodiscard]]
+    double f1(const double CV) const noexcept
+    {
+        const double s = std::sin(Constant() * CV);
+        return s * s;
     }
 
     // Only 1D CV space
@@ -59,7 +72,7 @@ struct SimpleBasis
     }
 };
 
-struct TargetDistributionUniform
+struct UniformTargetDistribution
 {
     // TODO: Add boundaries CV_min CV_max, outside of which the distribution is zero/falls off exponentially?
     // Only needs to be proportional to the target density, so unnormalized is fine?
@@ -72,30 +85,123 @@ struct TargetDistributionUniform
     [[nodiscard]]
     static std::string GetName()
     {
-        return "TargetDistributionUniform";
+        return "UniformTargetDistribution";
     }
 };
 
-template<typename BasisT, typename TargetDistT = TargetDistributionUniform>
+template<typename BasisT, typename TargetDistT = UniformTargetDistribution>
 struct VariationalBiasPotential
 {
 public:
     using ParametersT = BasisT::ParametersT;
 private:
     BasisT              functional_basis;
-    std::vector<double> averaged_parameters;
+    TargetDistT         target_distribution;
+    ParametersT         averaged_parameters;
     std::vector<double> batch;
     double              CV_current;
     double              CV_min;
     double              CV_max;
     double              gradient_descent_stepsize;
     int                 batch_size;
+    std::uint64_t       updates_count {0};
 
-    // double Reweight(const std::vector<std::pair<double, double>>& measurements) const noexcept
+    struct MomentsT
+    {
+        ParametersT mean;
+        std::array<std::array<double, 2>, 2> covariance;
+    };
+
+    // For the uniform target distribution, we can precompute the expectation values analytically
+    [[nodiscard]]
+    ParametersT ComputeUniformTargetDistExpectationValues() const noexcept
+    {
+        const double c = BasisT::Constant();
+        const double expectation_Q2   = (CV_max * CV_max + CV_min * CV_min + CV_max * CV_min)/ 3.0;
+
+        const double expectation_sin2 = 0.5 - (std::sin(2.0 * c * CV_max) - std::sin(2.0 * c * CV_min)) / (4.0 * c * (CV_max - CV_min));
+
+        return ParametersT{expectation_Q2, expectation_sin2};
+    }
+
+    // [[nodiscard]]
+    // ParametersT ComputeBatchExpectationValues() const noexcept
     // {
-    //     // Pair CV measurements with action measurements
-    //     // return
+    //     ParametersT expectation_values{0.0, 0.0};
+    //     if (batch.empty())
+    //     {
+    //         return expectation_values;
+    //     }
+
+    //     for (double CV : batch)
+    //     {
+    //         expectation_values[0] += functional_basis.f0(CV);
+    //         expectation_values[1] += functional_basis.f1(CV);
+    //     }
+    //     const double inverse_N = 1.0 / static_cast<double>(batch.size());
+    //     expectation_values[0] *= inverse_N;
+    //     expectation_values[1] *= inverse_N;
+    //     return expectation_values;
     // }
+
+    [[nodiscard]]
+    MomentsT ComputeBatchMoments() const noexcept
+    {
+        MomentsT moments{};
+
+        std::array<double, 2>                mean{0.0, 0.0};
+        std::array<std::array<double, 2>, 2> cov_matrix{{{0.0, 0.0}, {0.0, 0.0}}};
+
+        std::size_t  N = 0;
+        for (double CV : batch)
+        {
+            N += 1;
+            const double f0        = functional_basis.f0(CV);
+            const double f1        = functional_basis.f1(CV);
+
+            const std::array<double, 2> x{f0, f1};
+
+            std::array<double, 2> delta{x[0] - mean[0], x[1] - mean[1]};
+
+            const double inverse_N = 1.0 / static_cast<double>(N);
+            mean[0]               += delta[0] * inverse_N;
+            mean[1]               += delta[1] * inverse_N;
+
+            std::array<double, 2> delta2{x[0] - mean[0], x[1] - mean[1]};
+
+            cov_matrix[0][0] += delta[0] * delta2[0];
+            cov_matrix[0][1] += delta[0] * delta2[1];
+            cov_matrix[1][0] += delta[1] * delta2[0];
+            cov_matrix[1][1] += delta[1] * delta2[1];
+        }
+
+        if (N == 0)
+        {
+            moments.mean        = ParametersT{0.0, 0.0};
+            moments.covariance  = {{{0.0, 0.0}, {0.0, 0.0}}};
+            return moments;
+        }
+
+        const double inverse_N = 1.0 / static_cast<double>(N);
+
+        cov_matrix[0][0] *= inverse_N;
+        cov_matrix[0][1] *= inverse_N;
+        cov_matrix[1][0] *= inverse_N;
+        cov_matrix[1][1] *= inverse_N;
+
+        moments.mean       = mean;
+        moments.covariance = cov_matrix;
+        return moments;
+    }
+
+    void UpdateAveragedParameters() noexcept
+    {
+        for (std::size_t i = 0u; i < averaged_parameters.size(); ++i)
+        {
+            averaged_parameters[i] = (averaged_parameters[i] * updates_count + functional_basis.parameters[i]) / static_cast<double>(updates_count + 1);
+        }
+        updates_count += 1;
+    }
 
     void MaybeUpdate() noexcept
     {
@@ -103,33 +209,35 @@ private:
         {
             return;
         }
-        // TODO: Perform update and clear batch
-    }
+        // const ParametersT batch_expectation_values  = ComputeBatchExpectationValues();
+        const MomentsT    batch_moments             = ComputeBatchMoments();
+        const ParametersT target_expectation_values = ComputeUniformTargetDistExpectationValues();
+        const ParametersT gradient                  = ParametersT{-batch_moments.mean[0] + target_expectation_values[0],
+                                                                  -batch_moments.mean[1] + target_expectation_values[1]};
 
-    // TODO: Can probably be done in a better way than returning a vector?
-    ParametersT/*std::vector<double>*/ ComputeGradient() const noexcept
-    {
-        // - expectation value of derivative sampled with V + expectation value of derivative sampled according to target distribution p
-    }
+        const double diff_0 = functional_basis.parameters[0] - averaged_parameters[0];
+        const double diff_1 = functional_basis.parameters[1] - averaged_parameters[1];
 
-    // TODO: Can probably be done in a better way than returning a vector?
-    ParametersT/*std::vector<double>*/ ComputeHessianTerm() const noexcept
-    {
-        // Covariance of derivatives + terms that vanish when when the bias is a liner combination of basis functions
-        // Never compute full Hessian, directly multiply with difference vector to get a vector again
-        // The Hessian can be computed exactly for simple target distributions
-        Hessian(current_averaged_parameters) * (current_parameters - current_averaged_parameters);
+        // Update with averaged stochastic gradient descent algorithm, using the full Hessian in contrast to the original VES paper (where only the diagonals are used)
+        functional_basis.parameters[0] -= gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
+        functional_basis.parameters[1] -= gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
+
+        UpdateAveragedParameters();
+
+        batch.clear();
     }
 public:
 
     VariationalBiasPotential(const BasisT& functional_basis_in, const double CV_min_in, const double CV_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
     functional_basis(functional_basis_in),
+    // averaged_parameters(BasisT::ParametersT.),
     CV_min(CV_min_in),
     CV_max(CV_max_in),
     gradient_descent_stepsize(gradient_descent_stepsize_in),
     batch_size(batch_size_in)
     {
-        averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
+        // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
+        averaged_parameters = functional_basis.parameters;
         std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
                   << "  functional_basis_name:     " << BasisT::GetName()         << "\n"
                   << "  target_distribution_name:  " << TargetDistT::GetName()    << "\n"
@@ -141,15 +249,6 @@ public:
 
     void UpdatePotential(const double CV) noexcept
     {
-        // Use an averaged stochastic gradient descent algorithm
-        // TODO: Store CV (and action?) value, only update if sufficient samples (batch_size) have been collected
-        // TODO: Can't update in-place? Or have to precompute gradient and hessian
-        // auto gradient;
-        // auto hessian;
-        // for (auto parameter : parameters)
-        // {
-        //     parameter -= gradient_descent_stepsize * (ComputeGradient(current_averaged_parameters) + ComputeHessianTerm(current_averaged_parameters));
-        // }
         batch.push_back(CV);
         MaybeUpdate();
 
@@ -157,9 +256,9 @@ public:
 
     void UpdatePotential(const std::vector<double>& CV_vec) noexcept
     {
-        for (double el : CV_vec)
+        for (double CV : CV_vec)
         {
-            batch.push_back(el);
+            batch.push_back(CV);
         }
         MaybeUpdate();
     }
@@ -178,13 +277,21 @@ public:
     [[nodiscard]]
     double ReturnPotential(const double CV) const noexcept
     {
-        return functional_basis.Evaluate(CV);
+        // TODO: Replace with basis using averaged parameter values?
+        SimpleBasis tmp_basis = functional_basis;
+        tmp_basis.parameters  = averaged_parameters;
+        return tmp_basis.Evaluate(CV);
+        // return functional_basis.Evaluate(CV);
     }
 
     [[nodiscard]]
     double ReturnDerivative(const double CV) const noexcept
     {
-        return functional_basis.Derivative(CV);
+        // TODO: Replace with basis using averaged parameter values?
+        SimpleBasis tmp_basis = functional_basis;
+        tmp_basis.parameters  = averaged_parameters;
+        return tmp_basis.Derivative(CV);
+        // return functional_basis.Derivative(CV);
     }
 
     void SetCV_current(const double CV_in) noexcept
@@ -210,33 +317,55 @@ public:
         return averaged_parameters;
     }
 
-    // void SaveParameters(const std::string& filename, const bool overwrite = false)
-    // {
-    //     std::ofstream ofs;
-    //     if (overwrite)
-    //     {
-    //         ofs.open(filename, std::fstream::out | std::fstream::trunc);
-    //     }
-    //     else
-    //     {
-    //         ofs.open(filename, std::fstream::out | std::fstream::app);
-    //     }
-    // }
+    void SaveParameters(const std::string& filename, const bool overwrite = false) const
+    {
+        std::ofstream ofs;
+        if (overwrite)
+        {
+            ofs.open(filename, std::fstream::out | std::fstream::trunc);
+        }
+        else
+        {
+            ofs.open(filename, std::fstream::out | std::fstream::app);
+        }
 
-    // void SavePotential(const std::string& filename, const bool overwrite = false)
-    // {
-    //     std::ofstream ofs;
-    //     if (overwrite)
-    //     {
-    //         ofs.open(filename, std::fstream::out | std::fstream::trunc);
-    //     }
-    //     else
-    //     {
-    //         ofs.open(filename, std::fstream::out | std::fstream::app);
-    //     }
-    // }
+        ofs /*<< "START_VES_PARAMS\n"*/
+            << "VES potential"              << "\n"
+            << "basis_name:"                << BasisT::GetName()              << "\n"
+            << "target_name:"               << TargetDistT::GetName()         << "\n"
+            << "CV_min:"                    << CV_min                         << "\n"
+            << "CV_max:"                    << CV_max                         << "\n"
+            << "gradient_descent_stepsize:" << gradient_descent_stepsize      << "\n"
+            << "batch_size:"                << batch_size                     << "\n"
+            << "alpha_1:"                   << functional_basis.parameters[0] << "\n"
+            << "alpha_2:"                   << functional_basis.parameters[1] << "\n"
+            << "alpha_1_avg:"               << averaged_parameters[0]         << "\n"
+            << "alpha_2_avg:"               << averaged_parameters[1]         << "\n"
+            << "END_VES_PARAMS"                                               << "\n";
+    }
 
-    // bool LoadPotential(const std::string& filename)
+    void SavePotential(const std::string& filename, const int grid_points = 801, const bool overwrite = false) const
+    {
+        std::ofstream ofs;
+        if (overwrite)
+        {
+            ofs.open(filename, std::fstream::out | std::fstream::trunc);
+        }
+        else
+        {
+            ofs.open(filename, std::fstream::out | std::fstream::app);
+        }
+
+        const double grid_distance = (CV_max - CV_min) / static_cast<double>(grid_points - 1);
+        for (int i = 0; i < grid_points - 1; ++i)
+        {
+            ofs << ReturnPotential(CV_min + grid_distance * i) << ",";
+        }
+        // ofs << ReturnPotential(CV_min + grid_distance * (grid_points - 1)) << "\n";
+        ofs << ReturnPotential(CV_max) << "\n";
+    }
+
+    // bool LoadPotential(const std::string& filename) const
     // {
     //     if (!std::filesystem::exists(filename))
     //     {
