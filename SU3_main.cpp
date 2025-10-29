@@ -536,16 +536,19 @@ int main(int argc, char** argv)
 
         // TODO: Seems like the batch size has to be quite large?
         // With OMF4: 6 + 5 * (n_hmc - 1) momentum updates/CV evaluations
-        int batch_size_ves = 40 * (6 + 5 * (n_hmc - 1));
+        int batch_size_ves = 100 * (6 + 5 * (n_hmc - 1));
         VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, 0.2, batch_size_ves};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
-
         // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, SimulatedAction, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
         GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+
+        GaugeUpdates::InstantonStart(Gluon, 1);
+
+        std::uniform_int_distribution<int>  distribution_parity_update(0, 1);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -565,6 +568,10 @@ int main(int argc, char** argv)
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
             // overall_time += update_time_meta;
+            if (distribution_parity_update(generator_rand))
+            {
+                ParityUpdate(Gluon, Gluonsmeared1);
+            }
             if (n_count % expectation_period == 0)
             {
                 Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear, rho_stout);

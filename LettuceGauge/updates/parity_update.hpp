@@ -3,7 +3,6 @@
 
 // Non-standard library headers
 #include "../defines.hpp"
-#include "../math/su2.hpp"
 #include "../math/su3.hpp"
 //-----
 #include <Eigen/Dense>
@@ -12,10 +11,10 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
-#include <random>
+// ...
 //----------------------------------------
 // Standard C headers
-#include <cmath>
+// ...
 
 // TODO: Leaves action invariant and changes sign of clover charge (per timeslice even), but changes plaquette based charge?
 
@@ -30,7 +29,7 @@ void ParityUpdate(GaugeField& U, GaugeField& U_copy) noexcept
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        site_coord current_site {t, x, y, z};
+        const site_coord current_site {t, x, y, z};
 
         const int rx = Nx - x - 1;
         const int ry = Ny - y - 1;
