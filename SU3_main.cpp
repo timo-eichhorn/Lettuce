@@ -38,6 +38,7 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
+#include "LettuceGauge/updates/parity_update.hpp"
 #include "LettuceGauge/updates/tempering.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
