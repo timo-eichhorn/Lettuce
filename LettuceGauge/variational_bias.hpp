@@ -18,6 +18,7 @@
 //----------------------------------------
 // Standard C headers
 #include <cmath>
+#include <cstdint>
 
 // Need to store previous measurements, along with actions to allow for weighting the measurements correctly?
 
@@ -26,7 +27,8 @@
 struct SimpleBasis
 {
     // TODO: Replace with vector when allowing for general number of parameters
-    using ParametersT = std::array<double, 2>;
+    static constexpr int    n_parameters = 2;
+    using ParametersT = std::array<double, n_parameters>;
     ParametersT             parameters             {0.0, 0.0};
     static constexpr double renormalization_factor {0.84};
 
@@ -55,20 +57,29 @@ struct SimpleBasis
         return s * s;
     }
 
+    [[nodiscard]]
+    double f0_deriv(const double CV) const noexcept
+    {
+        return 2.0 * CV;
+    }
+
+    [[nodiscard]]
+    double f1_deriv(const double CV) const noexcept
+    {
+        return Constant() * std::sin(2.0 * Constant() * CV);
+    }
+
     // Only 1D CV space
     [[nodiscard]]
     double Evaluate(const double CV) const noexcept
     {
-        const double sin_term = std::sin(Constant() * CV);
-        return parameters[0] * CV * CV + parameters[1] * sin_term * sin_term;
+        return parameters[0] * f0(CV) + parameters[1] * f1(CV);
     }
 
     [[nodiscard]]
     double Derivative(const double CV) const noexcept
     {
-        // const double arg = Constant() * CV;
-        // return 2 * (parameters[0] * CV + parameters[1] * Constant() * std::sin(arg) * std::cos(arg));
-        return 2.0 * parameters[0] * CV + parameters[1] * Constant() * std::sin(2.0 * Constant() * CV);
+        return parameters[0] * f0_deriv(CV) + parameters[1] * f1_deriv(CV);
     }
 };
 
@@ -94,17 +105,25 @@ struct VariationalBiasPotential
 {
 public:
     using ParametersT = BasisT::ParametersT;
+    static constexpr int n_parameters = BasisT::n_parameters;
 private:
     BasisT              functional_basis;
     TargetDistT         target_distribution;
     ParametersT         averaged_parameters;
-    std::vector<double> batch;
     double              CV_current;
     double              CV_min;
     double              CV_max;
+
+    // Hyperparameters
     double              gradient_descent_stepsize;
     int                 batch_size;
     std::uint64_t       updates_count {0};
+    // std::array<double, n_parameters>              gradient_descent_stepsizes{};
+    // std::array<int,    n_parameters>              batch_sizes{};
+    // std::array<std::uint64_t, n_parameters>       update_counts{};
+
+    std::vector<double> batch;
+    // std::array<std::vector<double>, n_parameters> batches;
 
     struct MomentsT
     {
@@ -124,33 +143,21 @@ private:
         return ParametersT{expectation_Q2, expectation_sin2};
     }
 
+    // TODO: For generic target distributions could approximately compute the expectation values via quadrature
+    //       Should be feasible for all basis forms/parameters we are ever going to work with
     // [[nodiscard]]
-    // ParametersT ComputeBatchExpectationValues() const noexcept
+    // ParametersT ComputeTargetDistExpectationValues() const noexcept
     // {
-    //     ParametersT expectation_values{0.0, 0.0};
-    //     if (batch.empty())
-    //     {
-    //         return expectation_values;
-    //     }
-
-    //     for (double CV : batch)
-    //     {
-    //         expectation_values[0] += functional_basis.f0(CV);
-    //         expectation_values[1] += functional_basis.f1(CV);
-    //     }
-    //     const double inverse_N = 1.0 / static_cast<double>(batch.size());
-    //     expectation_values[0] *= inverse_N;
-    //     expectation_values[1] *= inverse_N;
-    //     return expectation_values;
+    //     //
     // }
 
     [[nodiscard]]
-    MomentsT ComputeBatchMoments() const noexcept
+    MomentsT ComputeBatchMoments(/*const std::vector<double>& batch*/) const noexcept
     {
         MomentsT moments{};
 
-        std::array<double, 2>                mean{0.0, 0.0};
-        std::array<std::array<double, 2>, 2> cov_matrix{{{0.0, 0.0}, {0.0, 0.0}}};
+        std::array<double, n_parameters>                           mean{0.0, 0.0};
+        std::array<std::array<double, n_parameters>, n_parameters> cov_matrix{{{0.0, 0.0}, {0.0, 0.0}}};
 
         std::size_t  N = 0;
         for (double CV : batch)
@@ -193,6 +200,12 @@ private:
         moments.covariance = cov_matrix;
         return moments;
     }
+
+    // void UpdateAveragedParameter(int i) noexcept
+    // {
+    //     averaged_parameters[i] = (averaged_parameters[i] * update_counts[i] + functional_basis.parameters[i]) / static_cast<double>(update_counts[i] + 1);
+    //     update_counts[i]      += 1;
+    // }
 
     void UpdateAveragedParameters() noexcept
     {
@@ -247,11 +260,29 @@ public:
                   << "  batch_size:                " << batch_size                << "\n" << std::endl;
     }
 
+    // VariationalBiasPotential(const BasisT& functional_basis_in, const double CV_min_in, const double CV_max_in, const std::array<double, n_parameters>& gradient_descent_stepsizes_in, const std::array<int, n_parameters> batch_sizes_in) :
+    // functional_basis(functional_basis_in),
+    // // averaged_parameters(BasisT::ParametersT.),
+    // CV_min(CV_min_in),
+    // CV_max(CV_max_in),
+    // gradient_descent_stepsize(gradient_descent_stepsize_in),
+    // batch_size(batch_size_in)
+    // {
+    //     // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
+    //     averaged_parameters = functional_basis.parameters;
+    //     std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
+    //               << "  functional_basis_name:     " << BasisT::GetName()                                                      << "\n"
+    //               << "  target_distribution_name:  " << TargetDistT::GetName()                                                 << "\n"
+    //               << "  CV_min:                    " << CV_min                                                                 << "\n"
+    //               << "  CV_max:                    " << CV_max                                                                 << "\n"
+    //               << "  gradient_descent_stepsize: " << gradient_descent_stepsizes[0] << ", " << gradient_descent_stepsizes[1] << "\n"
+    //               << "  batch_size:                " << batch_sizes[0]                << ", " << gradient_descent_stepsizes[1] << "\n" << std::endl;
+    // }
+
     void UpdatePotential(const double CV) noexcept
     {
         batch.push_back(CV);
         MaybeUpdate();
-
     }
 
     void UpdatePotential(const std::vector<double>& CV_vec) noexcept
@@ -263,7 +294,7 @@ public:
         MaybeUpdate();
     }
 
-    // TODO: Is this needed? Symmetry is already built into the functional basis
+    // Only provided for compatibility with Metadynamics code
     void UpdatePotentialSymmetric(const double CV) noexcept
     {
         UpdatePotential(CV);
@@ -277,9 +308,9 @@ public:
     [[nodiscard]]
     double ReturnPotential(const double CV) const noexcept
     {
-        // TODO: Replace with basis using averaged parameter values?
-        SimpleBasis tmp_basis = functional_basis;
-        tmp_basis.parameters  = averaged_parameters;
+        // Use averaged parameter values
+        BasisT tmp_basis     = functional_basis;
+        tmp_basis.parameters = averaged_parameters;
         return tmp_basis.Evaluate(CV);
         // return functional_basis.Evaluate(CV);
     }
@@ -287,9 +318,9 @@ public:
     [[nodiscard]]
     double ReturnDerivative(const double CV) const noexcept
     {
-        // TODO: Replace with basis using averaged parameter values?
-        SimpleBasis tmp_basis = functional_basis;
-        tmp_basis.parameters  = averaged_parameters;
+        // Use averaged parameter values
+        BasisT tmp_basis     = functional_basis;
+        tmp_basis.parameters = averaged_parameters;
         return tmp_basis.Derivative(CV);
         // return functional_basis.Derivative(CV);
     }
@@ -330,17 +361,17 @@ public:
         }
 
         ofs /*<< "START_VES_PARAMS\n"*/
-            << "VES potential"              << "\n"
-            << "basis_name:"                << BasisT::GetName()              << "\n"
-            << "target_name:"               << TargetDistT::GetName()         << "\n"
-            << "CV_min:"                    << CV_min                         << "\n"
-            << "CV_max:"                    << CV_max                         << "\n"
-            << "gradient_descent_stepsize:" << gradient_descent_stepsize      << "\n"
-            << "batch_size:"                << batch_size                     << "\n"
-            << "alpha_1:"                   << functional_basis.parameters[0] << "\n"
-            << "alpha_2:"                   << functional_basis.parameters[1] << "\n"
-            << "alpha_1_avg:"               << averaged_parameters[0]         << "\n"
-            << "alpha_2_avg:"               << averaged_parameters[1]         << "\n"
+            << "VES potential"               << "\n"
+            << "basis_name: "                << BasisT::GetName()              << "\n"
+            << "target_name: "               << TargetDistT::GetName()         << "\n"
+            << "CV_min: "                    << CV_min                         << "\n"
+            << "CV_max: "                    << CV_max                         << "\n"
+            << "gradient_descent_stepsize: " << gradient_descent_stepsize      << "\n"
+            << "batch_size: "                << batch_size                     << "\n"
+            << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
+            << "alpha_2: "                   << functional_basis.parameters[1] << "\n"
+            << "alpha_1_avg: "               << averaged_parameters[0]         << "\n"
+            << "alpha_2_avg: "               << averaged_parameters[1]         << "\n"
             << "END_VES_PARAMS"                                               << "\n";
     }
 
@@ -356,16 +387,17 @@ public:
             ofs.open(filename, std::fstream::out | std::fstream::app);
         }
 
-        ofs << "alpha_1:"                   << functional_basis.parameters[0] << "\n"
-            << "alpha_2:"                   << functional_basis.parameters[1] << "\n"
-            << "alpha_1_avg:"               << averaged_parameters[0]         << "\n"
-            << "alpha_2_avg:"               << averaged_parameters[1]         << "\n";
+        ofs << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
+            << "alpha_2: "                   << functional_basis.parameters[1] << "\n"
+            << "alpha_1_avg: "               << averaged_parameters[0]         << "\n"
+            << "alpha_2_avg: "               << averaged_parameters[1]         << "\n";
+        // TODO: Add loss function/VES functional
+            // << "Loss: "                      << ComputeLossFunction() << "\n";
         const double grid_distance = (CV_max - CV_min) / static_cast<double>(grid_points - 1);
         for (int i = 0; i < grid_points - 1; ++i)
         {
             ofs << ReturnPotential(CV_min + grid_distance * i) << ",";
         }
-        // ofs << ReturnPotential(CV_min + grid_distance * (grid_points - 1)) << "\n";
         ofs << ReturnPotential(CV_max) << "\n";
     }
 

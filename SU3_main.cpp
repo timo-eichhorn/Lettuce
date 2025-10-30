@@ -536,8 +536,16 @@ int main(int argc, char** argv)
 
         // TODO: Seems like the batch size has to be quite large?
         // With OMF4: 6 + 5 * (n_hmc - 1) momentum updates/CV evaluations
-        int batch_size_ves = 100 * (6 + 5 * (n_hmc - 1));
-        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, 0.2, batch_size_ves};
+        double ves_stepsize       = 0.2;
+        // double ves_stepsize_quad  = 0.2;
+        // double ves_stepsize_sin   = 0.3;
+        int    steps_per_hmc_traj = (6 + 5 * (n_hmc - 1));
+        // int    ves_batchsize_quad = 500 * steps_per_hmc_traj;
+        // int    ves_batchsize_sin  = 100 * steps_per_hmc_traj;
+
+        int ves_batchsize         = 250 * steps_per_hmc_traj;
+        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, {ves_stepsize_quad, ves_stepsize_sin}, {ves_batchsize_quad, ves_batchsize_sin}};
+        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, ves_stepsize, ves_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
