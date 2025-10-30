@@ -8,6 +8,7 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -86,7 +87,7 @@ struct SimpleBasis
 struct UniformTargetDistribution
 {
     // TODO: Add boundaries CV_min CV_max, outside of which the distribution is zero/falls off exponentially?
-    // Only needs to be proportional to the target density, so unnormalized is fine?
+    // Only needs to be proportional to the target density, so unnormalized is fine
     [[nodiscard]]
     double operator()(const double /*CV*/) const noexcept
     {
@@ -100,7 +101,28 @@ struct UniformTargetDistribution
     }
 };
 
-template<typename BasisT, typename TargetDistT = UniformTargetDistribution>
+// If only the barrier terms are removed, the resulting distribution should be approximately Gaussian
+struct GaussianTargetDistribution
+{
+    double mean               {0.0};
+    double standard_deviation {1.0};
+
+    // Only needs to be proportional to the target density, so unnormalized is fine
+    [[nodiscard]]
+    double operator()(const double CV) const noexcept
+    {
+        const double arg = (CV - mean) / standard_deviation;
+        return std::exp(-0.5 * arg * arg);
+    }
+
+    [[nodiscard]]
+    static std::string GetName()
+    {
+        return "GaussianTargetDistribution";
+    }
+};
+
+template<typename BasisT, typename TargetDistT>
 struct VariationalBiasPotential
 {
 public:
@@ -110,6 +132,7 @@ private:
     BasisT              functional_basis;
     TargetDistT         target_distribution;
     ParametersT         averaged_parameters;
+    ParametersT         target_distribution_expectation_values;
     double              CV_current;
     double              CV_min;
     double              CV_max;
@@ -122,6 +145,11 @@ private:
     // std::array<int,    n_parameters>              batch_sizes{};
     // std::array<std::uint64_t, n_parameters>       update_counts{};
 
+    // Quadrature parameters
+    double quadrature_abs_tol   {1e-8};
+    double quadrature_rel_tol   {1e-6};
+    int    quadrature_max_depth {15};
+
     std::vector<double> batch;
     // std::array<std::vector<double>, n_parameters> batches;
 
@@ -132,24 +160,113 @@ private:
     };
 
     // For the uniform target distribution, we can precompute the expectation values analytically
-    [[nodiscard]]
-    ParametersT ComputeUniformTargetDistExpectationValues() const noexcept
+    // [[nodiscard]]
+    // ParametersT ComputeUniformTargetDistExpectationValues() const noexcept
+    // {
+    //     const double c = BasisT::Constant();
+    //     const double expectation_Q2   = (CV_max * CV_max + CV_min * CV_min + CV_max * CV_min)/ 3.0;
+
+    //     const double expectation_sin2 = 0.5 - (std::sin(2.0 * c * CV_max) - std::sin(2.0 * c * CV_min)) / (4.0 * c * (CV_max - CV_min));
+
+    //     return ParametersT{expectation_Q2, expectation_sin2};
+    // }
+
+    // 7-point Gauss, 15-point Kronrod
+    template<typename FuncT>
+    double GaussKronrodQuadrature(const FuncT& f, const double a, const double b, int depth = 0) const noexcept
     {
-        const double c = BasisT::Constant();
-        const double expectation_Q2   = (CV_max * CV_max + CV_min * CV_min + CV_max * CV_min)/ 3.0;
+        static constexpr double nodes_kronrod[8]   = {0.991455371120813,
+                                                      0.949107912342759,
+                                                      0.864864423359769,
+                                                      0.741531185599394,
+                                                      0.586087235467691,
+                                                      0.405845151377397,
+                                                      0.207784955007898,
+                                                      0.000000000000000};
 
-        const double expectation_sin2 = 0.5 - (std::sin(2.0 * c * CV_max) - std::sin(2.0 * c * CV_min)) / (4.0 * c * (CV_max - CV_min));
+        static constexpr double weights_kronrod[8] = {0.022935322010529,
+                                                      0.063092092629979,
+                                                      0.104790010322250,
+                                                      0.140653259715525,
+                                                      0.169004726639267,
+                                                      0.190350578064785,
+                                                      0.204432940075298,
+                                                      0.209482141084728};
 
-        return ParametersT{expectation_Q2, expectation_sin2};
+        static constexpr double weights_gauss[4] =   {0.129484966168870,
+                                                      0.279705391489277,
+                                                      0.381830050505119,
+                                                      0.417959183673469};
+
+        const double midpoint      = 0.5 * (a + b);
+        const double half_interval = 0.5 * (b - a);
+
+        const double f_midpoint = f(midpoint);
+        double       I_kronrod  = weights_kronrod[7] * f_midpoint;
+        double       I_gauss    = weights_gauss[3]   * f_midpoint;
+
+        for (int i = 0; i < 7; ++i)
+        {
+            const double x_offset = half_interval * nodes_kronrod[i];
+            const double f_left   = f(midpoint - x_offset);
+            const double f_right  = f(midpoint + x_offset);
+            const double sum      = f_left + f_right;
+
+            I_kronrod += weights_kronrod[i] * sum;
+
+            if (i == 1)
+            {
+                I_gauss += weights_gauss[0] * sum;
+            }
+            else if (i == 3)
+            {
+                I_gauss += weights_gauss[1] * sum;
+            }
+            else if (i == 5)
+            {
+                I_gauss += weights_gauss[2] * sum;
+            }
+        }
+
+        I_kronrod *= half_interval;
+        I_gauss   *= half_interval;
+
+        const double tolerance = std::max(quadrature_abs_tol, quadrature_rel_tol * std::abs(I_kronrod));
+        const double error     = std::abs(I_kronrod - I_gauss);
+
+        if (error <= tolerance or depth >= quadrature_max_depth)
+        {
+            return I_kronrod;
+        }
+        return GaussKronrodQuadrature(f, a, midpoint, depth + 1) + GaussKronrodQuadrature(f, midpoint, b, depth + 1);
     }
 
-    // TODO: For generic target distributions could approximately compute the expectation values via quadrature
-    //       Should be feasible for all basis forms/parameters we are ever going to work with
-    // [[nodiscard]]
-    // ParametersT ComputeTargetDistExpectationValues() const noexcept
-    // {
-    //     //
-    // }
+    // For generic target distributions compute the expectation values of the basis functions using Gauss-Konrod
+    [[nodiscard]]
+    ParametersT ComputeTargetDistExpectationValues(const double a, const double b) const noexcept
+    {
+        const auto p  = [this](double x) noexcept
+                        {
+                            const double tmp = target_distribution(x);
+                            return (std::isfinite(tmp) and tmp >= 0.0) ? tmp : 0.0;
+                        };
+
+        const auto f_0 = [this](double x) noexcept {return functional_basis.f0(x);};
+        const auto f_1 = [this](double x) noexcept {return functional_basis.f1(x);};
+
+        const double normalization = GaussKronrodQuadrature(p, a, b);
+
+        // TODO: Or error?
+        if (not std::isfinite(normalization) or normalization <= 0.0)
+        {
+            return ParametersT{0.0, 0.0};
+        }
+
+        const double I_0 = GaussKronrodQuadrature([&](double x) noexcept {return p(x) * f_0(x);}, a, b);
+        const double I_1 = GaussKronrodQuadrature([&](double x) noexcept {return p(x) * f_1(x);}, a, b);
+
+        return ParametersT{I_0 / normalization, I_1 / normalization};
+    }
 
     [[nodiscard]]
     MomentsT ComputeBatchMoments(/*const std::vector<double>& batch*/) const noexcept
@@ -222,11 +339,9 @@ private:
         {
             return;
         }
-        // const ParametersT batch_expectation_values  = ComputeBatchExpectationValues();
-        const MomentsT    batch_moments             = ComputeBatchMoments();
-        const ParametersT target_expectation_values = ComputeUniformTargetDistExpectationValues();
-        const ParametersT gradient                  = ParametersT{-batch_moments.mean[0] + target_expectation_values[0],
-                                                                  -batch_moments.mean[1] + target_expectation_values[1]};
+        const MomentsT    batch_moments = ComputeBatchMoments();
+        const ParametersT gradient      = ParametersT{-batch_moments.mean[0] + target_distribution_expectation_values[0],
+                                                                  -batch_moments.mean[1] + target_distribution_expectation_values[1]};
 
         const double diff_0 = functional_basis.parameters[0] - averaged_parameters[0];
         const double diff_1 = functional_basis.parameters[1] - averaged_parameters[1];
@@ -241,8 +356,9 @@ private:
     }
 public:
 
-    VariationalBiasPotential(const BasisT& functional_basis_in, const double CV_min_in, const double CV_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
+    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
     functional_basis(functional_basis_in),
+    target_distribution(target_distribution_in),
     // averaged_parameters(BasisT::ParametersT.),
     CV_min(CV_min_in),
     CV_max(CV_max_in),
@@ -251,6 +367,8 @@ public:
     {
         // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
         averaged_parameters = functional_basis.parameters;
+        // This relies on several members already being initialized, so can not use it in the member initializer list above
+        target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
         std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
                   << "  functional_basis_name:     " << BasisT::GetName()         << "\n"
                   << "  target_distribution_name:  " << TargetDistT::GetName()    << "\n"
@@ -270,6 +388,8 @@ public:
     // {
     //     // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
     //     averaged_parameters = functional_basis.parameters;
+    //     // This relies on several members already being initialized, so can not use it in the member initializer list above
+    //     target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
     //     std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
     //               << "  functional_basis_name:     " << BasisT::GetName()                                                      << "\n"
     //               << "  target_distribution_name:  " << TargetDistT::GetName()                                                 << "\n"

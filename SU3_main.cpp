@@ -544,8 +544,8 @@ int main(int argc, char** argv)
         // int    ves_batchsize_sin  = 100 * steps_per_hmc_traj;
 
         int ves_batchsize         = 250 * steps_per_hmc_traj;
-        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, {ves_stepsize_quad, ves_stepsize_sin}, {ves_batchsize_quad, ves_batchsize_sin}};
-        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, -8, 8, ves_stepsize, ves_batchsize};
+        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, UniformTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
+        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
