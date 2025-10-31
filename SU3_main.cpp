@@ -536,15 +536,15 @@ int main(int argc, char** argv)
 
         // TODO: Seems like the batch size has to be quite large?
         // With OMF4: 6 + 5 * (n_hmc - 1) momentum updates/CV evaluations
-        double ves_stepsize       = 0.2;
-        // double ves_stepsize_quad  = 0.2;
-        // double ves_stepsize_sin   = 0.3;
+        double Q_min_initial      = -0.2;
+        double Q_max_initial      =  0.2;
+        double Q_min              = -8.0;
+        double Q_max              =  8.0;
+        double ves_stepsize       =  0.2;
         int    steps_per_hmc_traj = (6 + 5 * (n_hmc - 1));
-        // int    ves_batchsize_quad = 500 * steps_per_hmc_traj;
-        // int    ves_batchsize_sin  = 100 * steps_per_hmc_traj;
 
-        int ves_batchsize         = 250 * steps_per_hmc_traj;
-        VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, UniformTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
+        int ves_batchsize         = 25 * steps_per_hmc_traj;
+        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_stepsize, ves_batchsize);
         // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
@@ -554,7 +554,7 @@ int main(int argc, char** argv)
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
         GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
-        GaugeUpdates::InstantonStart(Gluon, 1);
+        // GaugeUpdates::InstantonStart(Gluon, 1);
 
         std::uniform_int_distribution<int>  distribution_parity_update(0, 1);
 

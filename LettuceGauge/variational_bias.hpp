@@ -133,9 +133,13 @@ private:
     TargetDistT         target_distribution;
     ParametersT         averaged_parameters;
     ParametersT         target_distribution_expectation_values;
-    double              CV_current;
+    double              CV_current {0.0};
     double              CV_min;
     double              CV_max;
+    double              CV_current_min;
+    double              CV_current_max;
+    double              CV_domain_padding_factor {1.15};
+    double              CV_max_abs_observed {0.0};
 
     // Hyperparameters
     double              gradient_descent_stepsize;
@@ -333,6 +337,33 @@ private:
         updates_count += 1;
     }
 
+    // Assumes a domain and CV distribution that is symmetric around 0
+    void MaybeExpandDomain(const double CV) noexcept
+    {
+        const double abs_CV = std::abs(CV);
+
+        if (abs_CV <= CV_max_abs_observed)
+        {
+            return;
+        }
+
+        CV_max_abs_observed = std::abs(CV);
+        // const double CV_limit         = std::max(std::abs(CV_min), std::abs(CV_max));
+        const double current_limit  = std::max(std::abs(CV_current_min), std::abs(CV_current_max));
+        // const double proposed_limit = std::clamp(CV_domain_padding_factor * current_limit, CV_min, CV_max);
+        // Base new limit on observed value instead of the old limit
+        const double proposed_limit = std::max(current_limit, CV_domain_padding_factor * abs_CV);
+
+        // TODO: Add minimum change to update?
+        if (proposed_limit > current_limit)
+        {
+            CV_current_min = -proposed_limit;
+            CV_current_max =  proposed_limit;
+            // Update target distribution expectation values
+            target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_current_min, CV_current_max);
+        }
+    }
+
     void MaybeUpdate() noexcept
     {
         if (static_cast<int>(batch.size()) < batch_size)
@@ -356,51 +387,36 @@ private:
     }
 public:
 
-    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
+    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
     functional_basis(functional_basis_in),
     target_distribution(target_distribution_in),
     // averaged_parameters(BasisT::ParametersT.),
     CV_min(CV_min_in),
     CV_max(CV_max_in),
+    CV_current_min(CV_current_min_in),
+    CV_current_max(CV_current_max_in),
     gradient_descent_stepsize(gradient_descent_stepsize_in),
     batch_size(batch_size_in)
     {
         // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
         averaged_parameters = functional_basis.parameters;
         // This relies on several members already being initialized, so can not use it in the member initializer list above
-        target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
+        // target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
+        target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_current_min, CV_current_max);
         std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
                   << "  functional_basis_name:     " << BasisT::GetName()         << "\n"
                   << "  target_distribution_name:  " << TargetDistT::GetName()    << "\n"
                   << "  CV_min:                    " << CV_min                    << "\n"
                   << "  CV_max:                    " << CV_max                    << "\n"
+                  << "  CV_current_min:            " << CV_current_min            << "\n"
+                  << "  CV_current_max:            " << CV_current_max            << "\n"
                   << "  gradient_descent_stepsize: " << gradient_descent_stepsize << "\n"
                   << "  batch_size:                " << batch_size                << "\n" << std::endl;
     }
 
-    // VariationalBiasPotential(const BasisT& functional_basis_in, const double CV_min_in, const double CV_max_in, const std::array<double, n_parameters>& gradient_descent_stepsizes_in, const std::array<int, n_parameters> batch_sizes_in) :
-    // functional_basis(functional_basis_in),
-    // // averaged_parameters(BasisT::ParametersT.),
-    // CV_min(CV_min_in),
-    // CV_max(CV_max_in),
-    // gradient_descent_stepsize(gradient_descent_stepsize_in),
-    // batch_size(batch_size_in)
-    // {
-    //     // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
-    //     averaged_parameters = functional_basis.parameters;
-    //     // This relies on several members already being initialized, so can not use it in the member initializer list above
-    //     target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
-    //     std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
-    //               << "  functional_basis_name:     " << BasisT::GetName()                                                      << "\n"
-    //               << "  target_distribution_name:  " << TargetDistT::GetName()                                                 << "\n"
-    //               << "  CV_min:                    " << CV_min                                                                 << "\n"
-    //               << "  CV_max:                    " << CV_max                                                                 << "\n"
-    //               << "  gradient_descent_stepsize: " << gradient_descent_stepsizes[0] << ", " << gradient_descent_stepsizes[1] << "\n"
-    //               << "  batch_size:                " << batch_sizes[0]                << ", " << gradient_descent_stepsizes[1] << "\n" << std::endl;
-    // }
-
     void UpdatePotential(const double CV) noexcept
     {
+        MaybeExpandDomain(CV);
         batch.push_back(CV);
         MaybeUpdate();
     }
@@ -409,6 +425,7 @@ public:
     {
         for (double CV : CV_vec)
         {
+            MaybeExpandDomain(CV);
             batch.push_back(CV);
         }
         MaybeUpdate();
@@ -486,6 +503,8 @@ public:
             << "target_name: "               << TargetDistT::GetName()         << "\n"
             << "CV_min: "                    << CV_min                         << "\n"
             << "CV_max: "                    << CV_max                         << "\n"
+            << "CV_current_min: "            << CV_current_min                 << "\n"
+            << "CV_current_max: "            << CV_current_max                 << "\n"
             << "gradient_descent_stepsize: " << gradient_descent_stepsize      << "\n"
             << "batch_size: "                << batch_size                     << "\n"
             << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
@@ -510,7 +529,9 @@ public:
         ofs << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
             << "alpha_2: "                   << functional_basis.parameters[1] << "\n"
             << "alpha_1_avg: "               << averaged_parameters[0]         << "\n"
-            << "alpha_2_avg: "               << averaged_parameters[1]         << "\n";
+            << "alpha_2_avg: "               << averaged_parameters[1]         << "\n"
+            << "CV_current_min: "            << CV_current_min                 << "\n"
+            << "CV_current_max: "            << CV_current_max                 << "\n";
         // TODO: Add loss function/VES functional
             // << "Loss: "                      << ComputeLossFunction() << "\n";
         const double grid_distance = (CV_max - CV_min) / static_cast<double>(grid_points - 1);
