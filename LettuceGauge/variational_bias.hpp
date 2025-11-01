@@ -133,6 +133,7 @@ private:
     TargetDistT         target_distribution;
     ParametersT         averaged_parameters;
     ParametersT         target_distribution_expectation_values;
+    ParametersT         velocity {0.0, 0.0};
     double              CV_current {0.0};
     double              CV_min;
     double              CV_max;
@@ -143,6 +144,7 @@ private:
 
     // Hyperparameters
     double              gradient_descent_stepsize;
+    double              gradient_descent_momentum;
     int                 batch_size;
     std::uint64_t       updates_count {0};
     // std::array<double, n_parameters>              gradient_descent_stepsizes{};
@@ -374,14 +376,22 @@ private:
         }
         const MomentsT    batch_moments = ComputeBatchMoments();
         const ParametersT gradient      = ParametersT{-batch_moments.mean[0] + target_distribution_expectation_values[0],
-                                                                  -batch_moments.mean[1] + target_distribution_expectation_values[1]};
+                                                      -batch_moments.mean[1] + target_distribution_expectation_values[1]};
 
         const double diff_0 = functional_basis.parameters[0] - averaged_parameters[0];
         const double diff_1 = functional_basis.parameters[1] - averaged_parameters[1];
 
         // Update with averaged stochastic gradient descent algorithm, using the full Hessian in contrast to the original VES paper (where only the diagonals are used)
-        functional_basis.parameters[0] -= gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
-        functional_basis.parameters[1] -= gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
+        const double delta_0 = gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1;
+        const double delta_1 = gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1;
+        // functional_basis.parameters[0] -= gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
+        // functional_basis.parameters[1] -= gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
+
+        velocity[0] = gradient_descent_momentum * velocity[0] + gradient_descent_stepsize * delta_0;
+        velocity[1] = gradient_descent_momentum * velocity[1] + gradient_descent_stepsize * delta_1;
+
+        functional_basis.parameters[0] -= velocity[0];//gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
+        functional_basis.parameters[1] -= velocity[1];//gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
 
         UpdateAveragedParameters();
 
@@ -389,7 +399,7 @@ private:
     }
 public:
 
-    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const double gradient_descent_stepsize_in, const int batch_size_in) :
+    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const double gradient_descent_stepsize_in, const double gradient_descent_momentum_in, const int batch_size_in) :
     functional_basis(functional_basis_in),
     target_distribution(target_distribution_in),
     // averaged_parameters(BasisT::ParametersT.),
@@ -398,6 +408,7 @@ public:
     CV_current_min(CV_current_min_in),
     CV_current_max(CV_current_max_in),
     gradient_descent_stepsize(gradient_descent_stepsize_in),
+    gradient_descent_momentum(gradient_descent_momentum_in),
     batch_size(batch_size_in)
     {
         // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
@@ -413,6 +424,7 @@ public:
                   << "  CV_current_min:            " << CV_current_min            << "\n"
                   << "  CV_current_max:            " << CV_current_max            << "\n"
                   << "  gradient_descent_stepsize: " << gradient_descent_stepsize << "\n"
+                  << "  gradient_descent_momentum: " << gradient_descent_momentum << "\n"
                   << "  batch_size:                " << batch_size                << "\n" << std::endl;
     }
 
@@ -508,6 +520,7 @@ public:
             << "CV_current_min: "            << CV_current_min                 << "\n"
             << "CV_current_max: "            << CV_current_max                 << "\n"
             << "gradient_descent_stepsize: " << gradient_descent_stepsize      << "\n"
+            << "gradient_descent_momentum: " << gradient_descent_momentum      << "\n"
             << "batch_size: "                << batch_size                     << "\n"
             << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
             << "alpha_2: "                   << functional_basis.parameters[1] << "\n"
