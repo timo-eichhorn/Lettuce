@@ -347,12 +347,14 @@ private:
             return;
         }
 
-        CV_max_abs_observed = std::abs(CV);
+        CV_max_abs_observed = abs_CV;
         // const double CV_limit         = std::max(std::abs(CV_min), std::abs(CV_max));
         const double current_limit  = std::max(std::abs(CV_current_min), std::abs(CV_current_max));
+        const double max_limit      = std::min(std::abs(CV_min), std::abs(CV_max));
         // const double proposed_limit = std::clamp(CV_domain_padding_factor * current_limit, CV_min, CV_max);
         // Base new limit on observed value instead of the old limit
-        const double proposed_limit = std::max(current_limit, CV_domain_padding_factor * abs_CV);
+        double proposed_limit = std::max(current_limit, CV_domain_padding_factor * abs_CV);
+        proposed_limit        = std::min(proposed_limit, max_limit);
 
         // TODO: Add minimum change to update?
         if (proposed_limit > current_limit)
