@@ -141,6 +141,8 @@ private:
     double              CV_current_max;
     double              CV_domain_padding_factor {1.15};
     double              CV_max_abs_observed {0.0};
+    const double        penalty_prefactor {100.0};
+    const double        penalty_power     {4.0};
 
     // Hyperparameters
     double              gradient_descent_stepsize;
@@ -397,6 +399,38 @@ private:
 
         batch.clear();
     }
+
+    [[nodiscard]]
+    double ReturnPenaltyTerm(const double CV) const noexcept
+    {
+        if (CV < CV_min)
+        {
+            const double dist = CV_min - CV;
+            return penalty_prefactor * std::pow(dist, penalty_power);
+        }
+        if (CV > CV_max)
+        {
+            const double dist = CV - CV_max;
+            return penalty_prefactor * std::pow(dist, penalty_power);
+        }
+        return 0.0;
+    }
+
+    [[nodiscard]]
+    double ReturnPenaltyTermDerivative(const double CV) const noexcept
+    {
+        if (CV < CV_min)
+        {
+            const double dist = CV_min - CV;
+            return -penalty_power * penalty_prefactor * std::pow(dist, penalty_power - 1);
+        }
+        if (CV > CV_max)
+        {
+            const double dist = CV - CV_max;
+            return penalty_power * penalty_prefactor * std::pow(dist, penalty_power - 1);
+        }
+        return 0.0;
+    }
 public:
 
     VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const double gradient_descent_stepsize_in, const double gradient_descent_momentum_in, const int batch_size_in) :
@@ -456,13 +490,15 @@ public:
         UpdatePotential(CV_vec);
     }
 
+    // TODO: Either manually include a penalty term here, or move to functional basis?
+    //       Want to explicitly constrain the simulation to stay inside the specified domain
     [[nodiscard]]
     double ReturnPotential(const double CV) const noexcept
     {
         // Use averaged parameter values
         BasisT tmp_basis     = functional_basis;
         tmp_basis.parameters = averaged_parameters;
-        return tmp_basis.Evaluate(CV);
+        return tmp_basis.Evaluate(CV) + ReturnPenaltyTerm(CV);
         // return functional_basis.Evaluate(CV);
     }
 
@@ -472,7 +508,7 @@ public:
         // Use averaged parameter values
         BasisT tmp_basis     = functional_basis;
         tmp_basis.parameters = averaged_parameters;
-        return tmp_basis.Derivative(CV);
+        return tmp_basis.Derivative(CV) + ReturnPenaltyTermDerivative(CV);
         // return functional_basis.Derivative(CV);
     }
 
@@ -519,6 +555,8 @@ public:
             << "CV_max: "                    << CV_max                         << "\n"
             << "CV_current_min: "            << CV_current_min                 << "\n"
             << "CV_current_max: "            << CV_current_max                 << "\n"
+            << "penalty_prefactor: "         << penalty_prefactor              << "\n"
+            << "penalty_power: "             << penalty_power                  << "\n"
             << "gradient_descent_stepsize: " << gradient_descent_stepsize      << "\n"
             << "gradient_descent_momentum: " << gradient_descent_momentum      << "\n"
             << "batch_size: "                << batch_size                     << "\n"
