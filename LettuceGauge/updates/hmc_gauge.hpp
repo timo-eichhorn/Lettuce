@@ -379,8 +379,7 @@ namespace GaugeUpdates
                 // std::cout << "Random momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
 
-            //-----
-            // Reverse momenta for HMC reversibility test
+            // Useful for partial momentum refresh and reversibility test
 
             void ReverseMomenta() const noexcept
             {
@@ -395,9 +394,6 @@ namespace GaugeUpdates
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
-
-            //-----
-            // Update momenta for HMC
 
             void UpdateMomenta(const floatT epsilon) const noexcept
             {
@@ -415,8 +411,7 @@ namespace GaugeUpdates
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
 
-            //-----
-            // Update momenta with friction term for HMC
+            // Update momenta with friction term (RAHMC)
 
             void UpdateMomentaFriction(const floatT epsilon, const floatT friction_term, const bool friction_without_kick) const noexcept
             {
@@ -450,9 +445,6 @@ namespace GaugeUpdates
                 }
                 // std::cout << "Momenta lie in algebra: " << SU3::Tests::Testsu3All(Momentum, 1e-12) << std::endl;
             }
-
-            //-----
-            // Update gauge fields for HMC
 
             void UpdateFields(const floatT epsilon) const noexcept
             {
