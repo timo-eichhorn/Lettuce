@@ -19,66 +19,66 @@
 
 // This class is a minimal wrapper around an array containing a gauge field, to be used in the GaugeField4D and GaugeField4DSmeared classes
 // It should never be used by itself, hence everything is private
-template<std::size_t size_, typename gaugeT>
-class GaugeFieldRaw
+template<std::size_t size_, typename T>
+class LatticeField
 {
     private:
-        // This class should only be used internally in GaugeField4D and GaugeField4DSmeared, so everything is private
-        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
+        // This class should only be used internally as part of a wrapper class, so everything is private
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename S>
         friend class GaugeField4D;
 
-        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename S>
         friend class GaugeField4DSmeared;
 
-        template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeS>
+        template<int Nt_, int Nx_, int Ny_, int Nz_, typename S>
         friend class FullTensor4D;
 
-        std::unique_ptr<gaugeT[]> gaugefield_raw {std::make_unique<gaugeT[]>(size)};
+        std::unique_ptr<T[]> buffer {std::make_unique<T[]>(size)};
         static constexpr std::size_t size {size_};
 
-        GaugeFieldRaw() noexcept = default;
+        LatticeField() noexcept = default;
 
-        ~GaugeFieldRaw() = default;
+        ~LatticeField() = default;
 
-        GaugeFieldRaw(const GaugeFieldRaw& field_in) noexcept
+        LatticeField(const LatticeField& field_in) noexcept
         {
-            // std::cout << "Copy constructor of GaugeFieldRaw used!" << std::endl;
+            // std::cout << "Copy constructor of LatticeField used!" << std::endl;
             #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
-                gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
+                buffer[ind] = field_in.buffer[ind];
             }
         }
 
-        // We don't need assignment chaining, so return void instead of GaugeFieldRaw&
-        void operator=(const GaugeFieldRaw& field_in) noexcept
+        LatticeField& operator=(const LatticeField& field_in) noexcept
         {
-            // std::cout << "Copy assignment of GaugeFieldRaw used!" << std::endl;
+            // std::cout << "Copy assignment of LatticeField used!" << std::endl;
             #pragma omp parallel for
             for (std::size_t ind = 0; ind < size; ++ind)
             {
-                gaugefield_raw[ind] = field_in.gaugefield_raw[ind];
+                buffer[ind] = field_in.buffer[ind];
             }
+            return *this;
         }
 
-        gaugeT& operator[](const std::size_t ind) noexcept
+        T& operator[](const std::size_t ind) noexcept
         {
-            return gaugefield_raw[ind];
+            return buffer[ind];
         }
 
-        gaugeT operator[](const std::size_t ind) const noexcept
+        const T& operator[](const std::size_t ind) const noexcept
         {
-            return gaugefield_raw[ind];
+            return buffer[ind];
         }
 
         // Implement swap by swapping the underlying pointers
-        friend void Swap(GaugeFieldRaw& field1, GaugeFieldRaw& field2) noexcept
+        friend void Swap(LatticeField& field1, LatticeField& field2) noexcept
         {
-            field1.gaugefield_raw.swap(field2.gaugefield_raw);
-            // std::swap(field1.gaugefield_raw, field2.gaugefield_raw);
-            // auto tmp = std::move(field1.gaugefield_raw);
-            // field1.gaugefield_raw = std::move(field2.gaugefield_raw);
-            // field2.gaugefield_raw = std::move(tmp);
+            field1.buffer.swap(field2.buffer);
+            // std::swap(field1.buffer, field2.buffer);
+            // auto tmp = std::move(field1.buffer);
+            // field1.buffer = std::move(field2.buffer);
+            // field2.buffer = std::move(tmp);
         }
 };
 
@@ -96,7 +96,7 @@ class GaugeField4D
         // Promote single length to size_t so the product doesn't overflow even if std::size_t would be big enough
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * V};
-        GaugeFieldRaw<V_link, gaugeT> gaugefield;
+        LatticeField<V_link, gaugeT> gaugefield;
     public:
         GaugeField4D() noexcept
         {
@@ -126,8 +126,7 @@ class GaugeField4D
         //     }
 
         // Copy assignment
-        // We don't need assignment chaining, so return void instead of GaugeField4D&
-        void operator=(const GaugeField4D& field_in) noexcept
+        GaugeField4D& operator=(const GaugeField4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
             // Check for self-assignments
@@ -135,6 +134,7 @@ class GaugeField4D
             {
                 gaugefield = field_in.gaugefield;
             }
+            return *this;
         }
         //-----
         // Access gauge links via single integer coordinate
@@ -142,7 +142,7 @@ class GaugeField4D
         {
             return gaugefield[linear_coord];
         }
-        gaugeT operator()(const std::size_t linear_coord) const noexcept
+        const gaugeT& operator()(const std::size_t linear_coord) const noexcept
         {
             return gaugefield[linear_coord];
         }
@@ -152,7 +152,7 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(site, mu)];
         }
-        gaugeT operator()(const site_coord& site, const int mu) const noexcept
+        const gaugeT& operator()(const site_coord& site, const int mu) const noexcept
         {
             return gaugefield[LinearCoordinate(site, mu)];
         }
@@ -162,7 +162,7 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(coord)];
         }
-        gaugeT operator()(const link_coord& coord) const noexcept
+        const gaugeT& operator()(const link_coord& coord) const noexcept
         {
             return gaugefield[LinearCoordinate(coord)];
         }
@@ -237,10 +237,11 @@ class GaugeField4D
         // We only need to swap the raw gaugefields
         friend void Swap(GaugeField4D& U1, GaugeField4D& U2) noexcept
         {
-            if (U1.Shape() != U2.Shape())
-            {
-                std::cerr << "Warning: Trying to swap two arrays with different sizes!" << std::endl;
-            }
+            // Shapes are always the same as long as the extents are template parameters
+            // if (U1.Shape() != U2.Shape())
+            // {
+            //     std::cerr << "Warning: Trying to swap two arrays with different sizes!" << std::endl;
+            // }
             Swap(U1.gaugefield, U2.gaugefield);
         }
 
@@ -385,6 +386,11 @@ class GaugeField4D
         //     // Promote single length to size_t so the product doesn't overflow
         //     return (((mu * static_cast<std::size_t>(Nmu) + t) * Nx + x) * Ny + y) * Nz + z;
         // }
+        // Inverse of functions above, transform linear coordinate to tuple of coordinates/5 integers
+        // link_coord LinkCoordinate(std::size_t ind) const noexcept
+        // {
+        //     return {(ind / (Nmu * Nz * Ny * Nx)) % Nt, (ind / (Nmu * Nz * Ny)) % Nx, (ind / (Nmu * Nz)) % Ny, (ind / Nmu) % Nz, static_cast<int>(ind % Nmu)};
+        // }
 };
 
 // This class acts as a general container for multiple gauge fields in 4 dimensions (mainly meant to be used for smearing/calculation of smeared forces)
@@ -451,7 +457,7 @@ class FullTensor4D
         // Promote single length to size_t so the product doesn't overflow
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
         static constexpr std::size_t V_link {Nmu * Nnu * V};
-        GaugeFieldRaw<V_link, gaugeT> gaugefield;
+        LatticeField<V_link, gaugeT> gaugefield;
     public:
         // Constructor with four arguments (one length for each direction)
         FullTensor4D() noexcept
@@ -465,8 +471,7 @@ class FullTensor4D
         }
 
         // Copy assignment
-        // We don't need assignment chaining, so return void instead of FullTensor4D&
-        void operator=(const FullTensor4D& field_in) noexcept
+        FullTensor4D& operator=(const FullTensor4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of FullTensor4D used" << std::endl;
             // Check for self-assignments
@@ -485,6 +490,7 @@ class FullTensor4D
                 }
                 // gaugefield = field_in.gaugefield;
             }
+            return *this;
         }
         //-----
         // Access gauge links via single integer coordinate
@@ -492,7 +498,7 @@ class FullTensor4D
         {
             return gaugefield[linear_coord];
         }
-        gaugeT operator()(const std::size_t linear_coord) const noexcept
+        const gaugeT& operator()(const std::size_t linear_coord) const noexcept
         {
             return gaugefield[linear_coord];
         }
@@ -502,7 +508,7 @@ class FullTensor4D
         {
             return gaugefield[LinearCoordinate(site, mu, nu)];
         }
-        gaugeT operator()(const site_coord& site, const int mu, const int nu) const noexcept
+        const gaugeT& operator()(const site_coord& site, const int mu, const int nu) const noexcept
         {
             return gaugefield[LinearCoordinate(site, mu, nu)];
         }
@@ -523,7 +529,7 @@ class FullTensor4D
             return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
         }
         // [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
-        gaugeT operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
+        const gaugeT& operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
         {
             return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
         }
