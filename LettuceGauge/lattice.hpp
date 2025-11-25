@@ -23,7 +23,7 @@ template<std::size_t size_, typename T>
 class LatticeField
 {
     private:
-        // This class should only be used internally in GaugeField4D and GaugeField4DSmeared, so everything is private
+        // This class should only be used internally as part of a wrapper class, so everything is private
         template<int Nt_, int Nx_, int Ny_, int Nz_, typename S>
         friend class GaugeField4D;
 
@@ -50,8 +50,7 @@ class LatticeField
             }
         }
 
-        // We don't need assignment chaining, so return void instead of LatticeField&
-        void operator=(const LatticeField& field_in) noexcept
+        LatticeField& operator=(const LatticeField& field_in) noexcept
         {
             // std::cout << "Copy assignment of LatticeField used!" << std::endl;
             #pragma omp parallel for
@@ -59,6 +58,7 @@ class LatticeField
             {
                 buffer[ind] = field_in.buffer[ind];
             }
+            return *this;
         }
 
         T& operator[](const std::size_t ind) noexcept
@@ -66,7 +66,7 @@ class LatticeField
             return buffer[ind];
         }
 
-        T operator[](const std::size_t ind) const noexcept
+        const T& operator[](const std::size_t ind) const noexcept
         {
             return buffer[ind];
         }
@@ -126,8 +126,7 @@ class GaugeField4D
         //     }
 
         // Copy assignment
-        // We don't need assignment chaining, so return void instead of GaugeField4D&
-        void operator=(const GaugeField4D& field_in) noexcept
+        GaugeField4D& operator=(const GaugeField4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of GaugeField4D used" << std::endl;
             // Check for self-assignments
@@ -135,6 +134,7 @@ class GaugeField4D
             {
                 gaugefield = field_in.gaugefield;
             }
+            return *this;
         }
         //-----
         // Access gauge links via single integer coordinate
@@ -142,7 +142,7 @@ class GaugeField4D
         {
             return gaugefield[linear_coord];
         }
-        gaugeT operator()(const std::size_t linear_coord) const noexcept
+        const gaugeT& operator()(const std::size_t linear_coord) const noexcept
         {
             return gaugefield[linear_coord];
         }
@@ -152,7 +152,7 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(site, mu)];
         }
-        gaugeT operator()(const site_coord& site, const int mu) const noexcept
+        const gaugeT& operator()(const site_coord& site, const int mu) const noexcept
         {
             return gaugefield[LinearCoordinate(site, mu)];
         }
@@ -162,7 +162,7 @@ class GaugeField4D
         {
             return gaugefield[LinearCoordinate(coord)];
         }
-        gaugeT operator()(const link_coord& coord) const noexcept
+        const gaugeT& operator()(const link_coord& coord) const noexcept
         {
             return gaugefield[LinearCoordinate(coord)];
         }
@@ -237,10 +237,11 @@ class GaugeField4D
         // We only need to swap the raw gaugefields
         friend void Swap(GaugeField4D& U1, GaugeField4D& U2) noexcept
         {
-            if (U1.Shape() != U2.Shape())
-            {
-                std::cerr << "Warning: Trying to swap two arrays with different sizes!" << std::endl;
-            }
+            // Shapes are always the same as long as the extents are template parameters
+            // if (U1.Shape() != U2.Shape())
+            // {
+            //     std::cerr << "Warning: Trying to swap two arrays with different sizes!" << std::endl;
+            // }
             Swap(U1.gaugefield, U2.gaugefield);
         }
 
@@ -470,8 +471,7 @@ class FullTensor4D
         }
 
         // Copy assignment
-        // We don't need assignment chaining, so return void instead of FullTensor4D&
-        void operator=(const FullTensor4D& field_in) noexcept
+        FullTensor4D& operator=(const FullTensor4D& field_in) noexcept
         {
             // std::cout << "Copy assignment operator of FullTensor4D used" << std::endl;
             // Check for self-assignments
@@ -490,6 +490,7 @@ class FullTensor4D
                 }
                 // gaugefield = field_in.gaugefield;
             }
+            return *this;
         }
         //-----
         // Access gauge links via single integer coordinate
@@ -497,7 +498,7 @@ class FullTensor4D
         {
             return gaugefield[linear_coord];
         }
-        gaugeT operator()(const std::size_t linear_coord) const noexcept
+        const gaugeT& operator()(const std::size_t linear_coord) const noexcept
         {
             return gaugefield[linear_coord];
         }
@@ -507,7 +508,7 @@ class FullTensor4D
         {
             return gaugefield[LinearCoordinate(site, mu, nu)];
         }
-        gaugeT operator()(const site_coord& site, const int mu, const int nu) const noexcept
+        const gaugeT& operator()(const site_coord& site, const int mu, const int nu) const noexcept
         {
             return gaugefield[LinearCoordinate(site, mu, nu)];
         }
@@ -528,7 +529,7 @@ class FullTensor4D
             return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
         }
         // [[deprecated("Using individual coordinates is disencouraged, use link_coord instead")]]
-        gaugeT operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
+        const gaugeT& operator()(const int t, const int x, const int y, const int z, const int mu, const int nu) const noexcept
         {
             return gaugefield[LinearCoordinate(t, x, y, z, mu, nu)];
         }
