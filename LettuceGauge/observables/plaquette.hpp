@@ -12,7 +12,7 @@
 #include <complex>
 //----------------------------------------
 // Standard C headers
-// ...
+#include <cmath>
 
 //-----
 // Calculates plaquette at given coordinates
@@ -59,6 +59,24 @@ double PlaquetteSumTimeslice(const GaugeField& U, const int t) noexcept
         }
     }
     return Plaq_sum;
+}
+
+[[nodiscard]]
+double MaxPlaquette(const GaugeField& U) noexcept
+{
+    double max_plaquette {-static_cast<double>(Ncolor)};
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    for (int nu = 1; nu < 4; ++nu)
+    {
+        for (int mu = 0; mu < nu; ++mu)
+        {
+            max_plaquette = std::fmax(max_plaquette, std::real(Plaquette(U, {t, x, y, z}, mu, nu).trace()));
+        }
+    }
+    return max_plaquette;
 }
 
 // Top right quadrant, i.e., P_{mu, nu}
