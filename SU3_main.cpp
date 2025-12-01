@@ -543,10 +543,13 @@ int main(int argc, char** argv)
         double Q_max              =  8.0;
         double ves_stepsize       =  0.5;
         double ves_momentum       =  0.9; // Seems to be the default value for Polyak momentum
-        int    steps_per_hmc_traj = (6 + 5 * (n_hmc - 1));
 
-        int ves_batchsize         = 50 * steps_per_hmc_traj;
-        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_stepsize, ves_momentum, ves_batchsize);
+        int ves_initial_batchsize = 50 * n_hmc;
+
+        using VESParametersT = SimpleBasis::ParametersT;
+        Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
+        // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
+        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
         // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);

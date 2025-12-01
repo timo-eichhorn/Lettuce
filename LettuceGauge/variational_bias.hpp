@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <numbers>
@@ -122,7 +123,145 @@ struct GaussianTargetDistribution
     }
 };
 
-template<typename BasisT, typename TargetDistT>
+// TODO: Currently handling of ParametersT suboptimal...
+namespace Optimizers
+{
+    template<typename ParametersT>
+    struct UpdateInfo
+    {
+        ParametersT gradient{};
+        ParametersT difference_to_average{};
+
+        // TODO: Hard-coded for now
+        std::array<std::array<double, 2>, 2> covariance{};
+    };
+
+    template<typename ParametersT>
+    struct AveragedStochasticGradientDescent
+    {
+        double        stepsize;
+        double        momentum;
+        int           batch_size;
+
+        ParametersT   velocity{};
+        // TODO: Used for Polyak averaging, might replace with exponentially decaying moving average later
+        std::uint64_t updates_count{};
+
+        AveragedStochasticGradientDescent(double stepsize_in, double momentum_in, int batch_size_in) : stepsize(stepsize_in), momentum(momentum_in), batch_size(batch_size_in) {}
+
+        [[nodiscard]]
+        int GetBatchSize() const noexcept
+        {
+            return batch_size;
+        }
+
+        void Update(ParametersT& parameters, ParametersT& averaged_parameters, const UpdateInfo<ParametersT>& update_info) noexcept
+        {
+            // TODO: Currently still uses hard-coded number of parameters
+            ParametersT delta{};
+
+            // Update with averaged stochastic gradient descent algorithm, using the full Hessian in contrast to the original VES paper (where only the diagonals are used)
+            delta[0] = update_info.gradient[0] + update_info.covariance[0][0] * update_info.difference_to_average[0] + update_info.covariance[0][1] * update_info.difference_to_average[1];
+            delta[1] = update_info.gradient[1] + update_info.covariance[1][0] * update_info.difference_to_average[0] + update_info.covariance[1][1] * update_info.difference_to_average[1];
+
+            velocity[0] = momentum * velocity[0] + stepsize * delta[0];
+            velocity[1] = momentum * velocity[1] + stepsize * delta[1];
+
+            parameters[0] -= velocity[0];
+            parameters[1] -= velocity[1];
+
+            // Polyak averaging
+            for (std::size_t i = 0; i < parameters.size(); ++i)
+            {
+                averaged_parameters[i] = (averaged_parameters[i] * static_cast<double>(updates_count) + parameters[i]) / static_cast<double>(updates_count + 1);
+                // // TODO: Replace with exponentially decaying moving average?
+                // const double decay_factor = 0.9;
+                // averaged_parameters[i] = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
+            }
+            updates_count += 1;
+        }
+
+        [[nodiscard]]
+        static std::string GetName()
+        {
+            return "AveragedStochasticGradientDescent";
+        }
+
+        [[nodiscard]]
+        std::string GetParameters() const
+        {
+            return std::format("\nstepsize: {}\nmomentum: {}\nbatch_size (current): {}", stepsize, momentum, batch_size);
+        }
+    };
+
+    template<typename ParametersT>
+    struct Adam
+    {
+        // Default parameters from original paper [1412.6980]
+        double        alpha   {0.001};
+        double        beta_1  {0.9};
+        double        beta_2  {0.999};
+        double        epsilon {1.e-8};
+        std::uint64_t t       {0u};
+        int           batch_size;
+
+        ParametersT   m{}; // First moment vector
+        ParametersT   v{}; // Second moment vector
+
+        explicit Adam(int batch_size_in) : batch_size(batch_size_in) {}
+
+        [[nodiscard]]
+        int GetBatchSize() const noexcept
+        {
+            return batch_size;
+        }
+
+        // TODO: The update_info member covariance and difference_to_average are unused here
+        void Update(ParametersT& parameters, ParametersT& averaged_parameters, const UpdateInfo<ParametersT>& update_info) noexcept
+        {
+            t += 1;
+            const double t_d = static_cast<double>(t);
+
+            for (std::size_t i = 0; i < m.size(); ++i)
+            {
+                // TODO: Compute or get gradient
+                m[i] = beta_1 * m[i] + (1.0 - beta_1) * update_info.gradient[i];
+                v[i] = beta_2 * v[i] + (1.0 - beta_2) * update_info.gradient[i] * update_info.gradient[i];
+
+                // Inefficient version
+                // const double m_hat = m[i] / (1.0 - std::pow(beta_1, t_d));
+                // const double v_hat = v[i] / (1.0 - std::pow(beta_2, t_d));
+                // parameters[i] -= alpha * m_hat / (std::sqrt(v_hat) + epsilon);
+                // More efficient version
+                const double alpha_t = alpha * std::sqrt(1.0 - std::pow(beta_2, t_d)) / (1.0 - std::pow(beta_1, t_d));
+                parameters[i] -= alpha_t * m[i] / (std::sqrt(v[i]) + epsilon);
+            }
+
+            // Polyak averaging
+            for (std::size_t i = 0; i < parameters.size(); ++i)
+            {
+                averaged_parameters[i] = (averaged_parameters[i] * (t_d - 1.0) + parameters[i]) / t_d;
+                // // TODO: Replace with exponentially decaying moving average?
+                // const double decay_factor = 0.9;
+                // averaged_parameters[i] = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
+            }
+        }
+
+        [[nodiscard]]
+        static std::string GetName()
+        {
+            return "Adam";
+        }
+
+        [[nodiscard]]
+        std::string GetParameters() const
+        {
+            return std::format("\nalpha: {}\nbeta_1: {}\nbeta_2: {}\nepsilon: {}\nbatch_size (current): {}", alpha, beta_1, beta_2, epsilon, batch_size);
+        }
+    };
+} // namespace Optimizers
+
+template<typename BasisT, typename TargetDistT, typename OptimizerT>
 struct VariationalBiasPotential
 {
 public:
@@ -131,53 +270,34 @@ public:
 private:
     BasisT              functional_basis;
     TargetDistT         target_distribution;
+    OptimizerT          optimizer;
+
     ParametersT         averaged_parameters;
     ParametersT         target_distribution_expectation_values;
-    ParametersT         velocity {0.0, 0.0};
-    double              CV_current {0.0};
+
+    double              CV_current               {0.0};
     double              CV_min;
     double              CV_max;
     double              CV_current_min;
     double              CV_current_max;
     double              CV_domain_padding_factor {1.15};
-    double              CV_max_abs_observed {0.0};
-    const double        penalty_prefactor {100.0};
-    const double        penalty_power     {4.0};
-
-    // Hyperparameters
-    double              gradient_descent_stepsize;
-    double              gradient_descent_momentum;
+    double              CV_max_abs_observed      {0.0};
+    const double        penalty_prefactor        {100.0};
+    const double        penalty_power            {4.0};
     int                 batch_size;
-    std::uint64_t       updates_count {0};
-    // std::array<double, n_parameters>              gradient_descent_stepsizes{};
-    // std::array<int,    n_parameters>              batch_sizes{};
-    // std::array<std::uint64_t, n_parameters>       update_counts{};
 
     // Quadrature parameters
-    double quadrature_abs_tol   {1e-8};
-    double quadrature_rel_tol   {1e-6};
-    int    quadrature_max_depth {15};
+    double              quadrature_abs_tol       {1e-8};
+    double              quadrature_rel_tol       {1e-6};
+    int                 quadrature_max_depth     {15};
 
     std::vector<double> batch;
-    // std::array<std::vector<double>, n_parameters> batches;
 
     struct MomentsT
     {
         ParametersT mean;
         std::array<std::array<double, 2>, 2> covariance;
     };
-
-    // For the uniform target distribution, we can precompute the expectation values analytically
-    // [[nodiscard]]
-    // ParametersT ComputeUniformTargetDistExpectationValues() const noexcept
-    // {
-    //     const double c = BasisT::Constant();
-    //     const double expectation_Q2   = (CV_max * CV_max + CV_min * CV_min + CV_max * CV_min)/ 3.0;
-
-    //     const double expectation_sin2 = 0.5 - (std::sin(2.0 * c * CV_max) - std::sin(2.0 * c * CV_min)) / (4.0 * c * (CV_max - CV_min));
-
-    //     return ParametersT{expectation_Q2, expectation_sin2};
-    // }
 
     // 7-point Gauss, 15-point Kronrod
     template<typename FuncT>
@@ -201,7 +321,7 @@ private:
                                                       0.204432940075298,
                                                       0.209482141084728};
 
-        static constexpr double weights_gauss[4] =   {0.129484966168870,
+        static constexpr double weights_gauss[4]   = {0.129484966168870,
                                                       0.279705391489277,
                                                       0.381830050505119,
                                                       0.417959183673469};
@@ -253,14 +373,11 @@ private:
     [[nodiscard]]
     ParametersT ComputeTargetDistExpectationValues(const double a, const double b) const noexcept
     {
-        const auto p  = [this](double x) noexcept
-                        {
-                            const double tmp = target_distribution(x);
-                            return (std::isfinite(tmp) and tmp >= 0.0) ? tmp : 0.0;
-                        };
-
-        const auto f_0 = [this](double x) noexcept {return functional_basis.f0(x);};
-        const auto f_1 = [this](double x) noexcept {return functional_basis.f1(x);};
+        const auto p   = [this](double x) noexcept
+                         {
+                             const double tmp = target_distribution(x);
+                             return (std::isfinite(tmp) and tmp >= 0.0) ? tmp : 0.0;
+                         };
 
         const double normalization = GaussKronrodQuadrature(p, a, b);
 
@@ -269,6 +386,9 @@ private:
         {
             return ParametersT{0.0, 0.0};
         }
+
+        const auto f_0 = [this](double x) noexcept {return functional_basis.f0(x);};
+        const auto f_1 = [this](double x) noexcept {return functional_basis.f1(x);};
 
         const double I_0 = GaussKronrodQuadrature([&](double x) noexcept {return p(x) * f_0(x);}, a, b);
         const double I_1 = GaussKronrodQuadrature([&](double x) noexcept {return p(x) * f_1(x);}, a, b);
@@ -284,6 +404,8 @@ private:
         std::array<double, n_parameters>                           mean{0.0, 0.0};
         std::array<std::array<double, n_parameters>, n_parameters> cov_matrix{{{0.0, 0.0}, {0.0, 0.0}}};
 
+        // Compute covariance matrix in a single pass using Welford's algorithm
+        // TODO: This is not necessary for most (first-order) optimizers like Adam
         std::size_t  N = 0;
         for (double CV : batch)
         {
@@ -326,21 +448,6 @@ private:
         return moments;
     }
 
-    // void UpdateAveragedParameter(int i) noexcept
-    // {
-    //     averaged_parameters[i] = (averaged_parameters[i] * update_counts[i] + functional_basis.parameters[i]) / static_cast<double>(update_counts[i] + 1);
-    //     update_counts[i]      += 1;
-    // }
-
-    void UpdateAveragedParameters() noexcept
-    {
-        for (std::size_t i = 0u; i < averaged_parameters.size(); ++i)
-        {
-            averaged_parameters[i] = (averaged_parameters[i] * updates_count + functional_basis.parameters[i]) / static_cast<double>(updates_count + 1);
-        }
-        updates_count += 1;
-    }
-
     // Assumes a domain and CV distribution that is symmetric around 0
     void MaybeExpandDomain(const double CV) noexcept
     {
@@ -367,6 +474,7 @@ private:
             CV_current_max =  proposed_limit;
             // Update target distribution expectation values
             target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_current_min, CV_current_max);
+            // TODO: Assuming a random walk on the domain, we would need to rescale the batch size proportionally to the squared domain size
         }
     }
 
@@ -377,25 +485,16 @@ private:
             return;
         }
         const MomentsT    batch_moments = ComputeBatchMoments();
-        const ParametersT gradient      = ParametersT{-batch_moments.mean[0] + target_distribution_expectation_values[0],
-                                                      -batch_moments.mean[1] + target_distribution_expectation_values[1]};
+        const ParametersT gradient{-batch_moments.mean[0] + target_distribution_expectation_values[0],
+                                   -batch_moments.mean[1] + target_distribution_expectation_values[1]};
 
-        const double diff_0 = functional_basis.parameters[0] - averaged_parameters[0];
-        const double diff_1 = functional_basis.parameters[1] - averaged_parameters[1];
+        const ParametersT difference_to_average{functional_basis.parameters[0] - averaged_parameters[0],
+                                                functional_basis.parameters[1] - averaged_parameters[1]};
 
-        // Update with averaged stochastic gradient descent algorithm, using the full Hessian in contrast to the original VES paper (where only the diagonals are used)
-        const double delta_0 = gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1;
-        const double delta_1 = gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1;
-        // functional_basis.parameters[0] -= gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
-        // functional_basis.parameters[1] -= gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
 
-        velocity[0] = gradient_descent_momentum * velocity[0] + gradient_descent_stepsize * delta_0;
-        velocity[1] = gradient_descent_momentum * velocity[1] + gradient_descent_stepsize * delta_1;
+        Optimizers::UpdateInfo<ParametersT> info{gradient, difference_to_average, batch_moments.covariance};
 
-        functional_basis.parameters[0] -= velocity[0];//gradient_descent_stepsize * (gradient[0] + batch_moments.covariance[0][0] * diff_0 + batch_moments.covariance[0][1] * diff_1);
-        functional_basis.parameters[1] -= velocity[1];//gradient_descent_stepsize * (gradient[1] + batch_moments.covariance[1][0] * diff_0 + batch_moments.covariance[1][1] * diff_1);
-
-        UpdateAveragedParameters();
+        optimizer.Update(functional_basis.parameters, averaged_parameters, info);
 
         batch.clear();
     }
@@ -433,33 +532,32 @@ private:
     }
 public:
 
-    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const double gradient_descent_stepsize_in, const double gradient_descent_momentum_in, const int batch_size_in) :
+    VariationalBiasPotential(const BasisT& functional_basis_in, const TargetDistT& target_distribution_in, const OptimizerT& optimizer_in, const double CV_min_in, const double CV_max_in, double CV_current_min_in, double CV_current_max_in, const int batch_size_in) :
     functional_basis(functional_basis_in),
     target_distribution(target_distribution_in),
-    // averaged_parameters(BasisT::ParametersT.),
+    optimizer(optimizer_in),
+    averaged_parameters(functional_basis_in.parameters),
     CV_min(CV_min_in),
     CV_max(CV_max_in),
     CV_current_min(CV_current_min_in),
     CV_current_max(CV_current_max_in),
-    gradient_descent_stepsize(gradient_descent_stepsize_in),
-    gradient_descent_momentum(gradient_descent_momentum_in),
     batch_size(batch_size_in)
     {
         // averaged_parameters.assign(static_cast<std::size_t>(batch_size), 0.0);
-        averaged_parameters = functional_basis.parameters;
+        // averaged_parameters = functional_basis.parameters;
         // This relies on several members already being initialized, so can not use it in the member initializer list above
         // target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
         target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_current_min, CV_current_max);
         std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
                   << "  functional_basis_name:     " << BasisT::GetName()         << "\n"
                   << "  target_distribution_name:  " << TargetDistT::GetName()    << "\n"
+                  << "  optimizer_name:            " << OptimizerT::GetName()     << "\n"
+                  << "  optimizer_parameters:      " << optimizer.GetParameters() << "\n"
                   << "  CV_min:                    " << CV_min                    << "\n"
                   << "  CV_max:                    " << CV_max                    << "\n"
                   << "  CV_current_min:            " << CV_current_min            << "\n"
-                  << "  CV_current_max:            " << CV_current_max            << "\n"
-                  << "  gradient_descent_stepsize: " << gradient_descent_stepsize << "\n"
-                  << "  gradient_descent_momentum: " << gradient_descent_momentum << "\n"
-                  << "  batch_size:                " << batch_size                << "\n" << std::endl;
+                  << "  CV_current_max:            " << CV_current_max            << "\n" << std::endl;
+                  // << "  batch_size:                " << batch_size                << "\n" << std::endl;
     }
 
     void UpdatePotential(const double CV) noexcept
@@ -499,7 +597,6 @@ public:
         BasisT tmp_basis     = functional_basis;
         tmp_basis.parameters = averaged_parameters;
         return tmp_basis.Evaluate(CV) + ReturnPenaltyTerm(CV);
-        // return functional_basis.Evaluate(CV);
     }
 
     [[nodiscard]]
@@ -509,7 +606,6 @@ public:
         BasisT tmp_basis     = functional_basis;
         tmp_basis.parameters = averaged_parameters;
         return tmp_basis.Derivative(CV) + ReturnPenaltyTermDerivative(CV);
-        // return functional_basis.Derivative(CV);
     }
 
     void SetCV_current(const double CV_in) noexcept
@@ -551,15 +647,14 @@ public:
             << "VES potential"               << "\n"
             << "basis_name: "                << BasisT::GetName()              << "\n"
             << "target_name: "               << TargetDistT::GetName()         << "\n"
+            << "optimizer_name: "            << OptimizerT::GetName()          << "\n"
+            << "optimizer_parameters: "      << optimizer.GetParameters()      << "\n"
             << "CV_min: "                    << CV_min                         << "\n"
             << "CV_max: "                    << CV_max                         << "\n"
             << "CV_current_min: "            << CV_current_min                 << "\n"
             << "CV_current_max: "            << CV_current_max                 << "\n"
             << "penalty_prefactor: "         << penalty_prefactor              << "\n"
             << "penalty_power: "             << penalty_power                  << "\n"
-            << "gradient_descent_stepsize: " << gradient_descent_stepsize      << "\n"
-            << "gradient_descent_momentum: " << gradient_descent_momentum      << "\n"
-            << "batch_size: "                << batch_size                     << "\n"
             << "alpha_1: "                   << functional_basis.parameters[0] << "\n"
             << "alpha_2: "                   << functional_basis.parameters[1] << "\n"
             << "alpha_1_avg: "               << averaged_parameters[0]         << "\n"
