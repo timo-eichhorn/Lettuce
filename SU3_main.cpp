@@ -535,22 +535,20 @@ int main(int argc, char** argv)
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.SymmetrizePotentialMaximum();
 
-        // TODO: Seems like the batch size has to be quite large?
-        // With OMF4: 6 + 5 * (n_hmc - 1) momentum updates/CV evaluations
-        double Q_min_initial      = -0.2;
-        double Q_max_initial      =  0.2;
-        double Q_min              = -8.0;
-        double Q_max              =  8.0;
-        double ves_stepsize       =  0.5;
-        double ves_momentum       =  0.9; // Seems to be the default value for Polyak momentum
+                         double Q_min_initial      = -0.2;
+                         double Q_max_initial      =  0.2;
+                         double Q_min              = -8.0;
+                         double Q_max              =  8.0;
+        [[maybe_unused]] double ves_stepsize       =  0.5;
+        [[maybe_unused]] double ves_momentum       =  0.9; // Seems to be the default value for Polyak momentum
 
         int ves_initial_batchsize = 50 * n_hmc;
 
         using VESParametersT = SimpleBasis::ParametersT;
-        Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
-        // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
-        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
-        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, -8, 8, ves_stepsize, ves_batchsize};
+        // Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
+        Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
+        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
+        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);

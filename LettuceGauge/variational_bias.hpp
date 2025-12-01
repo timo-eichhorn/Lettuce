@@ -170,13 +170,13 @@ namespace Optimizers
             parameters[0] -= velocity[0];
             parameters[1] -= velocity[1];
 
-            // Polyak averaging
             for (std::size_t i = 0; i < parameters.size(); ++i)
             {
-                averaged_parameters[i] = (averaged_parameters[i] * static_cast<double>(updates_count) + parameters[i]) / static_cast<double>(updates_count + 1);
-                // // TODO: Replace with exponentially decaying moving average?
-                // const double decay_factor = 0.9;
-                // averaged_parameters[i] = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
+                // Polyak averaging
+                // averaged_parameters[i] = (averaged_parameters[i] * static_cast<double>(updates_count) + parameters[i]) / static_cast<double>(updates_count + 1);
+                // Exponentially decaying moving average
+                const double decay_factor = 0.9;
+                averaged_parameters[i]    = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
             }
             updates_count += 1;
         }
@@ -237,13 +237,13 @@ namespace Optimizers
                 parameters[i] -= alpha_t * m[i] / (std::sqrt(v[i]) + epsilon);
             }
 
-            // Polyak averaging
             for (std::size_t i = 0; i < parameters.size(); ++i)
             {
+                // Polyak averaging
                 averaged_parameters[i] = (averaged_parameters[i] * (t_d - 1.0) + parameters[i]) / t_d;
-                // // TODO: Replace with exponentially decaying moving average?
-                // const double decay_factor = 0.9;
-                // averaged_parameters[i] = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
+                // Exponentially decaying moving average
+                const double decay_factor = 0.9;
+                averaged_parameters[i]    = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
             }
         }
 
