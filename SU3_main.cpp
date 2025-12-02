@@ -535,8 +535,11 @@ int main(int argc, char** argv)
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.SymmetrizePotentialMaximum();
 
-                         double Q_min_initial      = -0.2;
-                         double Q_max_initial      =  0.2;
+        // With uniform distribution the initial range has to be chosen much smaller
+                         // double Q_min_initial      = -0.2;
+                         // double Q_max_initial      =  0.2;
+                         double Q_min_initial      = -0.6;
+                         double Q_max_initial      =  0.6;
                          double Q_min              = -8.0;
                          double Q_max              =  8.0;
         [[maybe_unused]] double ves_stepsize       =  0.5;
@@ -547,8 +550,8 @@ int main(int argc, char** argv)
         using VESParametersT = SimpleBasis::ParametersT;
         // Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
         Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
-        VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
-        // VariationalBiasPotential TopBiasPotential{SimpleBasis{-1.0, -10.0}, GaussianTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
+        // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
+        VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);

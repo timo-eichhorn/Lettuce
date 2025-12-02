@@ -79,9 +79,21 @@ struct SimpleBasis
     }
 
     [[nodiscard]]
+    double Evaluate(const double CV, const ParametersT& params) const noexcept
+    {
+        return params[0] * f0(CV) + params[1] * f1(CV);
+    }
+
+    [[nodiscard]]
     double Derivative(const double CV) const noexcept
     {
         return parameters[0] * f0_deriv(CV) + parameters[1] * f1_deriv(CV);
+    }
+
+    [[nodiscard]]
+    double Derivative(const double CV, const ParametersT& params) const noexcept
+    {
+        return params[0] * f0_deriv(CV) + params[1] * f1_deriv(CV);
     }
 };
 
@@ -144,8 +156,8 @@ namespace Optimizers
         int           batch_size;
 
         ParametersT   velocity{};
-        // TODO: Used for Polyak averaging, might replace with exponentially decaying moving average later
-        std::uint64_t updates_count{};
+        // Only used for Polyak averaging, but currently we use an exponentially decaying moving average
+        // std::uint64_t updates_count{0u};
 
         AveragedStochasticGradientDescent(double stepsize_in, double momentum_in, int batch_size_in) : stepsize(stepsize_in), momentum(momentum_in), batch_size(batch_size_in) {}
 
@@ -178,7 +190,8 @@ namespace Optimizers
                 const double decay_factor = 0.9;
                 averaged_parameters[i]    = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
             }
-            updates_count += 1;
+            // Only used for Polyak averaging, but currently we use an exponentially decaying moving average
+            // updates_count += 1;
         }
 
         [[nodiscard]]
@@ -222,6 +235,8 @@ namespace Optimizers
             t += 1;
             const double t_d = static_cast<double>(t);
 
+            const double beta_1_pow = std::pow(beta_1, t_d);
+            const double beta_2_pow = std::pow(beta_2, t_d);
             for (std::size_t i = 0; i < m.size(); ++i)
             {
                 // TODO: Compute or get gradient
@@ -229,18 +244,19 @@ namespace Optimizers
                 v[i] = beta_2 * v[i] + (1.0 - beta_2) * update_info.gradient[i] * update_info.gradient[i];
 
                 // Inefficient version
-                // const double m_hat = m[i] / (1.0 - std::pow(beta_1, t_d));
-                // const double v_hat = v[i] / (1.0 - std::pow(beta_2, t_d));
-                // parameters[i] -= alpha * m_hat / (std::sqrt(v_hat) + epsilon);
+                const double m_hat = m[i] / (1.0 - beta_1_pow);
+                const double v_hat = v[i] / (1.0 - beta_2_pow);
+                parameters[i] -= alpha * m_hat / (std::sqrt(v_hat) + epsilon);
                 // More efficient version
-                const double alpha_t = alpha * std::sqrt(1.0 - std::pow(beta_2, t_d)) / (1.0 - std::pow(beta_1, t_d));
-                parameters[i] -= alpha_t * m[i] / (std::sqrt(v[i]) + epsilon);
+                // TODO: Technically epsilon would need to be rescaled to achieve a version that is completely equivalent to the standard version
+                // const double alpha_t = alpha * std::sqrt(1.0 - std::pow(beta_2, t_d)) / (1.0 - std::pow(beta_1, t_d));
+                // parameters[i] -= alpha_t * m[i] / (std::sqrt(v[i]) + epsilon);
             }
 
             for (std::size_t i = 0; i < parameters.size(); ++i)
             {
                 // Polyak averaging
-                averaged_parameters[i] = (averaged_parameters[i] * (t_d - 1.0) + parameters[i]) / t_d;
+                // averaged_parameters[i] = (averaged_parameters[i] * (t_d - 1.0) + parameters[i]) / t_d;
                 // Exponentially decaying moving average
                 const double decay_factor = 0.9;
                 averaged_parameters[i]    = decay_factor * averaged_parameters[i] + (1.0 - decay_factor) * parameters[i];
@@ -292,6 +308,8 @@ private:
     int                 quadrature_max_depth     {15};
 
     std::vector<double> batch;
+
+    static_assert(BasisT::n_parameters == 2, "VariationalBiasPotential is currently hard-coded to assume a basis with 2 parameters");
 
     struct MomentsT
     {
@@ -547,6 +565,10 @@ public:
         // averaged_parameters = functional_basis.parameters;
         // This relies on several members already being initialized, so can not use it in the member initializer list above
         // target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_min, CV_max);
+        if (batch_size_in != optimizer.GetBatchSize())
+        {
+            std::cerr << std::format("Warning, VES batch_size ({}) incompatible with optimizer batch_size ({})\n", batch_size_in, optimizer.GetBatchSize());
+        }
         target_distribution_expectation_values = ComputeTargetDistExpectationValues(CV_current_min, CV_current_max);
         std::cout << "\nInitialized VariationalBiasPotential with the following parameters:\n"
                   << "  functional_basis_name:     " << BasisT::GetName()         << "\n"
@@ -594,18 +616,20 @@ public:
     double ReturnPotential(const double CV) const noexcept
     {
         // Use averaged parameter values
-        BasisT tmp_basis     = functional_basis;
-        tmp_basis.parameters = averaged_parameters;
-        return tmp_basis.Evaluate(CV) + ReturnPenaltyTerm(CV);
+        // BasisT tmp_basis     = functional_basis;
+        // tmp_basis.parameters = averaged_parameters;
+        // return tmp_basis.Evaluate(CV) + ReturnPenaltyTerm(CV);
+        return functional_basis.Evaluate(CV, averaged_parameters) + ReturnPenaltyTerm(CV);
     }
 
     [[nodiscard]]
     double ReturnDerivative(const double CV) const noexcept
     {
         // Use averaged parameter values
-        BasisT tmp_basis     = functional_basis;
-        tmp_basis.parameters = averaged_parameters;
-        return tmp_basis.Derivative(CV) + ReturnPenaltyTermDerivative(CV);
+        // BasisT tmp_basis     = functional_basis;
+        // tmp_basis.parameters = averaged_parameters;
+        // return tmp_basis.Derivative(CV) + ReturnPenaltyTermDerivative(CV);
+        return functional_basis.Derivative(CV, averaged_parameters) + ReturnPenaltyTermDerivative(CV);
     }
 
     void SetCV_current(const double CV_in) noexcept
