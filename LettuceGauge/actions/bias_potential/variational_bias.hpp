@@ -151,11 +151,13 @@ namespace Optimizers
     template<typename ParametersT>
     struct AveragedStochasticGradientDescent
     {
-        double        stepsize;
-        double        momentum;
-        int           batch_size;
+        double stepsize;
+        double momentum;
+        int    batch_size;
 
-        ParametersT   velocity{};
+        static constexpr bool requires_hessian = true;
+
+        ParametersT velocity{};
         // Only used for Polyak averaging, but currently we use an exponentially decaying moving average
         // std::uint64_t updates_count{0u};
 
@@ -218,6 +220,8 @@ namespace Optimizers
         std::uint64_t t       {0u};
         int           batch_size;
 
+        static constexpr bool requires_hessian = false;
+
         ParametersT   m{}; // First moment vector
         ParametersT   v{}; // Second moment vector
 
@@ -239,7 +243,6 @@ namespace Optimizers
             const double beta_2_pow = std::pow(beta_2, t_d);
             for (std::size_t i = 0; i < m.size(); ++i)
             {
-                // TODO: Compute or get gradient
                 m[i] = beta_1 * m[i] + (1.0 - beta_1) * update_info.gradient[i];
                 v[i] = beta_2 * v[i] + (1.0 - beta_2) * update_info.gradient[i] * update_info.gradient[i];
 
@@ -423,13 +426,12 @@ private:
         std::array<std::array<double, n_parameters>, n_parameters> cov_matrix{{{0.0, 0.0}, {0.0, 0.0}}};
 
         // Compute covariance matrix in a single pass using Welford's algorithm
-        // TODO: This is not necessary for most (first-order) optimizers like Adam
         std::size_t  N = 0;
         for (double CV : batch)
         {
             N += 1;
-            const double f0        = functional_basis.f0(CV);
-            const double f1        = functional_basis.f1(CV);
+            const double f0 = functional_basis.f0(CV);
+            const double f1 = functional_basis.f1(CV);
 
             const std::array<double, 2> x{f0, f1};
 
@@ -439,27 +441,33 @@ private:
             mean[0]               += delta[0] * inverse_N;
             mean[1]               += delta[1] * inverse_N;
 
-            std::array<double, 2> delta2{x[0] - mean[0], x[1] - mean[1]};
+            if constexpr(OptimizerT::requires_hessian)
+            {
+                std::array<double, 2> delta2{x[0] - mean[0], x[1] - mean[1]};
 
-            cov_matrix[0][0] += delta[0] * delta2[0];
-            cov_matrix[0][1] += delta[0] * delta2[1];
-            cov_matrix[1][0] += delta[1] * delta2[0];
-            cov_matrix[1][1] += delta[1] * delta2[1];
+                cov_matrix[0][0] += delta[0] * delta2[0];
+                cov_matrix[0][1] += delta[0] * delta2[1];
+                cov_matrix[1][0] += delta[1] * delta2[0];
+                cov_matrix[1][1] += delta[1] * delta2[1];
+            }
         }
 
         if (N == 0)
         {
-            moments.mean        = ParametersT{0.0, 0.0};
-            moments.covariance  = {{{0.0, 0.0}, {0.0, 0.0}}};
+            moments.mean       = ParametersT{0.0, 0.0};
+            moments.covariance = {{{0.0, 0.0}, {0.0, 0.0}}};
             return moments;
         }
 
         const double inverse_N = 1.0 / static_cast<double>(N);
 
-        cov_matrix[0][0] *= inverse_N;
-        cov_matrix[0][1] *= inverse_N;
-        cov_matrix[1][0] *= inverse_N;
-        cov_matrix[1][1] *= inverse_N;
+        if constexpr(OptimizerT::requires_hessian)
+        {
+            cov_matrix[0][0] *= inverse_N;
+            cov_matrix[0][1] *= inverse_N;
+            cov_matrix[1][0] *= inverse_N;
+            cov_matrix[1][1] *= inverse_N;
+        }
 
         moments.mean       = mean;
         moments.covariance = cov_matrix;

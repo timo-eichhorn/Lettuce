@@ -548,10 +548,10 @@ int main(int argc, char** argv)
         int ves_initial_batchsize = 50 * n_hmc;
 
         using VESParametersT = SimpleBasis::ParametersT;
-        // Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
-        Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
-        // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
-        VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, adam_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
+        Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
+        // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
+        // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
+        VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
