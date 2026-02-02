@@ -68,7 +68,7 @@ inline constexpr int n_orelax {0};                          // Number of overrel
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not
 inline constexpr int  metapotential_update_stride {1};      // An update stride of 0 is interpreted as a static bias potential
-inline constexpr bool metapotential_well_tempered {false};   // If true, use well tempered Metadynamics instead of standard Metadynamics updates
+inline constexpr bool metapotential_well_tempered {true};   // If true, use well tempered Metadynamics instead of standard Metadynamics updates
 inline constexpr bool metadynamics_path_update_enabled {true};
 inline constexpr int n_smear_meta {4};                      // Number of smearing steps for topological charge used in Metadynamics
 inline constexpr bool tempering_enabled {false};             // Enable metadynamics updates with tempering or not

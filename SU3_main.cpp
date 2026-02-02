@@ -361,7 +361,7 @@ int main(int argc, char** argv)
     GaugeAction::IwasakiAction.SetBeta(beta);
     GaugeAction::DBW2Action.SetBeta(beta);
 
-    auto SimulatedAction = GaugeAction::DBW2Action;
+    auto SimulatedAction = GaugeAction::WilsonAction;
     std::cout << "SimulatedAction parameters: " << SimulatedAction.stencil_radius << ", " << SimulatedAction.c_plaq << ", " << SimulatedAction.c_rect << std::endl;
 
     // Initialize update functors
@@ -524,34 +524,36 @@ int main(int argc, char** argv)
     // Updates with Metadynamics
     if constexpr(metadynamics_enabled and !tempering_enabled)
     {
-        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        // Original default values
-        // MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
-        // New attempt at values for well tempered updates
-        // double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
-        // MetaBiasPotential TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
+        // With uniform distribution the initial range has to be chosen much smaller
+                         // double Q_min_initial      = -0.2;
+                         // double Q_max_initial      =  0.2;
+        [[maybe_unused]] double Q_min_initial           = -0.6;
+        [[maybe_unused]] double Q_max_initial           =  0.6;
+                         double Q_min                   = -8.0;
+                         double Q_max                   =  8.0;
+        [[maybe_unused]] double ves_stepsize            =  0.5;
+        [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
+        [[maybe_unused]] int    bin_number              =  800;
+        [[maybe_unused]] double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        [[maybe_unused]] double well_tempered_parameter =  10.0;
+        [[maybe_unused]] double threshold_weight        =  1000.0;
+
+        // Metadynamics
+        MetaBiasPotential TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, well_tempered_parameter, threshold_weight};
+
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.SymmetrizePotentialMaximum();
 
-        // With uniform distribution the initial range has to be chosen much smaller
-                         // double Q_min_initial      = -0.2;
-                         // double Q_max_initial      =  0.2;
-                         double Q_min_initial      = -0.6;
-                         double Q_max_initial      =  0.6;
-                         double Q_min              = -8.0;
-                         double Q_max              =  8.0;
-        [[maybe_unused]] double ves_stepsize       =  0.5;
-        [[maybe_unused]] double ves_momentum       =  0.9; // Seems to be the default value for Polyak momentum
+        // // Variationally enhanced sampling
+        // int ves_initial_batchsize = 50 * n_hmc;
 
-        int ves_initial_batchsize = 50 * n_hmc;
-
-        using VESParametersT = SimpleBasis::ParametersT;
-        Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
-        // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
-        // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
-        VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
+        // using VESParametersT = SimpleBasis::ParametersT;
+        // Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
+        // // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
+        // // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
+        // VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
 
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
@@ -619,19 +621,27 @@ int main(int argc, char** argv)
         // Conventional HMC only used during thermalization of Gluon_temper
         GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
 
-        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        // Original default values
-        // MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
-        // New attempt at values for well tempered updates
-        double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
-        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
+        // [[maybe_unused]] double Q_min_initial           = -0.6;
+        // [[maybe_unused]] double Q_max_initial           =  0.6;
+                         double Q_min                   = -8.0;
+                         double Q_max                   =  8.0;
+        // [[maybe_unused]] double ves_stepsize            =  0.5;
+        // [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
+        /*[[maybe_unused]]*/ int    bin_number              =  800;
+        /*[[maybe_unused]]*/ double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        /*[[maybe_unused]]*/ double well_tempered_parameter =  10.0;
+        /*[[maybe_unused]]*/ double threshold_weight        =  1000.0;
+
+        MetaBiasPotential                         TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, well_tempered_parameter, threshold_weight};
+
         // TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
         // TopBiasPotential.SymmetrizePotentialMaximum();
+
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
+
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
         GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
-
         GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng, rho_stout_metadynamics);
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
