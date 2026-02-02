@@ -2,8 +2,8 @@
 #define LETTUCE_METADYNAMICS_HPP
 
 // Non-standard library headers
-#include "IO/ansi_colors.hpp"
-#include "IO/string_manipulation.hpp"
+#include "../../IO/ansi_colors.hpp"
+#include "../../IO/string_manipulation.hpp"
 //----------------------------------------
 // Standard library headers
 // ...

@@ -5,6 +5,8 @@
 #include "LettuceGauge/lattice.hpp"
 //-----
 // Remaining files in alphabetic order (for now)
+#include "LettuceGauge/actions/bias_potential/metadynamics.hpp"
+#include "LettuceGauge/actions/bias_potential/variational_bias.hpp"
 #include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
@@ -15,7 +17,6 @@
 #include "LettuceGauge/math/su2.hpp"
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
-#include "LettuceGauge/metadynamics.hpp"
 // #include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
@@ -33,6 +34,7 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
+#include "LettuceGauge/updates/parity_update.hpp"
 #include "LettuceGauge/updates/tempering.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
