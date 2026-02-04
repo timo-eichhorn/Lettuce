@@ -535,11 +535,12 @@ int main(int argc, char** argv)
         [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
         [[maybe_unused]] int    bin_number              =  800;
         [[maybe_unused]] double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        [[maybe_unused]] double gaussian_width          =  4 * std::abs(Q_max - Q_min) / bin_number;
         [[maybe_unused]] double well_tempered_parameter =  10.0;
         [[maybe_unused]] double threshold_weight        =  1000.0;
 
         // Metadynamics
-        MetaBiasPotential TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, well_tempered_parameter, threshold_weight};
+        MetaBiasPotential TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, gaussian_width, well_tempered_parameter, threshold_weight};
 
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
@@ -629,10 +630,11 @@ int main(int argc, char** argv)
         // [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
         /*[[maybe_unused]]*/ int    bin_number              =  800;
         /*[[maybe_unused]]*/ double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        /*[[maybe_unused]]*/ double gaussian_width          =  4 * std::abs(Q_max - Q_min) / bin_number;
         /*[[maybe_unused]]*/ double well_tempered_parameter =  10.0;
         /*[[maybe_unused]]*/ double threshold_weight        =  1000.0;
 
-        MetaBiasPotential                         TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, well_tempered_parameter, threshold_weight};
+        MetaBiasPotential                         TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, gaussian_width, well_tempered_parameter, threshold_weight};
 
         // TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
         // TopBiasPotential.SymmetrizePotentialMaximum();

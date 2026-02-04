@@ -38,6 +38,7 @@ private:
     double              bin_width;
     double              bin_width_inverse;
     double              weight;
+    double              width;
     double              well_tempered_parameter;
     double              threshold_weight;
     std::uint_fast64_t  exceeded_count{0};
@@ -54,7 +55,7 @@ private:
         return CV_min + index * bin_width;
     }
 public:
-    MetaBiasPotential(const double CV_min_in, const double CV_max_in, const int bin_number_in, const double weight_in, const double well_tempered_parameter_in, const double threshold_weight_in) :
+    MetaBiasPotential(const double CV_min_in, const double CV_max_in, const int bin_number_in, const double weight_in, const double width_in, const double well_tempered_parameter_in, const double threshold_weight_in) :
     CV_min(CV_min_in),
     CV_max(CV_max_in),
     bin_number(bin_number_in),
@@ -62,6 +63,7 @@ public:
     bin_width((CV_max - CV_min) / bin_number),
     bin_width_inverse(1.0 / bin_width),
     weight(weight_in),
+    width(width_in),
     well_tempered_parameter(well_tempered_parameter_in),
     threshold_weight(threshold_weight_in)
     {
@@ -82,6 +84,7 @@ public:
                   << "  bin_width:               " << bin_width               << "\n"
                   << "  bin_width_inverse:       " << bin_width_inverse       << "\n"
                   << "  weight:                  " << weight                  << "\n"
+                  << "  width:                   " << width                   << "\n"
                   << "  well_tempered_parameter: " << well_tempered_parameter << "\n"
                   << "  threshold_weight:        " << threshold_weight        << "\n"
                   << "  exceeded_count:          " << exceeded_count          << "\n" << std::endl;
@@ -106,17 +109,20 @@ public:
         {
             exceeded_count += 1;
         }
+        double width_inverse_squared = 1.0 / (width * width);
         for (std::size_t bin = 0; bin < bias_grid.size(); ++bin)
         {
             const double CV_current_bin {CVFromBinIndex(bin)};
             const double dist           {CV - CV_current_bin};
             if constexpr(metapotential_well_tempered)
             {
-                bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist - bias_grid[bin] / well_tempered_parameter);
+                // bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist - bias_grid[bin] / well_tempered_parameter);
+                bias_grid[bin] += weight * std::exp(-0.5 * width_inverse_squared * dist * dist - bias_grid[bin] / well_tempered_parameter);
             }
             else
             {
-                bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist);
+                // bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist);
+                bias_grid[bin] += weight * std::exp(-0.5 * width_inverse_squared * dist * dist);
             }
         }
     }
@@ -316,6 +322,7 @@ public:
             << "CV_max: "                  << CV_max                  << "\n"
             << "bin_number: "              << bin_number              << "\n"
             << "weight: "                  << weight                  << "\n"
+            << "width: "                   << width                   << "\n"
             << "well_tempered_parameter: " << well_tempered_parameter << "\n"
             << "threshold_weight: "        << threshold_weight        << "\n"
             << "END_METADYN_PARAMS"                                   << "\n";
@@ -417,6 +424,12 @@ public:
                 weight = std::stod(current_line.substr(pos));
                 continue;
             }
+            // Get width
+            if ((pos = FindTokenEnd(current_line, "width: ")) != std::string::npos)
+            {
+                width = std::stod(current_line.substr(pos));
+                continue;
+            }
             // Get well_tempered_parameter
             if ((pos = FindTokenEnd(current_line, "well_tempered_parameter: ")) != std::string::npos)
             {
@@ -489,6 +502,7 @@ public:
                   << "  bin_width:               " << bin_width               << "\n"
                   << "  bin_width_inverse:       " << bin_width_inverse       << "\n"
                   << "  weight:                  " << weight                  << "\n"
+                  << "  width:                   " << width                   << "\n"
                   << "  well_tempered_parameter: " << well_tempered_parameter << "\n"
                   << "  threshold_weight:        " << threshold_weight        << "\n"
                   << "  exceeded_count:          " << exceeded_count          << "\n" << std::endl;
