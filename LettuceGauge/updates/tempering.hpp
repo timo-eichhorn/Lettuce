@@ -4,7 +4,7 @@
 // Non-standard library headers
 #include "../defines.hpp"
 // #include "../lattice.hpp"
-#include "../metadynamics.hpp"
+#include "../actions/bias_potential/metadynamics.hpp"
 #include "../observables/topological_charge.hpp"
 #include "../smearing/gradient_flow.hpp"
 //----------------------------------------
@@ -19,6 +19,8 @@
 
 namespace GaugeUpdates
 {
+    // TODO: Rewrite in terms of generic actions, with support for optional optimized action difference computation
+    //       For the current code, it might even be best to require an action difference function, and not support anything else
     template<typename prngT>
     struct MetadynamicsTemperingKernel
     {

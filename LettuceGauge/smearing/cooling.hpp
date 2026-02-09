@@ -53,7 +53,7 @@ struct CoolingKernel
         //       Would not work with the current implementation, since the reference can't be rebound
         void operator()(const link_coord& current_link) const noexcept
         {
-            Matrix_3x3 W;
+            // Matrix_3x3 W;
             SU2_comp<floatT> subblock;
             // Get the staple
             Matrix_3x3 st_adj {(Action.Staple(U, current_link)).adjoint()};
