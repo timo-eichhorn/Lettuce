@@ -21,7 +21,7 @@
 // Standard C headers
 // ...
 
-// We can reuse the integrators defined in hmc_gauge.hpp
+// We can reuse the standard integrators defined in hmc_gauge.hpp, but the multiple timescale integrators below specifically require an UpdateMetadynamicsMomenta() member function
 
 namespace Integrators::HMC
 {
@@ -261,7 +261,7 @@ namespace GaugeUpdates
 
     // TODO: Currently the kernel uses the global parameter n_smear_meta
     //       Should probably create a parameter either in HMCMetaDData or the kernel itself
-    template<typename IntegratorT, typename ActionT, typename prngT>
+    template<typename IntegratorT, typename ActionT, typename prngT, typename BiasPotentialT> //requires(std::same_as<BiasPotentialT, MetaBiasPotential> or std::same_as<BiasPotentialT, VariationalBiasPotential>)
     struct HMCMetaDKernel
     {
         private:
@@ -274,7 +274,7 @@ namespace GaugeUpdates
             // Metadynamics
             // double n_smear_meta;
             // double rho_stout_meta;
-            MetaBiasPotential& Metapotential;
+            BiasPotentialT& Metapotential;
             // FullTensor                                             Clover;
             // GaugeFieldSmeared                                      SmearedFields;
             // GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
@@ -289,6 +289,9 @@ namespace GaugeUpdates
             // [[no_unique_address]] CVPathBufferT cv_path_samples;
             using CVPathBufferT = std::vector<double>;
             CVPathBufferT cv_path_samples;
+            // CVPathBufferT cv_path_actions;
+
+            static_assert(metadynamics_path_update_enabled ? IntegratorT::path_update_compatible : true, "Path updates are only compatible with kick-drift-kick integrators");
 
             // The integrator needs to access the private member functions UpdateMomenta() and UpdateFields()
             friend IntegratorT;
@@ -365,7 +368,7 @@ namespace GaugeUpdates
             //-----
             // Calculate topological force/fat-link contribution from the metapotential
 
-            void CalculateTopologicalForce() noexcept
+            void CalculateTopologicalForce(const bool perform_submeasurement = false) noexcept
             {
                 // This is the Metadynamics/fat-link contribution to the momenta
                 // First we need to smear the fields n_smear_meta times and store all intermediate fields
@@ -391,7 +394,11 @@ namespace GaugeUpdates
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
                 if constexpr(metadynamics_path_update_enabled)
                 {
-                    cv_path_samples.push_back(CV_old);
+                    if (perform_submeasurement)
+                    {
+                        cv_path_samples.push_back(CV_old);
+                        // cv_path_actions.push_back(Hamiltonian() + Metapotential.ReturnPotential(CV_old));
+                    }
                 }
                 // auto end_deriv = std::chrono::high_resolution_clock::now();
                 // deriv_time += end_deriv - start_deriv;
@@ -428,9 +435,9 @@ namespace GaugeUpdates
             //-----
             // Update momenta for HMC
 
-            void UpdateMomenta(const floatT epsilon) noexcept
+            void UpdateMomenta(const floatT epsilon, const bool perform_submeasurement = false) noexcept
             {
-                CalculateTopologicalForce();
+                CalculateTopologicalForce(perform_submeasurement);
                 // auto start_momentum_update = std::chrono::high_resolution_clock::now();
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)
@@ -523,8 +530,18 @@ namespace GaugeUpdates
                 // std::cout << "kinetic_energy: " << kinetic_energy << " potential_energy: " << potential_energy << std::endl;
                 return potential_energy + kinetic_energy;
             }
+
+            void LogCVData() const
+            {
+                std::ofstream hmclog;
+                hmclog.open(hmclogfilepath, std::fstream::out | std::fstream::app);
+                std::copy(std::cbegin(cv_path_samples), std::prev(std::cend(cv_path_samples)), std::ostream_iterator<double>(hmclog, " "));
+                hmclog << cv_path_samples.back() << "\n";
+                // std::copy(std::cbegin(cv_path_actions), std::prev(std::cend(cv_path_actions)), std::ostream_iterator<double>(hmclog, " "));
+                // hmclog << cv_path_actions.back() << "\n";
+            }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, MetaBiasPotential& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, BiasPotentialT& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
             U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}
@@ -543,26 +560,23 @@ namespace GaugeUpdates
                 if constexpr(metadynamics_path_update_enabled)
                 {
                     cv_path_samples.clear();
-                    cv_path_samples.reserve(IntegratorT::NumberOfMomentumUpdates(n_step) + 1);
+                    cv_path_samples.reserve(n_step);
+                    // cv_path_actions.clear();
+                    // cv_path_actions.reserve(n_step);
                 }
                 else
                 {
                     cv_path_samples.resize(1);
+                    // Unused when path updates are disabled, no need to resize
+                    // cv_path_actions.resize(1);
                 }
 
                 // Perform integration with chosen integrator
                 Integrator(*this, trajectory_length, n_step);
+
                 //-----
                 // Calculate energy after time evolution
                 double CV_new     {MetaCharge()};
-                if constexpr(metadynamics_path_update_enabled)
-                {
-                    cv_path_samples.push_back(CV_new);
-                }
-                else
-                {
-                    cv_path_samples[0] = CV_new;
-                }
                 double energy_new {Hamiltonian() + Metapotential.ReturnPotential(CV_new)};
                 // TODO: Probably shouldnt use a global variable for DeltaH?
                 DeltaH = energy_new - energy_old;
@@ -575,12 +589,27 @@ namespace GaugeUpdates
                 // std::cout << "Time for fields updates:    " << fields_update_time.count() << std::endl;
                 // std::cout << "============================\n" << std::endl;
 
-                std::ofstream hmclog;
-                hmclog.open(hmclogfilepath, std::fstream::out | std::fstream::app);
-                std::copy(std::cbegin(cv_path_samples), std::prev(std::cend(cv_path_samples)), std::ostream_iterator<double>(hmclog, " "));
-                hmclog << cv_path_samples.back() << "\n";
+                // TODO: Does not yet properly work with metapotential_update_stride?
+                //       Case 0: No updates at all
+                //       Case 1: Regular updates
+                //       Case rest: Not handled yet
+                // TODO: Probably too annoying to make exact for generic integrators (merged momentum updates)...
+                // if constexpr(metapotential_update_stride >= 1 and metadynamics_path_update_enabled)
+                // {
+                //     if (metropolis_step)
+                //     {
+                //         for (std::size_t i = 0; i < cv_path_samples.size(); ++i)
+                //         {
+                //             // Perform accept-reject for each component, if rejected replace with original CV_old
+                //             bool accepted = (prng.UniformReal() <= std::exp(-cv_path_actions[i] + energy_old));
+                //             cv_path_samples[i] = (accepted ? cv_path_samples[i] : CV_old);
+                //         }
+                //     }
+                // }
 
-                // TODO: The bias potential should be updated at the end of the trajectory even for rejected proposals (using the original configuration's CV)
+                // Always write the visited CV values to a file
+                LogCVData();
+
                 if (metropolis_step)
                 {
                     double p        {std::exp(-energy_new + energy_old)};
@@ -590,7 +619,8 @@ namespace GaugeUpdates
                     if (accepted)
                     {
                         Metapotential.SetCV_current(CV_new);
-                        if constexpr(metapotential_updated)
+                        // TODO: Implement support for metapotential_update_stride > 1! Maybe best to move to bias potential class itself
+                        if constexpr(metapotential_update_stride >= 1)
                         {
                             Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                         }
@@ -599,18 +629,21 @@ namespace GaugeUpdates
                     else
                     {
                         Metapotential.SetCV_current(CV_old);
-                        if constexpr(metapotential_updated)
+                        std::fill(cv_path_samples.begin(), cv_path_samples.end(), CV_old);
+                        if constexpr(metapotential_update_stride >= 1)
                         {
-                            Metapotential.UpdatePotentialSymmetric(CV_old);
+                            Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                         }
                         U = U_copy;
                     }
+                    // If the accept-reject step is enabled, also log the CV values that are actually used for the bias potential update
+                    LogCVData();
                     return accepted;
                 }
                 else
                 {
                     Metapotential.SetCV_current(CV_new);
-                    if constexpr(metapotential_updated)
+                    if constexpr(metapotential_update_stride >= 1)
                     {
                         Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                     }

@@ -9,6 +9,8 @@
 #include "LettuceGauge/lattice.hpp"
 //-----
 // Remaining files in alphabetic order (for now)
+#include "LettuceGauge/actions/bias_potential/metadynamics.hpp"
+#include "LettuceGauge/actions/bias_potential/variational_bias.hpp"
 #include "LettuceGauge/actions/gauge/rectangular_action.hpp"
 #include "LettuceGauge/IO/ansi_colors.hpp"
 #include "LettuceGauge/IO/config_io/bmw_format.hpp"
@@ -19,7 +21,6 @@
 #include "LettuceGauge/math/su2.hpp"
 #include "LettuceGauge/math/su3.hpp"
 #include "LettuceGauge/math/su3_exp.hpp"
-#include "LettuceGauge/metadynamics.hpp"
 // #include "LettuceGauge/observables/observables.hpp"
 #include "LettuceGauge/observables/clover.hpp"
 #include "LettuceGauge/observables/plaquette.hpp"
@@ -37,6 +38,7 @@
 #include "LettuceGauge/updates/instanton.hpp"
 #include "LettuceGauge/updates/metropolis.hpp"
 #include "LettuceGauge/updates/overrelaxation.hpp"
+#include "LettuceGauge/updates/parity_update.hpp"
 #include "LettuceGauge/updates/tempering.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
@@ -289,7 +291,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     }
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const MetaBiasPotential& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
+template<typename BiasPotentialT>
+void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const BiasPotentialT& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
     Observables(Gluon, Gluonchain, logstream, n_count, n_smear, smearing_parameter, false);
@@ -365,10 +368,11 @@ int main(int argc, char** argv)
     HeatbathKernel                     Heatbath(Gluon, SimulatedAction, global_prng);
     // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, SimulatedAction, global_prng);
     OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, SimulatedAction);
-    Integrators::HMC::OMF_4            OMF_4_Integrator;
-    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
+    using HMC_IntegratorT = Integrators::HMC::OMF_4;
+    HMC_IntegratorT                    HMC_Integrator;
+    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
     // double ghmc_mixing_angle           {0.25 * pi<floatT>};
-    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
+    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -520,22 +524,47 @@ int main(int argc, char** argv)
     // Updates with Metadynamics
     if constexpr(metadynamics_enabled and !tempering_enabled)
     {
-        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        // Original default values
-        // MetaBiasPotential TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
-        // New attempt at values for well tempered updates
-        double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
-        MetaBiasPotential TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
+        // With uniform distribution the initial range has to be chosen much smaller
+                         // double Q_min_initial      = -0.2;
+                         // double Q_max_initial      =  0.2;
+        [[maybe_unused]] double Q_min_initial           = -0.6;
+        [[maybe_unused]] double Q_max_initial           =  0.6;
+                         double Q_min                   = -8.0;
+                         double Q_max                   =  8.0;
+        [[maybe_unused]] double ves_stepsize            =  0.5;
+        [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
+        [[maybe_unused]] int    bin_number              =  800;
+        [[maybe_unused]] double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        [[maybe_unused]] double gaussian_width          =  4 * std::abs(Q_max - Q_min) / bin_number;
+        [[maybe_unused]] double well_tempered_parameter =  10.0;
+        [[maybe_unused]] double threshold_weight        =  1000.0;
+
+        // Metadynamics
+        MetaBiasPotential TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, gaussian_width, well_tempered_parameter, threshold_weight};
+
         // TopBiasPotential.GeneratePotentialFrom([](double CV_in){return std::fmax(-0.25 * CV_in * CV_in - 14.0 * std::pow(std::sin(1.2 * pi<floatT> * CV_in), 2) + 43.0, 0.0);});
         // TopBiasPotential.LoadPotential("SU(3)_N=20x20x20x20_beta=1.250000/metapotential.txt");
         // TopBiasPotential.SymmetrizePotential();
         // TopBiasPotential.SymmetrizePotentialMaximum();
+
+        // // Variationally enhanced sampling
+        // int ves_initial_batchsize = 50 * n_hmc;
+
+        // using VESParametersT = SimpleBasis::ParametersT;
+        // Optimizers::AveragedStochasticGradientDescent<VESParametersT> sgd_optimizer(ves_stepsize, ves_momentum, ves_initial_batchsize);
+        // // Optimizers::Adam<VESParametersT>                              adam_optimizer(ves_initial_batchsize);
+        // // VariationalBiasPotential TopBiasPotential(SimpleBasis{0.0, 0.0}, UniformTargetDistribution{}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize);
+        // VariationalBiasPotential TopBiasPotential{SimpleBasis{0.0, 0.0}, GaussianTargetDistribution{0.0, 4}, sgd_optimizer, Q_min, Q_max, Q_min_initial, Q_max_initial, ves_initial_batchsize};
+
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
-        // GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, OMF_2_OMF_4_Integrator, SimulatedAction, n_smear_meta, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+
+        // GaugeUpdates::InstantonStart(Gluon, 1);
+
+        std::uniform_int_distribution<int>  distribution_parity_update(0, 1);
 
         // Thermalize with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -555,10 +584,14 @@ int main(int argc, char** argv)
             // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
             // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
             // overall_time += update_time_meta;
+            if (distribution_parity_update(generator_rand))
+            {
+                ParityUpdate(Gluon, Gluonsmeared1);
+            }
             if (n_count % expectation_period == 0)
             {
                 Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear, rho_stout);
-                if constexpr(metapotential_updated)
+                if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);
@@ -587,21 +620,30 @@ int main(int argc, char** argv)
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper
-        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
 
-        // CV_min, CV_max, bin_number, weight, well_tempered_parameter, threshold_weight
-        // Original default values
-        // MetaBiasPotential                         TopBiasPotential{-8, 8, 800, 0.05, 100, 1000.0};
-        // New attempt at values for well tempered updates
-        double meta_weight = metapotential_well_tempered ? 0.05 : 0.025;
-        MetaBiasPotential                         TopBiasPotential{-8, 8, 800, meta_weight, 10, 1000.0};
+        // [[maybe_unused]] double Q_min_initial           = -0.6;
+        // [[maybe_unused]] double Q_max_initial           =  0.6;
+                         double Q_min                   = -8.0;
+                         double Q_max                   =  8.0;
+        // [[maybe_unused]] double ves_stepsize            =  0.5;
+        // [[maybe_unused]] double ves_momentum            =  0.9; // Seems to be the default value for Polyak momentum
+        /*[[maybe_unused]]*/ int    bin_number              =  800;
+        /*[[maybe_unused]]*/ double gaussian_height         =  metapotential_well_tempered ? 0.05 : 0.025;
+        /*[[maybe_unused]]*/ double gaussian_width          =  4 * std::abs(Q_max - Q_min) / bin_number;
+        /*[[maybe_unused]]*/ double well_tempered_parameter =  10.0;
+        /*[[maybe_unused]]*/ double threshold_weight        =  1000.0;
+
+        MetaBiasPotential                         TopBiasPotential{Q_min, Q_max, bin_number, gaussian_height, gaussian_width, well_tempered_parameter, threshold_weight};
+
         // TopBiasPotential.LoadPotential("metapotential_16_1.24.txt");
         // TopBiasPotential.SymmetrizePotentialMaximum();
+
         TopBiasPotential.SaveParameters(metapotentialfilepath);
         TopBiasPotential.SavePotential(metapotentialfilepath);
-        GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, OMF_4_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
 
+        GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
         GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng, rho_stout_metadynamics);
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
@@ -636,7 +678,7 @@ int main(int argc, char** argv)
             {
                 Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
                 Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear, rho_stout);
-                if constexpr(metapotential_updated)
+                if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
                     TopBiasPotential.SavePotential(metapotentialfilepath);

@@ -18,9 +18,38 @@
 
 namespace Integrators::HMC
 {
+    struct Leapfrog_slow
+    {
+        static constexpr bool merged_momentum_updates = false;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
+        static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
+        {
+            return (n_step > 0) ? (2 * n_step) : 0;
+        }
+
+        template<typename HMCFunctor>
+        void operator()(HMCFunctor& HMC, const double trajectory_length, const int n_step) const noexcept
+        {
+            // Calculate stepsize epsilon from n_step
+            floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
+            // Perform integration
+            for (int step_count = 0; step_count < n_step; ++step_count)
+            {
+                HMC.UpdateMomenta(0.5 * epsilon);
+                HMC.UpdateFields(epsilon);
+                HMC.UpdateMomenta(0.5 * epsilon, perform_submeasurement);
+            }
+        }
+    };
+
     // Leapfrog integrator for HMC
     struct Leapfrog
     {
+        static constexpr bool merged_momentum_updates = true;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
         static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
         {
             return (n_step > 0) ? (n_step + 1) : 0;
@@ -31,16 +60,17 @@ namespace Integrators::HMC
         {
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
             // Perform integration
             // Momentum updates are merged in the loop
             HMC.UpdateMomenta(0.5 * epsilon);
             for (int step_count = 0; step_count < n_step - 1; ++step_count)
             {
                 HMC.UpdateFields(epsilon);
-                HMC.UpdateMomenta(epsilon);
+                HMC.UpdateMomenta(epsilon, perform_submeasurement);
             }
             HMC.UpdateFields(epsilon);
-            HMC.UpdateMomenta(0.5 * epsilon);
+            HMC.UpdateMomenta(0.5 * epsilon, perform_submeasurement);
         }
     };
     //-----
@@ -90,6 +120,9 @@ namespace Integrators::HMC
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
     struct OMF_2_slow
     {
+        static constexpr bool merged_momentum_updates = false;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
         static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
         {
             return (n_step > 0) ? (3 * n_step) : 0;
@@ -100,6 +133,7 @@ namespace Integrators::HMC
         {
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
             // Integrator constants
             const double alpha {0.1931833275037836 * epsilon};
             const double beta  {0.5 * epsilon};
@@ -111,7 +145,7 @@ namespace Integrators::HMC
                 HMC.UpdateFields(beta);
                 HMC.UpdateMomenta(gamma);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(alpha);
+                HMC.UpdateMomenta(alpha, perform_submeasurement);
             }
         }
     };
@@ -120,6 +154,9 @@ namespace Integrators::HMC
     // cf. hep-lat/0505020
     struct OMF_2
     {
+        static constexpr bool merged_momentum_updates = true;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
         static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
         {
             return (n_step > 0) ? (2 * n_step + 1) : 0;
@@ -130,6 +167,7 @@ namespace Integrators::HMC
         {
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
             // Integrator constants
             const double alpha {0.1931833275037836 * epsilon};
             const double beta  {0.5 * epsilon};
@@ -142,12 +180,12 @@ namespace Integrators::HMC
             HMC.UpdateFields(beta);
             for (int step_count = 0; step_count < n_step - 1; ++step_count)
             {
-                HMC.UpdateMomenta(2.0 * alpha);
+                HMC.UpdateMomenta(2.0 * alpha, perform_submeasurement);
                 HMC.UpdateFields(beta);
                 HMC.UpdateMomenta(gamma);
                 HMC.UpdateFields(beta);
             }
-            HMC.UpdateMomenta(alpha);
+            HMC.UpdateMomenta(alpha, perform_submeasurement);
         }
     };
     //-----
@@ -156,6 +194,9 @@ namespace Integrators::HMC
     // NOTE: This version doesn't use merged momentum updates and is slightly less efficient than the one below
     struct OMF_4_slow
     {
+        static constexpr bool merged_momentum_updates = false;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
         static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
         {
             return (n_step > 0) ? (6 * n_step) : 0;
@@ -166,6 +207,7 @@ namespace Integrators::HMC
         {
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
             // Integrator constants
             const double alpha {0.08398315262876693 * epsilon};
             const double beta  {0.2539785108410595 * epsilon};
@@ -189,7 +231,7 @@ namespace Integrators::HMC
                 HMC.UpdateFields(delta);
                 HMC.UpdateMomenta(gamma);
                 HMC.UpdateFields(beta);
-                HMC.UpdateMomenta(alpha);
+                HMC.UpdateMomenta(alpha, perform_submeasurement);
             }
         }
     };
@@ -198,6 +240,9 @@ namespace Integrators::HMC
     // cf. hep-lat/0505020
     struct OMF_4
     {
+        static constexpr bool merged_momentum_updates = true;
+        static constexpr bool path_update_compatible  = true; // Need kick-drift-kick structure
+
         static constexpr int NumberOfMomentumUpdates(const int n_step) noexcept
         {
             return (n_step > 0) ? (5 * n_step + 1) : 0;
@@ -208,6 +253,7 @@ namespace Integrators::HMC
         {
             // Calculate stepsize epsilon from n_step
             floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
+            static constexpr bool perform_submeasurement = true;
             // Integrator constants
             const double alpha {0.08398315262876693 * epsilon};
             const double beta  {0.2539785108410595 * epsilon};
@@ -231,7 +277,7 @@ namespace Integrators::HMC
             HMC.UpdateFields(beta);
             for (int step_count = 0; step_count < n_step - 1; ++step_count)
             {
-                HMC.UpdateMomenta(2.0 * alpha);
+                HMC.UpdateMomenta(2.0 * alpha, perform_submeasurement);
                 HMC.UpdateFields(beta);
                 HMC.UpdateMomenta(gamma);
                 HMC.UpdateFields(delta);
@@ -244,7 +290,7 @@ namespace Integrators::HMC
                 HMC.UpdateMomenta(gamma);
                 HMC.UpdateFields(beta);
             }
-            HMC.UpdateMomenta(alpha);
+            HMC.UpdateMomenta(alpha, perform_submeasurement);
         }
     };
     //-----
@@ -399,7 +445,7 @@ namespace GaugeUpdates
             //-----
             // Update momenta for HMC
 
-            void UpdateMomenta(const floatT epsilon) const noexcept
+            void UpdateMomenta(const floatT epsilon, [[maybe_unused]] const bool perform_submeasurement = false /*Only for MetaD-HMC*/) const noexcept
             {
                 #pragma omp parallel for
                 for (int t = 0; t < Nt; ++t)

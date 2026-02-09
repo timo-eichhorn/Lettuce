@@ -48,9 +48,9 @@ build:
 cluster:
 		$(MAKE) build ARCH_FLGS="-march=broadwell -mtune=broadwell -static"
 compass:
-		$(MAKE) build ARCH_FLGS="-march=alderlake -mtune=alderlake"
+		$(MAKE) build ARCH_FLGS="-march=alderlake -mtune=alderlake -static"
 pleiades:
-		$(MAKE) build ARCH_FLGS="-march=znver2 -mtune=znver2"
+		$(MAKE) build ARCH_FLGS="-march=znver2 -mtune=znver2 -static"
 run:
 		./$(OUT)
 clean:
