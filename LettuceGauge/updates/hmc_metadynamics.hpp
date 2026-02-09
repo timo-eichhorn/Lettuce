@@ -573,23 +573,6 @@ namespace GaugeUpdates
 
                 // Perform integration with chosen integrator
                 Integrator(*this, trajectory_length, n_step);
-                // if constexpr(metadynamics_path_update_enabled)
-                // {
-                //     const floatT epsilon {static_cast<floatT>(trajectory_length)/n_step};
-                //     for (int i = 0; i < n_step; ++i)
-                //     {
-                //         Integrator(*this, epsilon, 1);
-                //         // cv_path_samples.push_back(CV_old);
-                //         // cv_path_actions.push_back(Hamiltonian() + Metapotential.ReturnPotential(CV_old));
-                //         // For the integrators we usually use (kick-drift-kick) the CV value does not change from the last measurement, as only the momentum field is updated?
-                //         cv_path_samples.push_back(/*TODO: Last measured CV value*/);
-                //         cv_path_actions.push_back(Hamiltonian() + Metapotential.ReturnPotential(/*TODO: Have to measure CV?*/));
-                //     }
-                // }
-                // else
-                // {
-                //     Integrator(*this, trajectory_length, n_step);
-                // }
 
                 //-----
                 // Calculate energy after time evolution

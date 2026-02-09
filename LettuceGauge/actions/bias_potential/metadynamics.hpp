@@ -99,8 +99,6 @@ public:
         }
     }
 
-    // TODO: Introduce adjustable Gaussian variance that is independent of the bin width?
-    //       I suspect the Gaussians are currently too narrow
     // TODO: Could truncate updates after a certain distance from CV value due to exponential fall-off
     void UpdatePotential(const double CV) noexcept
     {
@@ -116,12 +114,10 @@ public:
             const double dist           {CV - CV_current_bin};
             if constexpr(metapotential_well_tempered)
             {
-                // bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist - bias_grid[bin] / well_tempered_parameter);
                 bias_grid[bin] += weight * std::exp(-0.5 * width_inverse_squared * dist * dist - bias_grid[bin] / well_tempered_parameter);
             }
             else
             {
-                // bias_grid[bin] += weight * std::exp(-0.5 * bin_width_inverse * bin_width_inverse * dist * dist);
                 bias_grid[bin] += weight * std::exp(-0.5 * width_inverse_squared * dist * dist);
             }
         }

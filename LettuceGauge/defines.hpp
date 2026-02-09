@@ -62,8 +62,8 @@ inline int n_therm {20};                                     // Number of update
 inline constexpr int n_metro {0};                           // Number of Metropolis sweeps per total update sweep
 inline constexpr int multi_hit {8};                         // Number of hits per site in Metropolis algorithm
 inline constexpr int n_heatbath {0};                        // Number of heat bath sweeps per total update sweep
-inline constexpr int n_hmc {20};                             // Number of integration steps per HMC update
-inline constexpr double hmc_trajectory_length {4.0};        // Trajectory length of a single HMC update
+inline constexpr int n_hmc {40};                             // Number of integration steps per HMC update
+inline constexpr double hmc_trajectory_length {8.0};        // Trajectory length of a single HMC update
 inline constexpr int n_orelax {0};                          // Number of overrelaxation sweeps per total update sweep
 inline constexpr int n_instanton_update {0};                // Number of instanton updates per total update sweep
 inline constexpr bool metadynamics_enabled {true};          // Enable metadynamics updates or not
