@@ -66,7 +66,7 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
 {
     static_assert(N_mu_start >= 0 and N_mu_end >= 0, "The template parameters of WilsonLoop are not allowed to be negative!");
     double W {0.0};
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)

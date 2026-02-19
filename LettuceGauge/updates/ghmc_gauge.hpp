@@ -47,7 +47,7 @@ namespace GaugeUpdates
 
             // void RandomMomentum(GaugeField& P) const noexcept
             // {
-            //     #pragma omp parallel for
+            //     #pragma omp parallel for collapse(2)
             //     for (int t = 0; t < Nt; ++t)
             //     for (int x = 0; x < Nx; ++x)
             //     for (int y = 0; y < Ny; ++y)
@@ -80,7 +80,7 @@ namespace GaugeUpdates
             {
                 double old_momentum_contribution    {std::cos(mixing_angle)};
                 double random_momentum_contribution {std::sin(mixing_angle)};
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(2)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -113,7 +113,7 @@ namespace GaugeUpdates
 
             void ReverseMomenta(GaugeField& P) const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(2)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -130,7 +130,7 @@ namespace GaugeUpdates
 
             void UpdateMomenta(const floatT epsilon) const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(2)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -149,7 +149,7 @@ namespace GaugeUpdates
 
             void UpdateFields(const floatT epsilon) const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(2)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -172,7 +172,7 @@ namespace GaugeUpdates
             {
                 double potential_energy {Action.Action(U)};
                 double kinetic_energy   {0.0};
-                #pragma omp parallel for reduction(+: kinetic_energy)
+                #pragma omp parallel for collapse(2) reduction(+: kinetic_energy)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)

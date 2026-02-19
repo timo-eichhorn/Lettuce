@@ -27,7 +27,7 @@ namespace FieldStrengthTensor
     // Version where the entries of F are antihermitian only (not traceless)
     void Clover(const GaugeField& U, FullTensor& F) noexcept
     {
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -67,7 +67,7 @@ namespace FieldStrengthTensor
     // Version where the entries of F are made antihermitian and traceless (i.e. algebra elements)
     void CloverTraceless(const GaugeField& U, FullTensor& F) noexcept
     {
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -106,7 +106,7 @@ namespace FieldStrengthTensor
     }
     void MakeComponentsTraceless(FullTensor& F) noexcept
     {
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -155,7 +155,7 @@ namespace EnergyDensity
     double Clover(const FullTensor& F) noexcept
     {
         double E {0.0};
-        #pragma omp parallel for reduction(+: E)
+        #pragma omp parallel for collapse(2) reduction(+: E)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -178,7 +178,7 @@ namespace EnergyDensity
     double CloverTimeslice(const FullTensor& F, const int t) noexcept
     {
         double E {0.0};
-        #pragma omp parallel for reduction(+: E)
+        #pragma omp parallel for collapse(2) reduction(+: E)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)

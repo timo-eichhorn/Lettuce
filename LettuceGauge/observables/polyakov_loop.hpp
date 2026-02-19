@@ -32,7 +32,7 @@ initializer( omp_priv = omp_orig )
 std::complex<double> PolyakovLoop(const GaugeField& U) noexcept
 {
     std::complex<floatT> P {0.0, 0.0};
-    #pragma omp parallel for reduction(+: P)
+    #pragma omp parallel for collapse(2) reduction(+: P)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)

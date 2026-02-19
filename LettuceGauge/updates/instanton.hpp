@@ -93,7 +93,7 @@ namespace GaugeUpdates
         // To avoid gauge singularities on the lattice, we actually do not place the instanton around the site_coord center, but rather shift all coordinates by 0.5 into the positive direction
         // This way, the gauge singularity at the center of the instanton never actually coincides with a lattice point
         site_coord lattice_shape {Gluon.Shape()};
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -212,7 +212,7 @@ namespace GaugeUpdates
 
     void MultiplyConfigurations(GaugeField& Gluon1, const GaugeField& Gluon2) noexcept
     {
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -376,7 +376,7 @@ namespace GaugeUpdates
         floatT Field_t {static_cast<floatT>(2.0) * pi<floatT> * std::abs(Q) / (Nt * Nx)};
         floatT Field_x {static_cast<floatT>(2.0) * pi<floatT> * std::abs(Q) / Nx};
         // Assign link values in t-direction
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -385,7 +385,7 @@ namespace GaugeUpdates
             Gluon({t, x, y, z, 1}) = comp_sig + std::cos(Field_t * t) * id_sig + i<floatT> * std::sin(Field_t * t) * sig;
         }
         // Assign link values on last time-slice in x-direction
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
@@ -406,7 +406,7 @@ namespace GaugeUpdates
             Field_z = static_cast<floatT>(2.0) * pi<floatT> * Q / (std::abs(Q) * Nz);
         }
         // Assign link values in y-direction
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -415,7 +415,7 @@ namespace GaugeUpdates
             Gluon({t, x, y, z, 3}) = comp_tau + std::cos(Field_y * y) * id_tau + i<floatT> * std::sin(Field_y * y) * tau;
         }
         // Assign link values on last y-slice in z-direction
-        #pragma omp parallel for
+        #pragma omp parallel for collapse(2)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int z = 0; z < Nz; ++z)
@@ -505,7 +505,7 @@ namespace GaugeUpdates
     //     floatT Field_t {static_cast<floatT>(2.0) * pi<floatT> * std::abs(Q) / (Nt * Nx)};
     //     floatT Field_x {static_cast<floatT>(2.0) * pi<floatT> * std::abs(Q) / Nx};
     //     // Assign link values in t-direction
-    //     #pragma omp parallel for
+    //     #pragma omp parallel for collapse(2)
     //     for (int t = 0; t < Nt; ++t)
     //     for (int x = 0; x < Nx; ++x)
     //     for (int y = 0; y < Ny; ++y)
@@ -514,7 +514,7 @@ namespace GaugeUpdates
     //         Gluon({t, x, y, z, 1}) *= comp_sig + std::cos(Field_t * t) * id_sig + i<floatT> * std::sin(Field_t * t) * sig;
     //     }
     //     // Assign link values on last time-slice in x-direction
-    //     #pragma omp parallel for
+    //     #pragma omp parallel for collapse(2)
     //     for (int x = 0; x < Nx; ++x)
     //     for (int y = 0; y < Ny; ++y)
     //     for (int z = 0; z < Nz; ++z)
@@ -535,7 +535,7 @@ namespace GaugeUpdates
     //         Field_z = static_cast<floatT>(2.0) * pi<floatT> * Q / (std::abs(Q) * Nz);
     //     }
     //     // Assign link values in y-direction
-    //     #pragma omp parallel for
+    //     #pragma omp parallel for collapse(2)
     //     for (int t = 0; t < Nt; ++t)
     //     for (int x = 0; x < Nx; ++x)
     //     for (int y = 0; y < Ny; ++y)
@@ -544,7 +544,7 @@ namespace GaugeUpdates
     //         Gluon({t, x, y, z, 3}) *= comp_tau + std::cos(Field_y * y) * id_tau + i<floatT> * std::sin(Field_y * y) * tau;
     //     }
     //     // Assign link values on last y-slice in z-direction
-    //     #pragma omp parallel for
+    //     #pragma omp parallel for collapse(2)
     //     for (int t = 0; t < Nt; ++t)
     //     for (int x = 0; x < Nx; ++x)
     //     for (int z = 0; z < Nz; ++z)

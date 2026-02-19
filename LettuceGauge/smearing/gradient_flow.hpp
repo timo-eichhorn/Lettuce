@@ -264,7 +264,7 @@ struct GradientFlowKernel
 
         void UpdateFields(GaugeField& U, const GaugeField& Z, const floatT c) const noexcept
         {
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(2)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -283,7 +283,7 @@ struct GradientFlowKernel
 
         // void AddForces(GaugeField& Z_1, const GaugeField& Z_2, const floatT c_1, const floatT c_2) const noexcept
         // {
-        //     #pragma omp parallel for
+        //     #pragma omp parallel for collapse(2)
         //     for (int t = 0; t < Nt; ++t)
         //     for (int x = 0; x < Nx; ++x)
         //     for (int y = 0; y < Ny; ++y)
@@ -297,7 +297,7 @@ struct GradientFlowKernel
 
         void CalculateZ(const GaugeField& U, GaugeField& Z, const floatT epsilon) const noexcept
         {
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(2)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -315,7 +315,7 @@ struct GradientFlowKernel
 
         void UpdateZ(const GaugeField& U, GaugeField& Z, const floatT c_old, const floatT c_new) const noexcept
         {
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(2)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)

@@ -23,7 +23,7 @@ void ParityUpdate(GaugeField& U, GaugeField& U_copy) noexcept
 {
     U_copy = U;
 
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)

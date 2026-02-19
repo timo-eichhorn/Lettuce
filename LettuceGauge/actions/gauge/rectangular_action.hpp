@@ -64,7 +64,7 @@ namespace GaugeAction
                 double sum_plaq {0.0};
                 double sum_rect {0.0};
 
-                #pragma omp parallel for reduction(+: sum_plaq, sum_rect)
+                #pragma omp parallel for collapse(2) reduction(+: sum_plaq, sum_rect)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
