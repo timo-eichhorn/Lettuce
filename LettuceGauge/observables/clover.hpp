@@ -59,7 +59,7 @@ template<int N_mu, int N_nu = N_mu>
 void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of CalculateClover are not allowed to be 0!");
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -94,7 +94,7 @@ void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
 template<>
 void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
 {
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)

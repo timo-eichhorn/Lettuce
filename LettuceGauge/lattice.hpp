@@ -114,7 +114,7 @@ class GaugeField4D
         // GaugeField4D(const GaugeField4D& field_in) noexcept :
         //     Nt(field_in.Nt), Nx(field_in.Nx), Ny(field_in.Ny), Nz(field_in.Nz), V(field_in.Nt * field_in.Nx * field_in.Ny * field_in.Nz * field_in.Nmu)
         //     {
-        //         #pragma omp parallel for collapse(2)
+        //         #pragma omp parallel for collapse(omp_collapse_depth)
         //         for (int t = 0; t < Nt; ++t)
         //         for (int x = 0; x < Nx; ++x)
         //         for (int y = 0; y < Ny; ++y)
@@ -169,7 +169,7 @@ class GaugeField4D
 
         void SetToIdentity() noexcept
         {
-            #pragma omp parallel for collapse(2)
+            #pragma omp parallel for collapse(omp_collapse_depth)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -182,7 +182,7 @@ class GaugeField4D
         }
         void SetToZero() noexcept
         {
-            #pragma omp parallel for collapse(2)
+            #pragma omp parallel for collapse(omp_collapse_depth)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -478,7 +478,7 @@ class FullTensor4D
             if (this != &field_in)
             {
                 // Copy using OpenMP seems to be faster than single-threaded std::copy (at least for "larger" 32^4 lattices)
-                #pragma omp parallel for collapse(2)
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
