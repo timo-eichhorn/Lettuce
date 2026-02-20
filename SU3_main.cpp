@@ -122,20 +122,20 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     Plaquette[0]                   = PlaquetteSum(Gluon);
 
     FieldStrengthTensor::Clover(Gluon, F_tensor);
-    Timer topcharge_timeslice_timer;
+    // Timer topcharge_timeslice_timer;
     for (int t = 0; t < Gluon.Length(0); ++t)
     {
         TopologicalChargeCloverTimeslice[0][t] = TopChargeCloverTimeslice(F_tensor, t);
     }
-    std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_timer.GetTimeSeconds() << std::endl;
-    Timer topcharge_symm_timer;
+    // std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_timer.GetTimeSeconds() << "\n";
+    // Timer topcharge_symm_timer;
     TopologicalChargeClover[0]     = std::accumulate(TopologicalChargeCloverTimeslice[0].cbegin(), TopologicalChargeCloverTimeslice[0].cend(), 0.0);
     // TopologicalChargeClover[0]     = TopChargeClover(Gluon);
     // TopologicalChargeClover[0]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-    std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_timer.GetTimeSeconds() << std::endl;
-    Timer topcharge_plaq_timer;
+    // std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_timer.GetTimeSeconds() << "\n";
+    // Timer topcharge_plaq_timer;
     TopologicalChargePlaquette[0]  = TopChargePlaquette(Gluon);
-    std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_timer.GetTimeSeconds() << std::endl;
+    // std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_timer.GetTimeSeconds() << "\n";
 
     FieldStrengthTensor::MakeComponentsTraceless(F_tensor);
     for (int t = 0; t < Gluon.Length(0); ++t)
@@ -146,21 +146,21 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // EClover[0]                     = EnergyDensity::Clover(F_tensor);
     EClover[0]                     = std::accumulate(ECloverTimeslice[0].cbegin(), ECloverTimeslice[0].cend(), 0.0);
 
-    Timer wilson_timer;
+    // Timer wilson_timer;
     WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
-    std::cout << "Time for calculating wilson 2: " << wilson_timer.GetTimeSeconds() << std::endl;
+    // std::cout << "Time for calculating wilson 2: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    wilson_timer.Reset();
+    // wilson_timer.Reset();
     WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
-    std::cout << "Time for calculating wilson 4: " << wilson_timer.GetTimeSeconds() << std::endl;
+    // std::cout << "Time for calculating wilson 4: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    wilson_timer.Reset();
+    // wilson_timer.Reset();
     WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
-    std::cout << "Time for calculating wilson 8: " << wilson_timer.GetTimeSeconds() << std::endl;
+    // std::cout << "Time for calculating wilson 8: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    Timer polyakov_timer;
+    // Timer polyakov_timer;
     PLoop[0]                       = PolyakovLoop(Gluon);
-    std::cout << "Time for calculating Polyakov: " << polyakov_timer.GetTimeSeconds() << std::endl;
+    // std::cout << "Time for calculating Polyakov: " << polyakov_timer.GetTimeSeconds() << "\n";
 
     //-----
     // Measurements involving smearing
@@ -169,9 +169,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // Apply smearing (first call is distinct from the calls afterwards, since we need to copy the unsmeared gaugefield here, but not later on)
         if (smear_count == 1)
         {
-            Timer smear_timer;
+            // Timer smear_timer;
             Flow(n_smear_skip);
-            std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_timer.GetTimeSeconds() << std::endl;
+            // std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_timer.GetTimeSeconds() << "\n";
         }
         else
         {
@@ -370,9 +370,9 @@ int main(int argc, char** argv)
             datalog << "[HMC start thermalization]\n";
             for (int n_count = 0; n_count < n_therm; ++n_count)
             {
-                Timer hmc_thermalization_timer;
+                // Timer hmc_thermalization_timer;
                 HMC(2 * n_hmc, false);
-                std::cout << "Time for thermalization sweep (HMC): " << hmc_thermalization_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for thermalization sweep (HMC): " << hmc_thermalization_timer.GetTimeSeconds() << "\n";
             }
             datalog << "[HMC end thermalization]\n" << std::endl;
         }
@@ -380,10 +380,10 @@ int main(int argc, char** argv)
         {
             for (int n_count = 0; n_count < n_therm; ++n_count)
             {
-                Timer thermalization_timer;
+                // Timer thermalization_timer;
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
-                std::cout << "Time for thermalization sweep (local): " << thermalization_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for thermalization sweep (local): " << thermalization_timer.GetTimeSeconds() << "\n";
             }
         }
 
@@ -391,7 +391,7 @@ int main(int argc, char** argv)
         {
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
-                Timer metropolis_timer;
+                // Timer metropolis_timer;
                 MetropolisKernel Metropolis(Gluon, SimulatedAction, global_prng, multi_hit, metropolis_epsilon);
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
@@ -399,26 +399,26 @@ int main(int argc, char** argv)
                 // Metropolis.AdjustEpsilon(acceptance_count);
                 metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
-                std::cout << "Time for " << n_metro << " Metropolis updates: " << metropolis_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for " << n_metro << " Metropolis updates: " << metropolis_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_heatbath != 0)
             {
-                Timer heatbath_timer;
+                // Timer heatbath_timer;
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
-                std::cout << "Time for " << n_heatbath << " heatbath updates: " << heatbath_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for " << n_heatbath << " heatbath updates: " << heatbath_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_hmc != 0)
             {
-                Timer hmc_timer;
+                // Timer hmc_timer;
                 HMC(n_hmc, accept_reject_enabled);
-                std::cout << "Time for one HMC trajectory: " << hmc_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for one HMC trajectory: " << hmc_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_orelax != 0)
             {
-                Timer overrelaxation_timer;
+                // Timer overrelaxation_timer;
                 // double action_before {SimulatedAction.Action(Gluon)};
                 // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
@@ -426,7 +426,7 @@ int main(int argc, char** argv)
                 // std::cout << "Action (before): " << action_before << std::endl;
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
-                std::cout << "Time for " << n_orelax << " OR updates: " << overrelaxation_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for " << n_orelax << " OR updates: " << overrelaxation_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_instanton_update != 0)
@@ -453,9 +453,9 @@ int main(int argc, char** argv)
             //-----
             if (n_count % expectation_period == 0)
             {
-                Timer observables_timer;
+                // Timer observables_timer;
                 Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
-                std::cout << "Time for calculating observables: " << observables_timer.GetTimeSeconds() << std::endl;
+                // std::cout << "Time for calculating observables: " << observables_timer.GetTimeSeconds() << std::endl;
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
@@ -545,9 +545,9 @@ int main(int argc, char** argv)
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            Timer metad_timer;
+            // Timer metad_timer;
             HMC_MetaD(n_hmc, accept_reject_enabled);
-            std::cout << "Time for meta update: " << metad_timer.GetTimeSeconds() << std::endl;
+            // std::cout << "Time for meta update: " << metad_timer.GetTimeSeconds() << "\n";
             if (distribution_parity_update(generator_rand))
             {
                 ParityUpdate(Gluon, Gluonsmeared1);
