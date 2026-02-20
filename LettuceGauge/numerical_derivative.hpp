@@ -149,7 +149,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     }
     CalculateClover<1, 1>(TestFieldSmeared[n_smear_meta], Clov);
     // Original clover derivative on maximally smeared field
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -176,7 +176,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     tmp *= i<floatT> * beta / 12.0 * Matrix_3x3::Identity();
 
     // Calculate the smeared Wilson action derivative
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)

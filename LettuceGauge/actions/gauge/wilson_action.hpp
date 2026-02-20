@@ -25,7 +25,7 @@ namespace WilsonAction
     {
         double S {0.0};
 
-        #pragma omp parallel for reduction(+: S)
+        #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: S)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)
@@ -49,7 +49,7 @@ namespace WilsonAction
         double S {0.0};
         // Matrix_SU3_double pl;
 
-        #pragma omp parallel for reduction(+: S)
+        #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: S)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)

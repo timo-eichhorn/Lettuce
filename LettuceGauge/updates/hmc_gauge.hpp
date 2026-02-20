@@ -397,7 +397,7 @@ namespace GaugeUpdates
 
             void RandomMomentum() const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -430,7 +430,7 @@ namespace GaugeUpdates
 
             void ReverseMomenta() const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -447,7 +447,7 @@ namespace GaugeUpdates
 
             void UpdateMomenta(const floatT epsilon, [[maybe_unused]] const bool perform_submeasurement = false /*Only for MetaD-HMC*/) const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -468,7 +468,7 @@ namespace GaugeUpdates
             {
                 if (friction_without_kick)
                 {
-                    #pragma omp parallel for
+                    #pragma omp parallel for collapse(omp_collapse_depth)
                     for (int t = 0; t < Nt; ++t)
                     for (int x = 0; x < Nx; ++x)
                     for (int y = 0; y < Ny; ++y)
@@ -482,7 +482,7 @@ namespace GaugeUpdates
                 }
                 else
                 {
-                    #pragma omp parallel for
+                    #pragma omp parallel for collapse(omp_collapse_depth)
                     for (int t = 0; t < Nt; ++t)
                     for (int x = 0; x < Nx; ++x)
                     for (int y = 0; y < Ny; ++y)
@@ -502,7 +502,7 @@ namespace GaugeUpdates
 
             void UpdateFields(const floatT epsilon) const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -525,7 +525,7 @@ namespace GaugeUpdates
             {
                 double potential_energy {Action.Action(U)};
                 double kinetic_energy   {0.0};
-                #pragma omp parallel for reduction(+: kinetic_energy)
+                #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: kinetic_energy)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)

@@ -23,13 +23,17 @@ private:
 public:
     Timer() noexcept(noexcept(ClockT::now())) : start_time(ClockT::now()) {}
 
+    void Reset()
+    {
+        start_time = ClockT::now();
+    }
+
     template<typename PeriodT = std::milli>
     [[nodiscard]]
     auto GetTime() const noexcept(noexcept(ClockT::now()))
     {
         using FloatDurationT = std::chrono::duration<double, PeriodT>;
         return std::chrono::duration_cast<FloatDurationT>(ClockT::now() - start_time).count();
-
     }
 
     [[nodiscard]]

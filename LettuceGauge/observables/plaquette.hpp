@@ -27,7 +27,7 @@ Matrix_SU3 Plaquette(const GaugeField& U, const site_coord& current_site, const 
 double PlaquetteSum(const GaugeField& U) noexcept
 {
     double Plaq_sum {0.0};
-    #pragma omp parallel for reduction(+: Plaq_sum)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Plaq_sum)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -46,7 +46,7 @@ double PlaquetteSum(const GaugeField& U) noexcept
 double PlaquetteSumTimeslice(const GaugeField& U, const int t) noexcept
 {
     double Plaq_sum {0.0};
-    #pragma omp parallel for reduction(+: Plaq_sum)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Plaq_sum)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
