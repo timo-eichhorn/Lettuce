@@ -42,6 +42,7 @@ template<typename T>
 inline constexpr T pi {static_cast<T>(3.14159265358979323846L)};
 
 using floatT = double;
+inline constexpr int omp_collapse_depth = 2;
 
 // Various global parameters (yes this is ugly)
 

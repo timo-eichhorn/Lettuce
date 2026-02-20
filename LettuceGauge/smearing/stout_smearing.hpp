@@ -33,7 +33,7 @@ void StoutSmearing4D(const GaugeField& U_unsmeared, GaugeField& U_smeared, const
     Matrix_3x3 B;
     Matrix_3x3 C;
 
-    #pragma omp parallel for private(Sigma, A, B, C)
+    #pragma omp parallel for collapse(omp_collapse_depth) private(Sigma, A, B, C)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -96,7 +96,7 @@ void StoutSmearing4DWithConstants(const GaugeField& U_unsmeared, GaugeField& U_s
     Matrix_3x3 B;
     Matrix_3x3 C;
 
-    #pragma omp parallel for private(st, A, B, C)
+    #pragma omp parallel for collapse(omp_collapse_depth) private(st, A, B, C)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -126,7 +126,7 @@ void CalculateLambda(const GaugeField& U, const GaugeField& Sigma, const GaugeFi
     Matrix_3x3 B;
     Matrix_3x3 C;
 
-    #pragma omp parallel for private(st, A, B, C)
+    #pragma omp parallel for collapse(omp_collapse_depth) private(st, A, B, C)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -155,7 +155,7 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
     // Instead, the relation between Sigma and F is given by:
     // Sigma' = U'^{\dagger} F (all at the same smearing level)
     // Since we usually work with F, we first need to multiply the incoming 'Sigma' with U'^{\dagger} to actually obtain the Sigma from the Peardon & Morningstar paper
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -174,7 +174,7 @@ void StoutForceRecursion(const GaugeField& U, const GaugeField& U_prev, GaugeFie
     // Lambda contains contributions from Sigma_prev, but as long as we call CalculateLambda() first everything is correct
     // Here, U refers to the field at smearing level n - 1, and U_prev to the field at smearing level n
 
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -250,7 +250,7 @@ struct StoutSmearingKernel
         // where we need parameters in both functions for the higher order integrators
         void UpdateFields(GaugeField& U, const GaugeField& Z) const noexcept
         {
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(omp_collapse_depth)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)
@@ -268,7 +268,7 @@ struct StoutSmearingKernel
 
         void CalculateForce(const GaugeField& U, GaugeField& Z) const noexcept
         {
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(omp_collapse_depth)
             for (int t = 0; t < Nt; ++t)
             for (int x = 0; x < Nx; ++x)
             for (int y = 0; y < Ny; ++y)

@@ -320,7 +320,7 @@ namespace GaugeUpdates
 
             void RandomMomentum() const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -353,7 +353,7 @@ namespace GaugeUpdates
 
             void ReverseMomenta() const noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -404,7 +404,7 @@ namespace GaugeUpdates
                 // deriv_time += end_deriv - start_deriv;
                 // Calculate clover derivative
                 // auto start_cderiv = std::chrono::high_resolution_clock::now();
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -439,7 +439,7 @@ namespace GaugeUpdates
             {
                 CalculateTopologicalForce(perform_submeasurement);
                 // auto start_momentum_update = std::chrono::high_resolution_clock::now();
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -460,7 +460,7 @@ namespace GaugeUpdates
 
             void UpdateGaugeMomenta(const floatT epsilon) noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -475,7 +475,7 @@ namespace GaugeUpdates
 
             void UpdateMetadynamicsMomenta(const floatT epsilon) noexcept
             {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -493,7 +493,7 @@ namespace GaugeUpdates
             void UpdateFields(const floatT epsilon) const noexcept
             {
                 // auto start_fields_update = std::chrono::high_resolution_clock::now();
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(omp_collapse_depth)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)
@@ -518,7 +518,7 @@ namespace GaugeUpdates
             {
                 double potential_energy {Action.Action(U)};
                 double kinetic_energy   {0.0};
-                #pragma omp parallel for reduction(+: kinetic_energy)
+                #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: kinetic_energy)
                 for (int t = 0; t < Nt; ++t)
                 for (int x = 0; x < Nx; ++x)
                 for (int y = 0; y < Ny; ++y)

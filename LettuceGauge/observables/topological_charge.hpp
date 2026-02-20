@@ -25,7 +25,7 @@
 double TopChargeCloverSlow(const GaugeField& U) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -98,7 +98,7 @@ double TopChargeCloverSlow(const GaugeField& U) noexcept
 double TopChargeClover(const GaugeField& U) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -203,7 +203,7 @@ double TopChargeClover(const GaugeField& U) noexcept
 double TopChargeClover(const FullTensor& Clover) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -234,7 +234,7 @@ double TopChargeClover(const FullTensor& Clover) noexcept
 double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
@@ -338,7 +338,7 @@ double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
 double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
@@ -367,7 +367,7 @@ double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
 double TopChargePlaquette(const GaugeField& U) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -419,7 +419,7 @@ double TopChargePlaquette(const GaugeField& U) noexcept
 double TopChargePlaquette2x2(const GaugeField& U) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -459,7 +459,7 @@ double TopChargePlaquette2x2(const GaugeField& U) noexcept
 double TopChargeCloverImproved(const GaugeField& U, const double c_plaq = 1.0 + 8.0 * 1.0/12.0/* = 5/3 */, const double c_rect = -1.0/12.0) noexcept
 {
     double Q {0.0};
-    #pragma omp parallel for reduction(+: Q)
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     for (int t = 0; t < Nt; ++t)
     for (int x = 0; x < Nx; ++x)
     for (int y = 0; y < Ny; ++y)
@@ -507,7 +507,7 @@ namespace TopologicalCharge
     // double PlaquetteChargeFromGaugeField(const GaugeField& U) noexcept
     // {
     //     doubleQ {0.0};
-    //     #pragma omp parallel for reduction(+: Q)
+    //     #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
     //     for (int t = 0; t < Nt; ++t)
     //     for (int x = 0; x < Nx; ++x)
     //     for (int y = 0; y < Ny; ++y)
@@ -547,7 +547,7 @@ namespace TopologicalCharge
     double CloverChargeFromFTensor(const FullTensor& F) noexcept
     {
         double Q {0.0};
-        #pragma omp parallel for reduction(+: Q)
+        #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
         for (int t = 0; t < Nt; ++t)
         for (int x = 0; x < Nx; ++x)
         for (int y = 0; y < Ny; ++y)

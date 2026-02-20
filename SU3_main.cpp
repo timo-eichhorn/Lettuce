@@ -40,6 +40,7 @@
 #include "LettuceGauge/updates/overrelaxation.hpp"
 #include "LettuceGauge/updates/parity_update.hpp"
 #include "LettuceGauge/updates/tempering.hpp"
+#include "LettuceGauge/utility/timer.hpp"
 //-----
 #include "PCG/pcg_random.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
@@ -114,35 +115,27 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
 
     // Unsmeared observables
-    // auto start_action = std::chrono::high_resolution_clock::now();
+    // Timer action_timer;
     // Action[0]                      = WilsonAction::ActionNormalized(Gluon);
-    // auto end_action = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> action_time = end_action - start_action;
-    // std::cout << "Time for calculating action: " << action_time.count() << std::endl;
+    // std::cout << "Time for calculating action: " << action_timer.GetTimeSeconds() << std::endl;
     ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
     Plaquette[0]                   = PlaquetteSum(Gluon);
 
     FieldStrengthTensor::Clover(Gluon, F_tensor);
-    // auto start_topcharge_timeslice = std::chrono::high_resolution_clock::now();
+    // Timer topcharge_timeslice_timer;
     for (int t = 0; t < Gluon.Length(0); ++t)
     {
         TopologicalChargeCloverTimeslice[0][t] = TopChargeCloverTimeslice(F_tensor, t);
     }
-    // auto end_topcharge_timeslice = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> topcharge_timeslice_time = end_topcharge_timeslice - start_topcharge_timeslice;
-    // std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_time.count() << std::endl;
-    // auto start_topcharge_symm = std::chrono::high_resolution_clock::now();
+    // std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_timer.GetTimeSeconds() << "\n";
+    // Timer topcharge_symm_timer;
     TopologicalChargeClover[0]     = std::accumulate(TopologicalChargeCloverTimeslice[0].cbegin(), TopologicalChargeCloverTimeslice[0].cend(), 0.0);
     // TopologicalChargeClover[0]     = TopChargeClover(Gluon);
     // TopologicalChargeClover[0]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-    // auto end_topcharge_symm = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> topcharge_symm_time = end_topcharge_symm - start_topcharge_symm;
-    // std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_time.count() << std::endl;
-    // auto start_topcharge_plaq = std::chrono::high_resolution_clock::now();
+    // std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_timer.GetTimeSeconds() << "\n";
+    // Timer topcharge_plaq_timer;
     TopologicalChargePlaquette[0]  = TopChargePlaquette(Gluon);
-    // auto end_topcharge_plaq = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> topcharge_plaq_time = end_topcharge_plaq - start_topcharge_plaq;
-    // std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_time.count() << std::endl;
+    // std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_timer.GetTimeSeconds() << "\n";
 
     FieldStrengthTensor::MakeComponentsTraceless(F_tensor);
     for (int t = 0; t < Gluon.Length(0); ++t)
@@ -153,29 +146,21 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // EClover[0]                     = EnergyDensity::Clover(F_tensor);
     EClover[0]                     = std::accumulate(ECloverTimeslice[0].cbegin(), ECloverTimeslice[0].cend(), 0.0);
 
-    // auto start_wilson = std::chrono::high_resolution_clock::now();
+    // Timer wilson_timer;
     WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
-    // auto end_wilson = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> wilson_time = end_wilson - start_wilson;
-    // std::cout << "Time for calculating wilson 2: " << wilson_time.count() << std::endl;
+    // std::cout << "Time for calculating wilson 2: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    // start_wilson = std::chrono::high_resolution_clock::now();
+    // wilson_timer.Reset();
     WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
-    // end_wilson = std::chrono::high_resolution_clock::now();
-    // wilson_time = end_wilson - start_wilson;
-    // std::cout << "Time for calculating wilson 4: " << wilson_time.count() << std::endl;
+    // std::cout << "Time for calculating wilson 4: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    // start_wilson = std::chrono::high_resolution_clock::now();
+    // wilson_timer.Reset();
     WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
-    // end_wilson = std::chrono::high_resolution_clock::now();
-    // wilson_time = end_wilson - start_wilson;
-    // std::cout << "Time for calculating wilson 8: " << wilson_time.count() << std::endl;
+    // std::cout << "Time for calculating wilson 8: " << wilson_timer.GetTimeSeconds() << "\n";
 
-    // auto start_polyakov = std::chrono::high_resolution_clock::now();
+    // Timer polyakov_timer;
     PLoop[0]                       = PolyakovLoop(Gluon);
-    // auto end_polyakov = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> polyakov_time = end_polyakov - start_polyakov;
-    // std::cout << "Time for calculating Polyakov: " << polyakov_time.count() << std::endl;
+    // std::cout << "Time for calculating Polyakov: " << polyakov_timer.GetTimeSeconds() << "\n";
 
     //-----
     // Measurements involving smearing
@@ -184,11 +169,9 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         // Apply smearing (first call is distinct from the calls afterwards, since we need to copy the unsmeared gaugefield here, but not later on)
         if (smear_count == 1)
         {
-            // auto start_smear = std::chrono::high_resolution_clock::now();
+            // Timer smear_timer;
             Flow(n_smear_skip);
-            // auto end_smear = std::chrono::high_resolution_clock::now();
-            // std::chrono::duration<double> smear_time = end_smear - start_smear;
-            // std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_time.count() << std::endl;
+            // std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_timer.GetTimeSeconds() << "\n";
         }
         else
         {
@@ -377,6 +360,7 @@ int main(int argc, char** argv)
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
     // std::chrono::duration<double> overall_time {0.0};
+    Timer overall_timer;
     // Regular updates without Metadynamics
     if constexpr(!metadynamics_enabled)
     {
@@ -386,11 +370,9 @@ int main(int argc, char** argv)
             datalog << "[HMC start thermalization]\n";
             for (int n_count = 0; n_count < n_therm; ++n_count)
             {
-                // auto start_therm_hmc {std::chrono::high_resolution_clock::now()};
+                // Timer hmc_thermalization_timer;
                 HMC(2 * n_hmc, false);
-                // auto end_therm_hmc {std::chrono::high_resolution_clock::now()};
-                // std::chrono::duration<double> hmc_therm_time {end_therm_hmc - start_therm_hmc};
-                // std::cout << "Time for thermalization sweep (HMC): " << hmc_therm_time.count() << std::endl;
+                // std::cout << "Time for thermalization sweep (HMC): " << hmc_thermalization_timer.GetTimeSeconds() << "\n";
             }
             datalog << "[HMC end thermalization]\n" << std::endl;
         }
@@ -398,12 +380,10 @@ int main(int argc, char** argv)
         {
             for (int n_count = 0; n_count < n_therm; ++n_count)
             {
-                // auto start_therm {std::chrono::high_resolution_clock::now()};
+                // Timer thermalization_timer;
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
-                // auto end_therm {std::chrono::high_resolution_clock::now()};
-                // std::chrono::duration<double> therm_time {end_therm - start_therm};
-                // std::cout << "Time for thermalization sweep (local): " << therm_time.count() << std::endl;
+                // std::cout << "Time for thermalization sweep (local): " << thermalization_timer.GetTimeSeconds() << "\n";
             }
         }
 
@@ -411,7 +391,7 @@ int main(int argc, char** argv)
         {
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
-                // auto start_update_metro {std::chrono::high_resolution_clock::now()};
+                // Timer metropolis_timer;
                 MetropolisKernel Metropolis(Gluon, SimulatedAction, global_prng, multi_hit, metropolis_epsilon);
                 Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
@@ -419,34 +399,26 @@ int main(int argc, char** argv)
                 // Metropolis.AdjustEpsilon(acceptance_count);
                 metropolis_epsilon = Metropolis.GetEpsilon();
                 acceptance_count = 0;
-                // auto end_update_metro {std::chrono::high_resolution_clock::now()};
-                // std::chrono::duration<double> update_time_metro {end_update_metro - start_update_metro};
-                // std::cout << "Time for " << n_metro << " Metropolis updates: " << update_time_metro.count() << std::endl;
+                // std::cout << "Time for " << n_metro << " Metropolis updates: " << metropolis_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_heatbath != 0)
             {
-                // auto start_update_heatbath {std::chrono::high_resolution_clock::now()};
+                // Timer heatbath_timer;
                 Iterator::Checkerboard4(Heatbath, n_heatbath);
-                // auto end_update_heatbath {std::chrono::high_resolution_clock::now()};
-                // std::chrono::duration<double> update_time_heatbath {end_update_heatbath - start_update_heatbath};
-                // std::cout << "Time for " << n_heatbath << " heatbath updates: " << update_time_heatbath.count() << std::endl;
-                // overall_time += update_time_heatbath;
+                // std::cout << "Time for " << n_heatbath << " heatbath updates: " << heatbath_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_hmc != 0)
             {
-                // auto start_update_hmc {std::chrono::high_resolution_clock::now()};
+                // Timer hmc_timer;
                 HMC(n_hmc, accept_reject_enabled);
-                // auto end_update_hmc {std::chrono::high_resolution_clock::now()};
-                // std::chrono::duration<double> update_time_hmc {end_update_hmc - start_update_hmc};
-                // std::cout << "Time for one HMC trajectory: " << update_time_hmc.count() << std::endl;
-                // overall_time += update_time_hmc;
+                // std::cout << "Time for one HMC trajectory: " << hmc_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_orelax != 0)
             {
-                // auto start_update_or = std::chrono::high_resolution_clock::now();
+                // Timer overrelaxation_timer;
                 // double action_before {SimulatedAction.Action(Gluon)};
                 // Iterator::CheckerboardSum(OverrelaxationDirect, acceptance_count_or, n_orelax);
                 Iterator::Checkerboard4(OverrelaxationSubgroup, n_orelax);
@@ -454,10 +426,7 @@ int main(int argc, char** argv)
                 // std::cout << "Action (before): " << action_before << std::endl;
                 // std::cout << "Action (after): " << action_after << std::endl;
                 // std::cout << action_after - action_before << std::endl;
-                // auto end_update_or = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> update_time_or {end_update_or - start_update_or};
-                // std::cout << "Time for " << n_orelax << " OR updates: " << update_time_or.count() << std::endl;
-                // overall_time += update_time_or;
+                // std::cout << "Time for " << n_orelax << " OR updates: " << overrelaxation_timer.GetTimeSeconds() << "\n";
             }
             //-----
             if constexpr(n_instanton_update != 0)
@@ -484,11 +453,9 @@ int main(int argc, char** argv)
             //-----
             if (n_count % expectation_period == 0)
             {
-                // auto start_observable = std::chrono::high_resolution_clock::now();
+                // Timer observables_timer;
                 Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
-                // auto end_observable = std::chrono::high_resolution_clock::now();
-                // std::chrono::duration<double> observable_time {end_observable - start_observable};
-                // std::cout << "Time for calculating observables: " << observable_time.count() << std::endl;
+                // std::cout << "Time for calculating observables: " << observables_timer.GetTimeSeconds() << std::endl;
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
@@ -578,12 +545,9 @@ int main(int argc, char** argv)
 
         for (int n_count = 0; n_count < n_run; ++n_count)
         {
-            // auto start_update_meta = std::chrono::high_resolution_clock::now();
+            // Timer metad_timer;
             HMC_MetaD(n_hmc, accept_reject_enabled);
-            // auto end_update_meta = std::chrono::high_resolution_clock::now();
-            // std::chrono::duration<double> update_time_meta {end_update_meta - start_update_meta};
-            // std::cout << "Time for meta update: " << update_time_meta.count() << std::endl;
-            // overall_time += update_time_meta;
+            // std::cout << "Time for meta update: " << metad_timer.GetTimeSeconds() << "\n";
             if (distribution_parity_update(generator_rand))
             {
                 ParityUpdate(Gluon, Gluonsmeared1);
@@ -698,8 +662,8 @@ int main(int argc, char** argv)
     std::chrono::duration<double> elapsed_seconds {end - startcalc};
     std::time_t end_time {std::chrono::system_clock::to_time_t(end)};
 
-    // std::cout << "Overall time:    " << overall_time.count() << std::endl;
-    // std::cout << "Normalized time: " << overall_time.count() / n_run << std::endl;
+    std::cout << "Overall time:    " << overall_timer.GetTimeSeconds() << std::endl;
+    std::cout << "Normalized time: " << overall_timer.GetTimeSeconds() / n_run << std::endl;
 
     //-----
     // Save final configuration and PRNG state
