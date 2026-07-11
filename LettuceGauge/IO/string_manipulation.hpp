@@ -8,13 +8,14 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
-#include <algorithm>
 #include <string>
+#include <string_view>
 //----------------------------------------
 // Standard C headers
 // ...
 
-std::size_t FindTokenEnd(const std::string_view str, const std::string_view token)
+[[nodiscard]]
+inline std::size_t FindTokenEnd(const std::string_view str, const std::string_view token)
 {
     // First check for leading whitespaces (essentially std::isspace)
     std::size_t first_nonwhitespace {str.find_first_not_of(" \f\n\r\t\v")};
@@ -35,7 +36,7 @@ std::size_t FindTokenEnd(const std::string_view str, const std::string_view toke
 }
 
 // C++ strings suck, so define this helper function
-void LeftErase(std::string& str, const std::string& erase)
+inline void LeftErase(std::string& str, const std::string& erase)
 {
     std::size_t pos = str.find(erase);
     if (pos != std::string::npos)
@@ -46,7 +47,7 @@ void LeftErase(std::string& str, const std::string& erase)
 
 // Search the string 'str' for 'erase' starting and delete everything to the left of 'erase'
 // If including == true, erase everything including 'erase', otherwise only until 'erase'
-void EraseUntil(std::string& str, const std::string& erase, const bool including = true)
+inline void EraseUntil(std::string& str, const std::string& erase, const bool including = true)
 {
     std::size_t pos = str.find(erase);
     if (pos != std::string::npos)
@@ -82,49 +83,49 @@ T ConvertStringTo(const std::string& str) = delete;
 // Fall back to safer specializations if available
 
 template<>
-int ConvertStringTo(const std::string& str)
+inline int ConvertStringTo(const std::string& str)
 {
     return std::stoi(str);
 }
 
 template<>
-long ConvertStringTo(const std::string& str)
+inline long ConvertStringTo(const std::string& str)
 {
     return std::stol(str);
 }
 
 template<>
-long long ConvertStringTo(const std::string& str)
+inline long long ConvertStringTo(const std::string& str)
 {
     return std::stoll(str);
 }
 
 template<>
-unsigned long ConvertStringTo(const std::string& str)
+inline unsigned long ConvertStringTo(const std::string& str)
 {
     return std::stoul(str);
 }
 
 template<>
-unsigned long long ConvertStringTo(const std::string& str)
+inline unsigned long long ConvertStringTo(const std::string& str)
 {
     return std::stoull(str);
 }
 
 template<>
-float ConvertStringTo(const std::string& str)
+inline float ConvertStringTo(const std::string& str)
 {
     return std::stof(str);
 }
 
 template<>
-double ConvertStringTo(const std::string& str)
+inline double ConvertStringTo(const std::string& str)
 {
     return std::stod(str);
 }
 
 template<>
-long double ConvertStringTo(const std::string& str)
+inline long double ConvertStringTo(const std::string& str)
 {
     return std::stold(str);
 }

@@ -24,7 +24,7 @@
 // Standard C headers
 // ...
 
-std::string program_version = "SU(3)_version_1.3";
+inline std::string program_version = "SU(3)_version_1.3";
 
 inline constexpr int Ndim   {4};
 inline constexpr int Ncolor {3};
@@ -47,16 +47,16 @@ inline constexpr int omp_collapse_depth = 2;
 // Various global parameters (yes this is ugly)
 
 // Run parameters
-int n_run;                                                  // Number of runs
-int expectation_period;                                     // Number of updates between calculation of expectation values
-floatT beta;                                                // Coupling
+inline int n_run;                                           // Number of runs
+inline int expectation_period;                              // Number of updates between calculation of expectation values
+inline floatT beta;                                         // Coupling
 inline int n_smear {10};                                    // Number of smearing steps (total amount of smearing steps is actually n_smear * n_smear_skip)
 inline int n_smear_skip {10};                               // Number of smearing steps to skip between measurements
 inline floatT rho_stout {0.10};                             // Stout smearing parameter
 inline floatT rho_stout_metadynamics {0.12};                // Stout smearing parameter for Metadynamics CV
 // Checkpointing
-int checkpoint_period {500};                                // Number of updates between checkpoints (both for the configuration and the PRNG state)
-int n_checkpoint_backups {2};                               // Number of rotating checkpoints to use
+inline int checkpoint_period {500};                         // Number of updates between checkpoints (both for the configuration and the PRNG state)
+inline int n_checkpoint_backups {2};                        // Number of rotating checkpoints to use
 inline bool extend_run {false};                             // Set to true only if extending an existing run (among other things skips thermalization)
 // Update algorithm related parameters
 inline int n_therm {20};                                     // Number of update sweeps before starting actual update loop (the type of update sweeps is specified below)
@@ -76,37 +76,37 @@ inline constexpr bool tempering_enabled {false};             // Enable metadynam
 inline constexpr int tempering_nonmetadynamics_sweeps {10};  // Number of non metadynamics update sweeps for every metadynamics update during tempering
 inline constexpr int tempering_swap_period {1};             // Number of update sweeps between parallel tempering swap attempts
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
-double DeltaH;                                              // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
-double DeltaVTempering;                                     // Metapotential change of tempering swap proposal
-double DeltaSInstanton;                                     // Action change of instanton update proposal (see above)
-double JacobianInstanton;                                   // Jacobian during instanton update with gradient flow
+inline double DeltaH;                                       // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
+inline double DeltaVTempering;                              // Metapotential change of tempering swap proposal
+inline double DeltaSInstanton;                              // Action change of instanton update proposal (see above)
+inline double JacobianInstanton;                            // Jacobian during instanton update with gradient flow
 // Directory and logfile paths
-std::string old_maindirectory;                              // Main directory of previous run we wish to extend
-std::string maindirectory;                                  // Main directory containing all other subdirectories and files
-std::string checkpointdirectory;                            // Default directory to save checkpoints to (configs and PRNG states)
-std::string logfilepath;                                    // Filepath (log)
-std::string parameterfilepath;                              // Filepath (parameters)
-std::string hmclogfilepath;                                 // Filepath (HMC log)
-std::string metapotentialfilepath;                          // Filepath (metapotential)
-std::string logfilepath_temper;                             // Filepath (log for run with bias potential during PT-MetaD runs)
-auto start {std::chrono::system_clock::now()};              // Start time
-std::ofstream datalog;                                      // Output stream to save data
-std::ofstream wilsonlog;                                    // Output stream to save data (Wilson loops)
+inline std::string old_maindirectory;                       // Main directory of previous run we wish to extend
+inline std::string maindirectory;                           // Main directory containing all other subdirectories and files
+inline std::string checkpointdirectory;                     // Default directory to save checkpoints to (configs and PRNG states)
+inline std::string logfilepath;                             // Filepath (log)
+inline std::string parameterfilepath;                       // Filepath (parameters)
+inline std::string hmclogfilepath;                          // Filepath (HMC log)
+inline std::string metapotentialfilepath;                   // Filepath (metapotential)
+inline std::string logfilepath_temper;                      // Filepath (log for run with bias potential during PT-MetaD runs)
+inline auto start {std::chrono::system_clock::now()};       // Start time
+inline std::ofstream datalog;                               // Output stream to save data
+inline std::ofstream wilsonlog;                             // Output stream to save data (Wilson loops)
 // PRNG stuff
-pcg_extras::seed_seq_from<std::random_device> seed_source;  // Seed source to seed PRNGs
+inline pcg_extras::seed_seq_from<std::random_device> seed_source;  // Seed source to seed PRNGs
 #ifdef FIXED_SEED                                           // PRNG for random coordinates and probabilites
-pcg64 generator_rand(1);
+inline pcg64 generator_rand(1);
 #else
-pcg64 generator_rand(seed_source);
+inline pcg64 generator_rand(seed_source);
 #endif
-PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(generator_rand);
+inline PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(generator_rand);
 // For tracking various acceptance rates of update algorithms
-uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
-uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
-uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
-uint_fast64_t acceptance_count_metadynamics_hmc  {0};       // MetaD-HMC acceptance rate
-uint_fast64_t acceptance_count_tempering         {0};       // Parallel tempering swap acceptance rate
-uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
+inline uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
+inline uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
+inline uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
+inline uint_fast64_t acceptance_count_metadynamics_hmc  {0};       // MetaD-HMC acceptance rate
+inline uint_fast64_t acceptance_count_tempering         {0};       // Parallel tempering swap acceptance rate
+inline uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
 
 // Matrix_NxN is the same type as MatrixSUN, but the different names may be useful to explicitly indicate which objects are group elements and which are not
 using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2, Eigen::RowMajor>;

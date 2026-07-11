@@ -23,7 +23,7 @@ private:
 public:
     Timer() noexcept(noexcept(ClockT::now())) : start_time(ClockT::now()) {}
 
-    void Reset()
+    void Reset() noexcept(noexcept(ClockT::now()))
     {
         start_time = ClockT::now();
     }

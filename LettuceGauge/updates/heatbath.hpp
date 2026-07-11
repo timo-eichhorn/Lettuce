@@ -44,7 +44,7 @@ struct HeatbathKernel
         //       Fabricius-Haan/Kennedy-Pendleton algorithm)?
         // SU(2) heat bath which can be used in combination with a Cabibbo-Marinari decomposition to obtain a SU(N) pseudo heat bath algorithm
         [[nodiscard]]
-        SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT prefactor, const link_coord& current_link, const int max_iteration) const noexcept
+        SU2_comp<floatT> HeatbathSU2(const SU2_comp<floatT>& A, const floatT update_prefactor, const link_coord& current_link, const int iteration_limit) const noexcept
         {
             // Determinant of staple as norm to project staple back to SU(2)
             floatT           a_norm {static_cast<floatT>(1.0) / A.det_sqrt()};
@@ -63,14 +63,14 @@ struct HeatbathKernel
                 // Factor 0.25 to get the correct total prefactor
                 // For SU(2), the prefactor is 0.5 / beta
                 // For SU(3), the prefactor is 0.75 / beta
-                // floatT lambda_sq {static_cast<floatT>(-0.25 * prefactor * a_norm) * (x1 + x2 * x2 * x3)};
-                lambda_sq = static_cast<floatT>(-0.25 * prefactor * a_norm) * (x1 + x2 * x2 * x3);
+                // floatT lambda_sq {static_cast<floatT>(-0.25 * update_prefactor * a_norm) * (x1 + x2 * x2 * x3)};
+                lambda_sq = static_cast<floatT>(-0.25 * update_prefactor * a_norm) * (x1 + x2 * x2 * x3);
                 //-----
                 // Correct for factor sqrt(1 - lambda_sq) in probability distribution via accept-reject step
                 // floatT r0 {prng.UniformReal(current_link)};
                 r0 = prng.UniformReal(current_link);
                 // After the maximum number of iterations is reached stop and return the unit matrix, i.e., don't update the link
-                if (iteration_count > max_iteration)
+                if (iteration_count > iteration_limit)
                 {
                     return {1.0, 0.0};
                 }

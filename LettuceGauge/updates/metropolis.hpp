@@ -49,7 +49,7 @@ struct MetropolisKernel
             int        accept_count {0};
 
             // Perform multiple hits on the same link
-            for (int n_hit = 0; n_hit < multi_hit; ++n_hit)
+            for (int hit_count = 0; hit_count < n_hit; ++hit_count)
             {
                 // auto start_multihit = std::chrono::high_resolution_clock::now();
                 int        choice   {prng.UniformInt(current_link)};

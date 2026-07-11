@@ -9,15 +9,22 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
+#include <array>
+#include <chrono>
 #include <complex>
 #include <filesystem>
+#include <fstream>
 #include <ios>
+#include <iostream>
+#include <sstream>
 #include <string>
 // #include <fstream>
 //----------------------------------------
 // Standard C headers
 #include <cstddef>
 #include <cstdio>
+#include <cstdint>
+#include <cstring>
 
 //+---------------------------------------------------------------------------------+
 //| This file provides functions to load and save configurations stored in the BMW  |
@@ -88,7 +95,8 @@ struct Checksum_Adler64
         final = (B_copy << 32) + A_copy;
     }
 
-    std::string ReturnString() noexcept
+    [[nodiscard]]
+    inline std::string ReturnString() noexcept
     {
         if (final == Adler64_prime)
         {
@@ -119,7 +127,8 @@ void SwapEndianness(T* in) noexcept
 //-----
 // Functions for conventional BMW format (first two rows/12 reals)
 
-Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
+[[nodiscard]]
+inline Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
 {
     // BMW format stores only the first two rows
     Matrix_SU3 tmp;
@@ -133,7 +142,8 @@ Matrix_SU3 ReconstructMatBMW(const std::array<double, 12>& buffer) noexcept
     return tmp;
 }
 
-std::array<double, 12> DeconstructMatBMW(const Matrix_SU3& link) noexcept
+[[nodiscard]]
+inline std::array<double, 12> DeconstructMatBMW(const Matrix_SU3& link) noexcept
 {
     // BMW format stores only the first two rows
     return {std::real(link(0, 0)), std::imag(link(0, 0)), std::real(link(0, 1)), std::imag(link(0, 1)), std::real(link(0, 2)), std::imag(link(0, 2)),
@@ -304,7 +314,6 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
     config_ofstream.open(filename, std::ios::trunc | std::ios::binary);
     const std::size_t     header_block_size {4096};
     char                  header_block[header_block_size];
-    int                   header_offset {0};
     Checksum_Adler64      checksum;
 
     // Write header
@@ -339,11 +348,21 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
     std::memset(header_block, '\n', header_block_size);
     // First header line
     site_coord lattice_lengths {U.Shape()};
-    header_offset = std::sprintf(header_block, "#BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    int header_offset = std::snprintf(header_block, header_block_size, "#BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    if (header_offset < 0 or static_cast<std::size_t>(header_offset) >= header_block_size)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "BMW header exceeds the available buffer!" << Lettuce::Color::Reset << "\n";
+        return false;
+    }
     // Additional header comments
     // TODO: Insert git hash here
-    header_offset += std::sprintf(header_block + header_offset, "\nGenerated with Lettuce\n");
-    // TODO: Check if header length is exceeded (perhaps better if we work with a string here instead of a char array?)
+    const std::size_t remaining_header_size {header_block_size - static_cast<std::size_t>(header_offset)};
+    const int         comment_size          {std::snprintf(header_block + header_offset, remaining_header_size, "\nGenerated with Lettuce\n")};
+    if (comment_size < 0 or static_cast<std::size_t>(comment_size) >= remaining_header_size)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "BMW header comments exceed the available buffer!" << Lettuce::Color::Reset << "\n";
+        return false;
+    }
     // Write header to file
     config_ofstream.write(header_block, header_block_size);
     auto end_write_header {std::chrono::high_resolution_clock::now()};
@@ -383,7 +402,8 @@ bool SaveConfigBMW(const GaugeField& U, const std::string& filename, const bool 
 //-----
 // Functions for modified BMW format (all three rows/18 reals)
 
-Matrix_SU3 ReconstructMatBMWFull(const std::array<double, 18>& buffer) noexcept
+[[nodiscard]]
+inline Matrix_SU3 ReconstructMatBMWFull(const std::array<double, 18>& buffer) noexcept
 {
     // BMW format stores only the first two rows
     Matrix_SU3 tmp;
@@ -393,7 +413,8 @@ Matrix_SU3 ReconstructMatBMWFull(const std::array<double, 18>& buffer) noexcept
     return tmp;
 }
 
-std::array<double, 18> DeconstructMatBMWFull(const Matrix_SU3& link) noexcept
+[[nodiscard]]
+inline std::array<double, 18> DeconstructMatBMWFull(const Matrix_SU3& link) noexcept
 {
     // BMW format stores only the first two rows
     return {std::real(link(0, 0)), std::imag(link(0, 0)), std::real(link(0, 1)), std::imag(link(0, 1)), std::real(link(0, 2)), std::imag(link(0, 2)),
@@ -563,7 +584,6 @@ bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const b
     config_ofstream.open(filename, std::ios::trunc | std::ios::binary);
     const std::size_t     header_block_size {4096};
     char                  header_block[header_block_size];
-    int                   header_offset {0};
     Checksum_Adler64      checksum;
 
     // Write header
@@ -598,11 +618,21 @@ bool SaveConfigBMWFull(const GaugeField& U, const std::string& filename, const b
     std::memset(header_block, '\n', header_block_size);
     // First header line
     site_coord lattice_lengths {U.Shape()};
-    header_offset = std::sprintf(header_block, "#18BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    int header_offset = std::snprintf(header_block, header_block_size, "#18BMW %d %d %d %d %s\n", lattice_lengths[1], lattice_lengths[2], lattice_lengths[3], lattice_lengths[0], checksum_string.c_str());
+    if (header_offset < 0 or static_cast<std::size_t>(header_offset) >= header_block_size)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "BMW header exceeds the available buffer!" << Lettuce::Color::Reset << "\n";
+        return false;
+    }
     // Additional header comments
     // TODO: Insert git hash here
-    header_offset += std::sprintf(header_block + header_offset, "\nGenerated with Lettuce\n");
-    // TODO: Check if header length is exceeded (perhaps better if we work with a string here instead of a char array?)
+    const std::size_t remaining_header_size {header_block_size - static_cast<std::size_t>(header_offset)};
+    const int         comment_size          {std::snprintf(header_block + header_offset, remaining_header_size, "\nGenerated with Lettuce\n")};
+    if (comment_size < 0 or static_cast<std::size_t>(comment_size) >= remaining_header_size)
+    {
+        std::cerr << Lettuce::Color::BoldRed << "BMW header comments exceed the available buffer!" << Lettuce::Color::Reset << "\n";
+        return false;
+    }
     // Write header to file
     config_ofstream.write(header_block, header_block_size);
     auto end_write_header {std::chrono::high_resolution_clock::now()};

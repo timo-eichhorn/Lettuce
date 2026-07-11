@@ -295,7 +295,7 @@ struct GradientFlowKernel
         //     }
         // }
 
-        void CalculateZ(const GaugeField& U, GaugeField& Z, const floatT epsilon) const noexcept
+        void CalculateZ(const GaugeField& U, GaugeField& Z, const floatT step_size) const noexcept
         {
             #pragma omp parallel for collapse(omp_collapse_depth)
             for (int t = 0; t < Nt; ++t)
@@ -308,7 +308,7 @@ struct GradientFlowKernel
                     link_coord current_link {t, x, y, z, mu};
                     Matrix_3x3 st {Action.Staple(U, current_link)};
                     Matrix_3x3 A  {st * U(current_link).adjoint()};
-                    Z(current_link) = epsilon * SU3::Projection::Algebra(A);
+                    Z(current_link) = step_size * SU3::Projection::Algebra(A);
                 }
             }
         }

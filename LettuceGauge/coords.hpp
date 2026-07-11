@@ -8,11 +8,10 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
-#include <iostream>
 #include <ostream>
 //----------------------------------------
 // Standard C headers
-// ...
+#include <cstdlib>
 
 enum class link_orientation : bool {backwards = false, forwards = true};
 

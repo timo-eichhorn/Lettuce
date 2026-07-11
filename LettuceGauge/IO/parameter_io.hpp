@@ -10,6 +10,7 @@
 // ...
 //----------------------------------------
 // Standard C++ headers
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <typeinfo>
+#include <vector>
 //----------------------------------------
 // Standard C headers
 #include <cstddef>
@@ -82,7 +84,7 @@ struct NamedParameter
 //     NamedParameter<double> metro_target_acceptance          {"metro_target_acceptance"};
 // };
 
-void ExtendRun(const std::filesystem::path& old_run_directory)
+inline void ExtendRun(const std::filesystem::path& old_run_directory)
 {
     // TODO: This function currently only supports conventional runs, not MetaD or PT-MetaD runs
     //       Need to also check for metapotential.txt and log_temper.txt in those cases
@@ -206,7 +208,8 @@ void ExtendRun(const std::filesystem::path& old_run_directory)
 //-----
 // Check if specified command line argument exists
 
-bool CheckForCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view argument)
+[[nodiscard]]
+inline bool CheckForCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view argument)
 {
     auto string_contains_argument = [argument](std::string_view s){return s.starts_with(argument);};
     return std::find_if(command_line_arguments.cbegin(), command_line_arguments.cend(), string_contains_argument) != command_line_arguments.cend();
@@ -215,7 +218,8 @@ bool CheckForCommandLineArgument(const std::vector<std::string>& command_line_ar
 //-----
 // Get parameter from specified command line argument (if it exists)
 
-std::string ExtractCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view token)
+[[nodiscard]]
+inline std::string ExtractCommandLineArgument(const std::vector<std::string>& command_line_arguments, const std::string_view token)
 {
     for (std::string_view element_view : command_line_arguments)
     {
@@ -225,7 +229,7 @@ std::string ExtractCommandLineArgument(const std::vector<std::string>& command_l
             return std::string(element_view.substr(pos));
         }
     }
-    return std::string("");
+    return {};
 }
 
 //-----
@@ -248,7 +252,7 @@ void ValidatedIn(const std::string& message, T& target)
     }
 }
 
-void PrintVersionBanner()
+inline void PrintVersionBanner()
 {
     std::cout << Lettuce::Color::BoldBlue << "\n\n+------------------------------------------------+\n";
     // TODO: Fix alignment
@@ -264,7 +268,7 @@ void PrintVersionBanner()
 //       to the terminal and writing to files.
 // TODO: In the future, replace this with a function (or two functions) that can read parameters either from the terminal or from a file
 
-void Configuration(const std::vector<std::string>& command_line_arguments)
+inline void Configuration(const std::vector<std::string>& command_line_arguments)
 {
     PrintVersionBanner();
     // TODO: Once we use the NamedParameter structs we should probably rewrite the parameter scanning below
@@ -332,7 +336,7 @@ void Configuration(const std::vector<std::string>& command_line_arguments)
     std::cout << "tempering_enabled is "                << tempering_enabled      << ".\n";
 }
 
-bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
+inline bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
 {
     std::filesystem::path filepath(filepath_string);
     if (!std::filesystem::exists(filepath))
@@ -369,7 +373,7 @@ bool OpenFile(std::ifstream& filestream, const std::string_view filepath_string)
 //     std::cout << "Read " << token_name << " = " <<  << "\n";
 // }
 
-void ReadParameters(std::string_view parameterfilepath)
+inline void ReadParameters(const std::string_view parameterfilepath)
 {
     std::ifstream pstream;
     if (!OpenFile(pstream, parameterfilepath))
@@ -488,7 +492,7 @@ void ReadParameters(std::string_view parameterfilepath)
 //-----
 // Writes simulation parameters to files
 
-void SaveParameters(std::string filename, const std::string& starttimestring)
+inline void SaveParameters(std::string filename, const std::string& starttimestring)
 {
     std::ofstream stream(filename, std::fstream::out | std::fstream::app);
     stream << std::setprecision(12) << std::fixed;
@@ -548,7 +552,7 @@ void SaveParameters(std::string filename, const std::string& starttimestring)
 //-----
 // Creates directories and files to store data
 
-void CreateFiles()
+inline void CreateFiles()
 {
     std::string LatticeSizeString    {std::to_string(Nt) + "x" + std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz)};
     std::string betaString           {std::to_string(beta)};
