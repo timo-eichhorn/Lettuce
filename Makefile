@@ -16,40 +16,40 @@ MAKEFLAGS   += --warn-undefined-variables --no-builtin-rules
 CXX ?= icpx
 # Override Make's default if necessary
 ifeq ($(origin CXX), default)
-	CXX := icpx
+    CXX := icpx
 endif
 
 # Compiling on and for Apple Silicon requires different flags
 ARCH_NAME := $(shell uname -m)
 ifeq ($(ARCH_NAME),arm64)
-	CXX     := clang++
-	OMPFLAG := -Xclang -fopenmp -lomp
+    CXX     := clang++
+    OMPFLAG := -Xclang -fopenmp -lomp
 else
-	# Try fallbacks (clang++ and g++) only if the user did NOT override CXX
-	ifeq ($(origin CXX), file)
-		ifeq (,$(shell command -v $(CXX) 2>/dev/null))
-			$(warning Default compiler $(CXX) not found. Trying clang++...)
-			CXX := clang++
-			ifeq (,$(shell command -v $(CXX) 2>/dev/null))
-				$(warning Compiler clang++ not found. Trying g++...)
-				CXX := g++
-				ifeq (,$(shell command -v $(CXX) 2>/dev/null))
-					$(error No suitable C++ compiler found.)
-				endif
-			endif
-		endif
-	endif
-	# Assign correct OMPFLAG flag based on compiler
-	ifneq (,$(filter icpx%,$(CXX)))
-		OMPFLAG := -fiopenmp
-	else ifneq (,$(filter g++%,$(CXX)))
-		OMPFLAG := -fopenmp
-	else ifneq (,$(filter clang++%,$(CXX)))
-		OMPFLAG := -fopenmp
-	else
-		$(warning Unsupported compiler: $(CXX) - You may encounter errors when trying to compile!)
-		OMPFLAG :=
-	endif
+    # Try fallbacks (clang++ and g++) only if the user did NOT override CXX
+    ifeq ($(origin CXX), file)
+        ifeq (,$(shell command -v $(CXX) 2>/dev/null))
+            $(warning Default compiler $(CXX) not found. Trying clang++...)
+            CXX := clang++
+            ifeq (,$(shell command -v $(CXX) 2>/dev/null))
+                $(warning Compiler clang++ not found. Trying g++...)
+                CXX := g++
+                ifeq (,$(shell command -v $(CXX) 2>/dev/null))
+                    $(error No suitable C++ compiler found.)
+                endif
+            endif
+        endif
+    endif
+    # Assign correct OMPFLAG flag based on compiler
+    ifneq (,$(filter icpx%,$(CXX)))
+        OMPFLAG := -fiopenmp
+    else ifneq (,$(filter g++%,$(CXX)))
+        OMPFLAG := -fopenmp
+    else ifneq (,$(filter clang++%,$(CXX)))
+        OMPFLAG := -fopenmp
+    else
+        $(warning Unsupported compiler: $(CXX) - You may encounter errors when trying to compile!)
+        OMPFLAG :=
+    endif
 endif
 
 CXX_BASE := $(notdir $(CXX))
