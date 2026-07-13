@@ -68,11 +68,13 @@
 
 //-----
 
-GaugeField                   Gluon;
-GaugeField                   Gluonsmeared1;
-GaugeField                   Gluonsmeared2;
-GaugeField                   Gluonchain;
-FullTensor                   F_tensor;
+struct ObservableWorkspace
+{
+    GaugeField smeared1;
+    GaugeField smeared2;
+    GaugeField chain;
+    FullTensor field_strength;
+};
 
 //-------------------------------------------------------------------------------------
 // Calculates and writes observables to logfile
@@ -84,8 +86,13 @@ void SaveObservable(const std::vector<double>& observable_vec, const std::string
     logstream << observable_vec.back() << "\n";
 }
 
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const int n_count, const int n_smear, const double smearing_parameter = rho_stout, const bool print_newline = true)
+void Observables(const GaugeField& Gluon, ObservableWorkspace& workspace, std::ofstream& logstream, const RunStatistics& statistics, const floatT action_beta, const int n_count, const int n_smear, const int smear_skip, const double smearing_parameter, const bool print_newline = true)
 {
+    auto& Gluonsmeared1 = workspace.smeared1;
+    auto& Gluonsmeared2 = workspace.smeared2;
+    auto& Gluonchain    = workspace.chain;
+    auto& F_tensor      = workspace.field_strength;
+
     std::vector<double>               ActionImproved(n_smear + 1);
     std::vector<double>               Plaquette(n_smear + 1);
     std::vector<std::vector<double>>  ECloverTimeslice(n_smear + 1, std::vector<double>(Gluon.Length(0), 0.0));
@@ -105,8 +112,8 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     std::vector<double>               Action(n_smear + 1);
     std::vector<double>               ActionUnnormalized(n_smear + 1);
     // auto ActionStruct = CreateObservable<double>(WilsonAction::ActionNormalized, n_smear + 1 , "Action");
-    // GaugeAction::Rectangular<1> WAct(beta, 1.0, 0.0);
-    GaugeAction::Rectangular<2> SymanzikAction(beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
+    // GaugeAction::Rectangular<1> WAct(action_beta, 1.0, 0.0);
+    GaugeAction::Rectangular<2> SymanzikAction(action_beta, 1.0 + 8.0 * 1.0/12.0, -1.0/12.0);
 
     Integrators::GradientFlow::Euler Flow_Integrator(Gluonsmeared2);
     GradientFlowKernel Flow(Gluon, Gluonsmeared1, Flow_Integrator, GaugeAction::WilsonAction, smearing_parameter);
@@ -114,53 +121,30 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     // CoolingKernel Cooling(Gluonsmeared1);
     // GradientFlowKernel Cooling(Gluonsmeared1, 0.12);
 
-    // Unsmeared observables
-    // Timer action_timer;
-    // Action[0]                      = WilsonAction::ActionNormalized(Gluon);
-    // std::cout << "Time for calculating action: " << action_timer.GetTimeSeconds() << std::endl;
-    ActionImproved[0]              = SymanzikAction.ActionNormalized(Gluon);
-    Plaquette[0]                   = PlaquetteSum(Gluon);
-
-    FieldStrengthTensor::Clover(Gluon, F_tensor);
-    // Timer topcharge_timeslice_timer;
-    for (int t = 0; t < Gluon.Length(0); ++t)
+    const auto PerformMeasurements = [&](const GaugeField& field, const int smear_count)
     {
-        TopologicalChargeCloverTimeslice[0][t] = TopChargeCloverTimeslice(F_tensor, t);
-    }
-    // std::cout << "Time for calculating topcharge timeslice: " << topcharge_timeslice_timer.GetTimeSeconds() << "\n";
-    // Timer topcharge_symm_timer;
-    TopologicalChargeClover[0]     = std::accumulate(TopologicalChargeCloverTimeslice[0].cbegin(), TopologicalChargeCloverTimeslice[0].cend(), 0.0);
-    // TopologicalChargeClover[0]     = TopChargeClover(Gluon);
-    // TopologicalChargeClover[0]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-    // std::cout << "Time for calculating topcharge (symm): " << topcharge_symm_timer.GetTimeSeconds() << "\n";
-    // Timer topcharge_plaq_timer;
-    TopologicalChargePlaquette[0]  = TopChargePlaquette(Gluon);
-    // std::cout << "Time for calculating topcharge (plaq): " << topcharge_plaq_timer.GetTimeSeconds() << "\n";
+        ActionImproved[smear_count]                          = SymanzikAction.ActionNormalized(field);
+        Plaquette[smear_count]                               = PlaquetteSum(field);
+        FieldStrengthTensor::Clover(field, F_tensor);
+        for (int t = 0; t < field.Length(0); ++t)
+        {
+            TopologicalChargeCloverTimeslice[smear_count][t] = TopChargeCloverTimeslice(F_tensor, t);
+        }
+        TopologicalChargeClover[smear_count]                 = std::accumulate(TopologicalChargeCloverTimeslice[smear_count].cbegin(), TopologicalChargeCloverTimeslice[smear_count].cend(), 0.0);
+        TopologicalChargePlaquette[smear_count]              = TopChargePlaquette(field);
+        FieldStrengthTensor::MakeComponentsTraceless(F_tensor);
+        for (int t = 0; t < field.Length(0); ++t)
+        {
+            ECloverTimeslice[smear_count][t]                 = EnergyDensity::CloverTimeslice(F_tensor, t);
+        }
+        EClover[smear_count]                                 = std::accumulate(ECloverTimeslice[smear_count].cbegin(), ECloverTimeslice[smear_count].cend(), 0.0);
+        WLoop2[smear_count]                                  = WilsonLoop<0, 2,  true>(field, Gluonchain);
+        WLoop4[smear_count]                                  = WilsonLoop<2, 4, false>(field, Gluonchain);
+        WLoop8[smear_count]                                  = WilsonLoop<4, 8, false>(field, Gluonchain);
+        PLoop[smear_count]                                   = PolyakovLoop(field);
+    };
 
-    FieldStrengthTensor::MakeComponentsTraceless(F_tensor);
-    for (int t = 0; t < Gluon.Length(0); ++t)
-    {
-        ECloverTimeslice[0][t]     = EnergyDensity::CloverTimeslice(F_tensor, t);
-        // EPlaquetteTimeslice[0][t]  = EnergyDensity::PlaquetteTimeslice(Gluon, t);
-    }
-    // EClover[0]                     = EnergyDensity::Clover(F_tensor);
-    EClover[0]                     = std::accumulate(ECloverTimeslice[0].cbegin(), ECloverTimeslice[0].cend(), 0.0);
-
-    // Timer wilson_timer;
-    WLoop2[0]                      = WilsonLoop<0, 2,  true>(Gluon, Gluonchain);
-    // std::cout << "Time for calculating wilson 2: " << wilson_timer.GetTimeSeconds() << "\n";
-
-    // wilson_timer.Reset();
-    WLoop4[0]                      = WilsonLoop<2, 4, false>(Gluon, Gluonchain);
-    // std::cout << "Time for calculating wilson 4: " << wilson_timer.GetTimeSeconds() << "\n";
-
-    // wilson_timer.Reset();
-    WLoop8[0]                      = WilsonLoop<4, 8, false>(Gluon, Gluonchain);
-    // std::cout << "Time for calculating wilson 8: " << wilson_timer.GetTimeSeconds() << "\n";
-
-    // Timer polyakov_timer;
-    PLoop[0]                       = PolyakovLoop(Gluon);
-    // std::cout << "Time for calculating Polyakov: " << polyakov_timer.GetTimeSeconds() << "\n";
+    PerformMeasurements(Gluon, 0);
 
     //-----
     // Measurements involving smearing
@@ -170,49 +154,25 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
         if (smear_count == 1)
         {
             // Timer smear_timer;
-            Flow(n_smear_skip);
+            Flow(smear_skip);
             // std::cout << "Time for smearing with " << Flow.ReturnIntegratorName() << ": " << smear_timer.GetTimeSeconds() << "\n";
         }
         else
         {
-            Flow.Resume(n_smear_skip);
+            Flow.Resume(smear_skip);
         }
-        // Iterator::Checkerboard(Cooling, n_smear_skip);
-        // Calculate observables
-        ActionImproved[smear_count]              = SymanzikAction.ActionNormalized(Gluonsmeared1);
-        Plaquette[smear_count]                   = PlaquetteSum(Gluonsmeared1);
-        FieldStrengthTensor::Clover(Gluonsmeared1, F_tensor);
-        for (int t = 0; t < Gluon.Length(0); ++t)
-        {
-            TopologicalChargeCloverTimeslice[smear_count][t] = TopChargeCloverTimeslice(F_tensor, t);
-        }
-        TopologicalChargeClover[smear_count]     = std::accumulate(TopologicalChargeCloverTimeslice[smear_count].cbegin(), TopologicalChargeCloverTimeslice[smear_count].cend(), 0.0);
-        // TopologicalChargeClover[smear_count]     = TopChargeClover(Gluonsmeared1);
-        // TopologicalChargeClover[smear_count]     = TopologicalCharge::CloverChargeFromFTensor(F_tensor);
-        TopologicalChargePlaquette[smear_count]  = TopChargePlaquette(Gluonsmeared1);
-        FieldStrengthTensor::MakeComponentsTraceless(F_tensor);
-        for (int t = 0; t < Gluon.Length(0); ++t)
-        {
-            ECloverTimeslice[smear_count][t]               = EnergyDensity::CloverTimeslice(F_tensor, t);
-            // EPlaquetteTimeslice[smear_count][t]  = EnergyDensity::PlaquetteTimeslice(Gluonsmeared1, t);
-        }
-        // EClover[smear_count]                     = EnergyDensity::Clover(F_tensor);
-        EClover[smear_count]                     = std::accumulate(ECloverTimeslice[smear_count].cbegin(), ECloverTimeslice[smear_count].cend(), 0.0);
-        WLoop2[smear_count]                      = WilsonLoop<0, 2,  true>(Gluonsmeared1, Gluonchain);
-        WLoop4[smear_count]                      = WilsonLoop<2, 4, false>(Gluonsmeared1, Gluonchain);
-        WLoop8[smear_count]                      = WilsonLoop<4, 8, false>(Gluonsmeared1, Gluonchain);
-        PLoop[smear_count]                       = PolyakovLoop(Gluonsmeared1);
+        PerformMeasurements(Gluonsmeared1, smear_count);
     }
 
     //-----
     // Final processing of observables (extracting real and imaginary parts, normalizing, ...)
     // These computations are trivial and can always be done on the host, so simply use std::transform for convenience here
-    std::transform(Plaquette.cbegin(), Plaquette.cend(),          Plaquette.begin(), [&Gluon](const auto& element){return element / Gluon.Volume();});
-    std::transform(Plaquette.cbegin(), Plaquette.cend(),         EPlaquette.begin(), [      ](const auto& element){return 36.0 - 2.0 * element;});
-    std::transform(Plaquette.cbegin(), Plaquette.cend(),             Action.begin(), [      ](const auto& element){return 1.0 - element / 18.0;});
-    std::transform(   Action.cbegin(),    Action.cend(), ActionUnnormalized.begin(), [&Gluon](const auto& element){return 6.0 * beta * Gluon.Volume() * element;});
-    std::transform(    PLoop.cbegin(),     PLoop.cend(),            PLoopRe.begin(), [      ](const auto& element){return std::real(element);});
-    std::transform(    PLoop.cbegin(),     PLoop.cend(),            PLoopIm.begin(), [      ](const auto& element){return std::imag(element);});
+    std::transform(Plaquette.cbegin(), Plaquette.cend(),          Plaquette.begin(), [&Gluon             ](const auto& element){return element / Gluon.Volume();});
+    std::transform(Plaquette.cbegin(), Plaquette.cend(),         EPlaquette.begin(), [                   ](const auto& element){return 36.0 - 2.0 * element;});
+    std::transform(Plaquette.cbegin(), Plaquette.cend(),             Action.begin(), [                   ](const auto& element){return 1.0 - element / 18.0;});
+    std::transform(   Action.cbegin(),    Action.cend(), ActionUnnormalized.begin(), [&Gluon, action_beta](const auto& element){return 6.0 * action_beta * Gluon.Volume() * element;});
+    std::transform(    PLoop.cbegin(),     PLoop.cend(),            PLoopRe.begin(), [                   ](const auto& element){return std::real(element);});
+    std::transform(    PLoop.cbegin(),     PLoop.cend(),            PLoopIm.begin(), [                   ](const auto& element){return std::imag(element);});
 
     //-----
     // Write to logfile
@@ -222,15 +182,15 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
     //-----
     if constexpr(n_hmc != 0)
     {
-        logstream << "DeltaH: " << DeltaH << "\n";
+        logstream << "DeltaH: " << statistics.delta_H_hmc << "\n";
     }
     if constexpr(metadynamics_enabled and tempering_enabled)
     {
-        logstream << "DeltaVTempering: " << DeltaVTempering << "\n";
+        logstream << "DeltaVTempering: " << statistics.delta_V_tempering << "\n";
     }
     if constexpr(n_instanton_update != 0)
     {
-        logstream << "DeltaSInstanton: " << DeltaSInstanton << "\n";
+        logstream << "DeltaSInstanton: " << statistics.delta_S_instanton << "\n";
     }
     //----
     SaveObservable(Action, "Wilson_Action: ", logstream);
@@ -275,10 +235,10 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 }
 
 template<typename BiasPotentialT>
-void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream& logstream, const BiasPotentialT& Metapotential, const int n_count, const int n_smear, const double smearing_parameter = rho_stout)
+void Observables(const GaugeField& Gluon, ObservableWorkspace& workspace, std::ofstream& logstream, const RunStatistics& statistics, const floatT action_beta, const BiasPotentialT& Metapotential, const int n_count, const int n_smear, const int smear_skip, const double smearing_parameter)
 {
     // Call the regular Observables() function, but do not print a newline at the end, since we still want to log the current CV
-    Observables(Gluon, Gluonchain, logstream, n_count, n_smear, smearing_parameter, false);
+    Observables(Gluon, workspace, logstream, statistics, action_beta, n_count, n_smear, smear_skip, smearing_parameter, false);
 
     double CV_current {Metapotential.ReturnCV_current()};
     logstream << "CV_MetaD: " << CV_current << "\n";
@@ -289,6 +249,19 @@ void Observables(const GaugeField& Gluon, GaugeField& Gluonchain, std::ofstream&
 
 int main(int argc, char** argv)
 {
+    const auto program_start = std::chrono::system_clock::now();
+
+    GaugeField          Gluon;
+    ObservableWorkspace observable_workspace;
+
+    auto& Gluonsmeared1 = observable_workspace.smeared1;
+    auto& Gluonsmeared2 = observable_workspace.smeared2;
+
+    RunStatistics                              statistics;
+    auto                                       generator_rand = MakeRandomGenerator();
+    PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int> prng(generator_rand);
+    std::ofstream                              datalog;
+
     // iostream not synchronized with corresponding C streams, might cause a problem with C libraries and might not be thread safe
     std::ios_base::sync_with_stdio(false);
     std::cout << std::setprecision(12) << std::fixed;
@@ -299,7 +272,7 @@ int main(int argc, char** argv)
     std::reverse(command_line_arguments.begin(), command_line_arguments.end());
 
     Configuration(command_line_arguments);
-    CreateFiles();
+    CreateFiles(program_start);
 
     // omp_set_schedule(omp_sched_static);
 
@@ -315,6 +288,10 @@ int main(int argc, char** argv)
     constexpr bool    create_checkpoint_subdirectories {true};
     CheckpointManager Checkpointer(checkpointdirectory, n_checkpoint_backups, create_checkpoint_subdirectories);
     std::cout << "Automatic checkpoint directory in " << Checkpointer.CheckpointDirectory() << std::endl;
+    const auto SavePrimaryCheckpoint = [&]
+    {
+        Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+    };
 
     Gluon.SetToIdentity();
     if (extend_run)
@@ -324,14 +301,14 @@ int main(int argc, char** argv)
         and std::filesystem::exists(old_maindirectory + "/checkpoints/final_distribution_state.txt"))
         {
             LoadConfigBMWFull(Gluon, old_maindirectory + "/checkpoints/final_config.conf");
-            global_prng.LoadState(old_maindirectory + "/checkpoints/final_prng_state.txt", old_maindirectory + "/checkpoints/final_distribution_state.txt");
+            prng.LoadState(old_maindirectory + "/checkpoints/final_prng_state.txt", old_maindirectory + "/checkpoints/final_distribution_state.txt");
         }
         else if (std::filesystem::exists(old_maindirectory + "/checkpoints/config.conf")
              and std::filesystem::exists(old_maindirectory + "/checkpoints/prng_state.txt")
              and std::filesystem::exists(old_maindirectory + "/checkpoints/distribution_state.txt"))
         {
             LoadConfigBMWFull(Gluon, old_maindirectory + "/checkpoints/config.conf");
-            global_prng.LoadState(old_maindirectory + "/checkpoints/prng_state.txt", old_maindirectory + "/checkpoints/distribution_state.txt");
+            prng.LoadState(old_maindirectory + "/checkpoints/prng_state.txt", old_maindirectory + "/checkpoints/distribution_state.txt");
         }
     }
 
@@ -348,14 +325,14 @@ int main(int argc, char** argv)
     std::cout << "SimulatedAction parameters: " << SimulatedAction.stencil_radius << ", " << SimulatedAction.c_plaq << ", " << SimulatedAction.c_rect << std::endl;
 
     // Initialize update functors
-    HeatbathKernel                     Heatbath(Gluon, SimulatedAction, global_prng);
-    // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, SimulatedAction, global_prng);
+    HeatbathKernel                     Heatbath(Gluon, SimulatedAction, prng);
+    // OverrelaxationDirectKernel         OverrelaxationDirect(Gluon, SimulatedAction, prng);
     OverrelaxationSubgroupKernel       OverrelaxationSubgroup(Gluon, SimulatedAction);
     using HMC_IntegratorT = Integrators::HMC::OMF_4;
     HMC_IntegratorT                    HMC_Integrator;
-    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
+    GaugeUpdates::HMCKernel            HMC(Gluon, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, prng, statistics, datalog, hmc_trajectory_length);
     // double ghmc_mixing_angle           {0.25 * pi<floatT>};
-    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, ghmc_mixing_angle, hmc_trajectory_length);
+    // GaugeUpdates::GeneralizedHMCKernel GHMC(Gluon, Gluonsmeared1, GHMC_Momentum, Gluonsmeared2, HMC_Integrator, SimulatedAction, prng, statistics, datalog, ghmc_mixing_angle, hmc_trajectory_length);
 
     // LoadConfigBMW(Gluon, "GradientFlowBMW/conf0001.conf");
 
@@ -392,13 +369,13 @@ int main(int argc, char** argv)
             if constexpr(n_metro != 0 and multi_hit != 0)
             {
                 // Timer metropolis_timer;
-                MetropolisKernel Metropolis(Gluon, SimulatedAction, global_prng, multi_hit, metropolis_epsilon);
-                Iterator::Checkerboard4Sum(Metropolis, acceptance_count, n_metro);
+                MetropolisKernel Metropolis(Gluon, SimulatedAction, prng, multi_hit, metropolis_epsilon);
+                Iterator::Checkerboard4Sum(Metropolis, statistics.acceptances_metropolis, n_metro);
                 // TODO: Perhaps this should all happen automatically inside the functor?
                 //       At the very least, we should probably combine the two actions below into one function
                 // Metropolis.AdjustEpsilon(acceptance_count);
                 metropolis_epsilon = Metropolis.GetEpsilon();
-                acceptance_count = 0;
+                statistics.acceptances_metropolis = 0;
                 // std::cout << "Time for " << n_metro << " Metropolis updates: " << metropolis_timer.GetTimeSeconds() << "\n";
             }
             //-----
@@ -436,17 +413,17 @@ int main(int argc, char** argv)
                 int                                 L_half      {Nt/2 - 1};
                 site_coord                          center      {L_half, L_half, L_half, L_half};
                 int                                 radius      {5};
-                GaugeUpdates::InstantonUpdateKernel InstantonUpdate(Gluon, Gluonsmeared1, SimulatedAction, global_prng, center, radius, false);
+                GaugeUpdates::InstantonUpdateKernel InstantonUpdate(Gluon, Gluonsmeared1, SimulatedAction, prng, statistics, center, radius, false);
                 // If the function is called for the first time, create Q = +1 and Q = -1 instanton configurations, otherwise reuse old configurations
                 if (n_count == 0)
                 {
-                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, true);
+                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, prng, true);
                     InstantonUpdate.CreateBPSTInstantons(center, radius);
                     InstantonUpdate(Q_instanton, accept_reject_enabled);
                 }
                 else
                 {
-                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, global_prng, false);
+                    // BPSTInstantonUpdate(Gluon, Gluonsmeared1, Q_instanton, center, radius, acceptance_count_instanton, accept_reject_enabled, prng, false);
                     InstantonUpdate(Q_instanton, accept_reject_enabled);
                 }
             }
@@ -454,36 +431,36 @@ int main(int argc, char** argv)
             if (n_count % expectation_period == 0)
             {
                 // Timer observables_timer;
-                Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
+                Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, rho_stout);
                 // std::cout << "Time for calculating observables: " << observables_timer.GetTimeSeconds() << std::endl;
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.12);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.12);
 
                 // n_smear = 300;
                 // n_smear_skip = 1;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.08);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.08);
 
                 // n_smear = 300;
                 // n_smear_skip = 2;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.04);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.04);
 
                 // n_smear = 300;
                 // n_smear_skip = 4;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.02);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.02);
 
                 // n_smear = 300;
                 // n_smear_skip = 8;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.01);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.01);
 
                 // n_smear = 300;
                 // n_smear_skip = 16;
-                // Observables(Gluon, Gluonchain, datalog, n_count, n_smear, 0.005);
+                // Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, 0.005);
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                SavePrimaryCheckpoint();
             }
         }
     }
@@ -527,7 +504,7 @@ int main(int argc, char** argv)
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
         GaugeUpdates::HMCMetaDData   MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
+        GaugeUpdates::HMCMetaDKernel HMC_MetaD(Gluon, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, prng, statistics, datalog, hmclogfilepath, hmc_trajectory_length, rho_stout_metadynamics);
 
         // GaugeUpdates::InstantonStart(Gluon, 1);
 
@@ -554,7 +531,7 @@ int main(int argc, char** argv)
             }
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, datalog, TopBiasPotential, n_count, n_smear, rho_stout);
+                Observables(Gluon, observable_workspace, datalog, statistics, beta, TopBiasPotential, n_count, n_smear, n_smear_skip, rho_stout);
                 if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
@@ -563,7 +540,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                SavePrimaryCheckpoint();
             }
         }
     }
@@ -584,7 +561,7 @@ int main(int argc, char** argv)
         datalog_temper.open(logfilepath_temper, std::fstream::out | std::fstream::app);
 
         // Conventional HMC only used during thermalization of Gluon_temper
-        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length);
+        GaugeUpdates::HMCKernel                   HMC_temper(Gluon_temper, Gluonsmeared1, Gluonsmeared2, HMC_Integrator, SimulatedAction, prng, statistics, datalog, hmc_trajectory_length);
 
         // [[maybe_unused]] double Q_min_initial           = -0.6;
         // [[maybe_unused]] double Q_max_initial           =  0.6;
@@ -607,8 +584,8 @@ int main(int argc, char** argv)
         TopBiasPotential.SavePotential(metapotentialfilepath);
 
         GaugeUpdates::HMCMetaDData                MetadynamicsData(n_smear_meta);
-        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, global_prng, hmc_trajectory_length, rho_stout_metadynamics);
-        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, global_prng, rho_stout_metadynamics);
+        GaugeUpdates::HMCMetaDKernel              HMC_MetaD(Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, MetadynamicsData, HMC_Integrator, SimulatedAction, prng, statistics, datalog, hmclogfilepath, hmc_trajectory_length, rho_stout_metadynamics);
+        GaugeUpdates::MetadynamicsTemperingKernel ParallelTemperingSwap(Gluon, Gluon_temper, Gluonsmeared1, Gluonsmeared2, TopBiasPotential, prng, statistics, rho_stout_metadynamics);
 
         // Thermalize Gluon with local updates, and Gluon_temper with normal HMC
         datalog << "[HMC start thermalization]\n";
@@ -640,8 +617,8 @@ int main(int argc, char** argv)
 
             if (n_count % expectation_period == 0)
             {
-                Observables(Gluon, Gluonchain, datalog, n_count, n_smear, rho_stout);
-                Observables(Gluon_temper, Gluonchain, datalog_temper, TopBiasPotential, n_count, n_smear, rho_stout);
+                Observables(Gluon, observable_workspace, datalog, statistics, beta, n_count, n_smear, n_smear_skip, rho_stout);
+                Observables(Gluon_temper, observable_workspace, datalog_temper, statistics, beta, TopBiasPotential, n_count, n_smear, n_smear_skip, rho_stout);
                 if constexpr(metapotential_update_stride >= 1)
                 {
                     if (n_count % (1 * expectation_period) == 0)
@@ -650,7 +627,7 @@ int main(int argc, char** argv)
             }
             if (n_count % checkpoint_period == 0)
             {
-                Checkpointer.AlternatingCheckpoints(SaveConfigBMWFull, global_prng, Gluon, "config.conf", "prng_state.txt", "distribution_state.txt");
+                SavePrimaryCheckpoint();
                 Checkpointer.AlternatingConfigCheckpoints(SaveConfigBMWFull, Gluon_temper, "config_temper.conf");
             }
         }
@@ -668,19 +645,19 @@ int main(int argc, char** argv)
     //-----
     // Save final configuration and PRNG state
     SaveConfigBMWFull(Gluon, checkpointdirectory + "/final_config.conf");
-    global_prng.SaveState(checkpointdirectory + "/final_prng_state.txt", checkpointdirectory + "/final_distribution_state.txt");
+    prng.SaveState(checkpointdirectory + "/final_prng_state.txt", checkpointdirectory + "/final_distribution_state.txt");
 
     // Print acceptance rates, PRNG width, and required time to terminal and to files
 
     std::cout << "\n";
-    PrintFinal(std::cout, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
+    PrintFinal(std::cout, statistics, metropolis_epsilon, end_time, elapsed_seconds);
 
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, statistics, metropolis_epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
 
     datalog.open(parameterfilepath, std::fstream::out | std::fstream::app);
-    PrintFinal(datalog, acceptance_count, acceptance_count_or, acceptance_count_hmc, acceptance_count_metadynamics_hmc, acceptance_count_tempering, metropolis_epsilon, end_time, elapsed_seconds);
+    PrintFinal(datalog, statistics, metropolis_epsilon, end_time, elapsed_seconds);
     datalog.close();
     datalog.clear();
     Checkpointer.CreateCompletedFile(maindirectory);

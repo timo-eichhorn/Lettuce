@@ -82,12 +82,14 @@ struct Timer
 
 void FillVector(std::vector<Matrix_SU3>& vec)
 {
+    static auto generator = MakeRandomGenerator();
+    static PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int> prng(generator);
     using size_type = typename std::vector<Matrix_SU3>::size_type;
     for (size_type i = 0; i < vec.size(); ++i)
     {
         // vec[i] = initial_value;
         // initial_value += Matrix_SU3(1);
-        vec[i] = SU3::RandomMatrix(global_prng.UniformInt(), global_prng.UniformReal());
+        vec[i] = SU3::RandomMatrix(prng.UniformInt(), prng.UniformReal());
     }
 }
 

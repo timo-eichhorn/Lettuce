@@ -22,7 +22,7 @@
 #include <vector>
 //----------------------------------------
 // Standard C headers
-// ...
+#include <cstdint>
 
 inline std::string program_version = "SU(3)_version_1.3";
 
@@ -76,10 +76,6 @@ inline constexpr bool tempering_enabled {false};             // Enable metadynam
 inline constexpr int tempering_nonmetadynamics_sweeps {10};  // Number of non metadynamics update sweeps for every metadynamics update during tempering
 inline constexpr int tempering_swap_period {1};             // Number of update sweeps between parallel tempering swap attempts
 inline double metro_target_acceptance {0.5};                // Target acceptance rate for Metropolis update, values around 50% seem to work well, but TRY OUT!
-inline double DeltaH;                                       // Energy change during HMC trajectory (declared globally so we can print it independently as observable)
-inline double DeltaVTempering;                              // Metapotential change of tempering swap proposal
-inline double DeltaSInstanton;                              // Action change of instanton update proposal (see above)
-inline double JacobianInstanton;                            // Jacobian during instanton update with gradient flow
 // Directory and logfile paths
 inline std::string old_maindirectory;                       // Main directory of previous run we wish to extend
 inline std::string maindirectory;                           // Main directory containing all other subdirectories and files
@@ -92,21 +88,33 @@ inline std::string logfilepath_temper;                      // Filepath (log for
 inline auto start {std::chrono::system_clock::now()};       // Start time
 inline std::ofstream datalog;                               // Output stream to save data
 inline std::ofstream wilsonlog;                             // Output stream to save data (Wilson loops)
-// PRNG stuff
-inline pcg_extras::seed_seq_from<std::random_device> seed_source;  // Seed source to seed PRNGs
-#ifdef FIXED_SEED                                           // PRNG for random coordinates and probabilites
-inline pcg64 generator_rand(1);
-#else
-inline pcg64 generator_rand(seed_source);
-#endif
-inline PRNG4D<Nt, Nx, Ny, Nz, pcg64, floatT, int>    global_prng(generator_rand);
+
 // For tracking various acceptance rates of update algorithms
-inline uint_fast64_t acceptance_count                   {0};       // Metropolis acceptance rate for new configurations
-inline uint_fast64_t acceptance_count_or                {0};       // Overrelaxation acceptance rate
-inline uint_fast64_t acceptance_count_hmc               {0};       // HMC acceptance rate
-inline uint_fast64_t acceptance_count_metadynamics_hmc  {0};       // MetaD-HMC acceptance rate
-inline uint_fast64_t acceptance_count_tempering         {0};       // Parallel tempering swap acceptance rate
-inline uint_fast64_t acceptance_count_instanton         {0};       // Instanton update acceptance rate
+struct RunStatistics
+{
+    double             delta_H_hmc                  {0.0}; // Currently also used for GHMC
+    double             delta_V_tempering            {0.0};
+    double             delta_S_instanton            {0.0};
+    // double             jacobian_instanton           {0.0};
+    std::uint_fast64_t acceptances_metropolis       {0};
+    std::uint_fast64_t acceptances_overrelaxation   {0};
+    std::uint_fast64_t acceptances_hmc              {0}; // Currently also used for GHMC
+    std::uint_fast64_t acceptances_metadynamics_hmc {0};
+    std::uint_fast64_t acceptances_tempering        {0};
+    std::uint_fast64_t acceptances_instanton        {0};
+
+};
+
+[[nodiscard]]
+inline pcg64 MakeRandomGenerator()
+{
+#ifdef FIXED_SEED
+    return pcg64(1);
+#else
+    pcg_extras::seed_seq_from<std::random_device> seed_source;
+    return pcg64(seed_source);
+#endif
+}
 
 // Matrix_NxN is the same type as MatrixSUN, but the different names may be useful to explicitly indicate which objects are group elements and which are not
 using Matrix_2x2     = Eigen::Matrix<std::complex<floatT>, 2, 2, Eigen::RowMajor>;

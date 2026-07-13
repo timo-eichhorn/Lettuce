@@ -25,15 +25,17 @@ namespace GaugeUpdates
     struct GeneralizedHMCKernel
     {
         private:
-            GaugeField&  U;
-            GaugeField&  U_copy;
+            GaugeField&        U;
+            GaugeField&        U_copy;
             // Warning: Since the momenta from the previous trajectory contribute to the new momenta, you need to make sure not to change the momenta from the outside!
             // TODO: Change this so the GeneralizedHMCKernel owns the momentum field? Tradeoff between safety and performance (usually functors should be cheap to construct)
-            GaugeField&  Momentum;
-            GaugeField&  Momentum_copy;
-            IntegratorT& Integrator;
-            ActionT&     Action;
-            prngT&       prng;
+            GaugeField&        Momentum;
+            GaugeField&        Momentum_copy;
+            IntegratorT&       Integrator;
+            ActionT&           Action;
+            prngT&             prng;
+            RunStatistics&     statistics;
+            std::ostream&      log;
         public:
             // Mixing parameter for old momenta and new Gaussian momenta, where:
             //     p_new = cos(mixing_angle) * p_old + sin(mixing_angle) * p_random
@@ -185,8 +187,8 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit GeneralizedHMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, GaugeField& Momentum_copy_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double mixing_angle_in, double trajectory_length_in = 1.0) noexcept :
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Momentum_copy(Momentum_copy_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), mixing_angle(mixing_angle_in), trajectory_length(trajectory_length_in)
+            explicit GeneralizedHMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, GaugeField& Momentum_copy_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, RunStatistics& statistics_in, std::ostream& log_in, double mixing_angle_in, double trajectory_length_in = 1.0) noexcept :
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Momentum_copy(Momentum_copy_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), statistics(statistics_in), log(log_in), mixing_angle(mixing_angle_in), trajectory_length(trajectory_length_in)
             {}
 
 
@@ -203,17 +205,16 @@ namespace GaugeUpdates
                 //-----
                 // Calculate energy after time evolution
                 double energy_new {Hamiltonian()};
-                // TODO: Probably shouldnt use a global variable for DeltaH?
-                DeltaH = energy_new - energy_old;
+                statistics.delta_H_hmc = energy_new - energy_old;
                 if (metropolis_step)
                 {
                     double p {std::exp(-energy_new + energy_old)};
                     double q {prng.UniformReal()};
-                    // datalog << "DeltaH: " << DeltaH << std::endl;
+                    // log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     if (q <= p)
                     {
                         // TODO: Use different counter than for conventional HMC?
-                        acceptance_count_hmc += 1;
+                        statistics.acceptances_hmc += 1;
                         return true;
                     }
                     else
@@ -226,7 +227,7 @@ namespace GaugeUpdates
                 }
                 else
                 {
-                    datalog << "DeltaH: " << DeltaH << std::endl;
+                    log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     return true;
                 }
             }

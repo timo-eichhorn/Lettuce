@@ -271,6 +271,9 @@ namespace GaugeUpdates
             IntegratorT&       Integrator;
             ActionT&           Action;
             prngT&             prng;
+            RunStatistics&     statistics;
+            std::ostream&      log;
+            const std::string& hmc_log_path;
             // Metadynamics
             // double n_smear_meta;
             // double rho_stout_meta;
@@ -534,16 +537,16 @@ namespace GaugeUpdates
             void LogCVData() const
             {
                 std::ofstream hmclog;
-                hmclog.open(hmclogfilepath, std::fstream::out | std::fstream::app);
+                hmclog.open(hmc_log_path, std::fstream::out | std::fstream::app);
                 std::copy(std::cbegin(cv_path_samples), std::prev(std::cend(cv_path_samples)), std::ostream_iterator<double>(hmclog, " "));
                 hmclog << cv_path_samples.back() << "\n";
                 // std::copy(std::cbegin(cv_path_actions), std::prev(std::cend(cv_path_actions)), std::ostream_iterator<double>(hmclog, " "));
                 // hmclog << cv_path_actions.back() << "\n";
             }
         public:
-            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, BiasPotentialT& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
+            explicit HMCMetaDKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, BiasPotentialT& Metapotential_in, HMCMetaDData& MetadynamicsData_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, RunStatistics& statistics_in, std::ostream& log_in, const std::string& hmc_log_path_in, double trajectory_length_in, double rho_stout_cv_in) noexcept :
             // U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta)
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), statistics(statistics_in), log(log_in), hmc_log_path(hmc_log_path_in), Metapotential(Metapotential_in), MetadynamicsData(MetadynamicsData_in), trajectory_length(trajectory_length_in), rho_stout_cv(rho_stout_cv_in)
             {}
 
             bool operator()(const int n_step, const bool metropolis_step) noexcept
@@ -578,8 +581,7 @@ namespace GaugeUpdates
                 // Calculate energy after time evolution
                 double CV_new     {MetaCharge()};
                 double energy_new {Hamiltonian() + Metapotential.ReturnPotential(CV_new)};
-                // TODO: Probably shouldnt use a global variable for DeltaH?
-                DeltaH = energy_new - energy_old;
+                statistics.delta_H_hmc = energy_new - energy_old;
                 // std::cout << "Time for smearing:          " << smearing_time.count() << std::endl;
                 // std::cout << "Time for clover:            " << clover_time.count() << std::endl;
                 // std::cout << "Time for derivative:        " << deriv_time.count() << std::endl;
@@ -615,7 +617,7 @@ namespace GaugeUpdates
                     double p        {std::exp(-energy_new + energy_old)};
                     double q        {prng.UniformReal()};
                     bool   accepted {q <= p};
-                    // datalog << "DeltaH: " << DeltaH << std::endl;
+                    // log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     if (accepted)
                     {
                         Metapotential.SetCV_current(CV_new);
@@ -624,7 +626,7 @@ namespace GaugeUpdates
                         {
                             Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                         }
-                        acceptance_count_metadynamics_hmc += 1;
+                        statistics.acceptances_metadynamics_hmc += 1;
                     }
                     else
                     {
@@ -647,7 +649,7 @@ namespace GaugeUpdates
                     {
                         Metapotential.UpdatePotentialSymmetric(cv_path_samples);
                     }
-                    datalog << "DeltaH: " << DeltaH << std::endl;
+                    log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     return true;
                 }
             }

@@ -382,12 +382,14 @@ namespace GaugeUpdates
     struct HMCKernel
     {
         private:
-            GaugeField&  U;
-            GaugeField&  U_copy;
-            GaugeField&  Momentum;
-            IntegratorT& Integrator;
-            ActionT&     Action;
-            prngT&       prng;
+            GaugeField&        U;
+            GaugeField&        U_copy;
+            GaugeField&        Momentum;
+            IntegratorT&       Integrator;
+            ActionT&           Action;
+            prngT&             prng;
+            RunStatistics&     statistics;
+            std::ostream&      log;
         public:
             double       trajectory_length;
         private:
@@ -538,8 +540,8 @@ namespace GaugeUpdates
                 return potential_energy + kinetic_energy;
             }
         public:
-            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, double trajectory_length_in = 1.0) noexcept :
-            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), trajectory_length(trajectory_length_in)
+            explicit HMCKernel(GaugeField& U_in, GaugeField& U_copy_in, GaugeField& Momentum_in, IntegratorT& Integrator_in, ActionT& Action_in, prngT& prng_in, RunStatistics& statistics_in, std::ostream& log_in, double trajectory_length_in = 1.0) noexcept :
+            U(U_in), U_copy(U_copy_in), Momentum(Momentum_in), Integrator(Integrator_in), Action(Action_in), prng(prng_in), statistics(statistics_in), log(log_in), trajectory_length(trajectory_length_in)
             {}
 
             // TODO: Add parameter: const double tau
@@ -556,16 +558,15 @@ namespace GaugeUpdates
                 //-----
                 // Calculate energy after time evolution
                 double energy_new {Hamiltonian()};
-                // TODO: Probably shouldnt use a global variable for DeltaH?
-                DeltaH = energy_new - energy_old;
+                statistics.delta_H_hmc = energy_new - energy_old;
                 if (metropolis_step)
                 {
                     double p {std::exp(-energy_new + energy_old)};
                     double q {prng.UniformReal()};
-                    // datalog << "DeltaH: " << DeltaH << std::endl;
+                    // log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     if (q <= p)
                     {
-                        acceptance_count_hmc += 1;
+                        statistics.acceptances_hmc += 1;
                         return true;
                     }
                     else
@@ -576,7 +577,7 @@ namespace GaugeUpdates
                 }
                 else
                 {
-                    datalog << "DeltaH: " << DeltaH << std::endl;
+                    log << "DeltaH: " << statistics.delta_H_hmc << std::endl;
                     return true;
                 }
             }

@@ -552,7 +552,7 @@ inline void SaveParameters(std::string filename, const std::string& starttimestr
 //-----
 // Creates directories and files to store data
 
-inline void CreateFiles()
+inline void CreateFiles(const std::chrono::system_clock::time_point start)
 {
     std::string LatticeSizeString    {std::to_string(Nt) + "x" + std::to_string(Nx) + "x" + std::to_string(Ny) + "x" + std::to_string(Nz)};
     std::string betaString           {std::to_string(beta)};
@@ -601,7 +601,7 @@ inline void CreateFiles()
 // Print final parameters to a specified ostream
 
 template<typename floatT>
-void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const uint_fast64_t acceptance_count_or, const uint_fast64_t acceptance_count_hmc, const uint_fast64_t acceptance_count_metadynamics_hmc, const uint_fast64_t acceptance_count_tempering, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
+void PrintFinal(std::ostream& log, const RunStatistics& statistics, const floatT epsilon, const std::time_t& end_time, const std::chrono::duration<double>& elapsed_seconds)
 {
     double metro_norm     {1.0};
     if (n_metro != 0 and multi_hit != 0)
@@ -629,16 +629,16 @@ void PrintFinal(std::ostream& log, const uint_fast64_t acceptance_count, const u
     {
         instanton_norm = 1.0 / (n_run * n_instanton_update);
     }
-    log << "Metro target acceptance: " << metro_target_acceptance                      << "\n";
-    log << "Metro acceptance: "        << acceptance_count * metro_norm                << "\n";
-    log << "OR acceptance: "           << acceptance_count_or * or_norm                << "\n";
-    log << "HMC acceptance: "          << acceptance_count_hmc * hmc_norm              << "\n";
-    log << "MetaD-HMC acceptance: "    << acceptance_count_metadynamics_hmc * hmc_norm << "\n";
-    log << "Tempering acceptance: "    << acceptance_count_tempering * tempering_norm  << "\n";
-    log << "Instanton acceptance: "    << acceptance_count_instanton * instanton_norm  << "\n";
-    log << "epsilon: "                 << epsilon                                      << "\n";
-    log << std::ctime(&end_time)                                                       << "\n";
-    log << "Required time: "           << elapsed_seconds.count()                      << "s\n";
+    log << "Metro target acceptance: " << metro_target_acceptance                                  << "\n";
+    log << "Metro acceptance: "        << statistics.acceptances_metropolis       * metro_norm     << "\n";
+    log << "OR acceptance: "           << statistics.acceptances_overrelaxation   * or_norm        << "\n";
+    log << "HMC acceptance: "          << statistics.acceptances_hmc              * hmc_norm       << "\n";
+    log << "MetaD-HMC acceptance: "    << statistics.acceptances_metadynamics_hmc * hmc_norm       << "\n";
+    log << "Tempering acceptance: "    << statistics.acceptances_tempering        * tempering_norm << "\n";
+    log << "Instanton acceptance: "    << statistics.acceptances_instanton        * instanton_norm << "\n";
+    log << "epsilon: "                 << epsilon                                                  << "\n";
+    log <<                                std::ctime(&end_time)                                    << "\n";
+    log << "Required time: "           << elapsed_seconds.count()                                  << "s\n";
 }
 
 #endif // LETTUCE_PARAMETER_IO_HPP

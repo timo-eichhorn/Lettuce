@@ -107,6 +107,8 @@ namespace GaugeUpdates
             double     denom               {std::sqrt(distance_squared - distance_mu_squared)};
             double     denom_r             {std::sqrt(distance_squared - distance_mu_squared + r * r)};
             double     lambda              {-std::atan((difference_mu + 1.0) / denom) + std::atan(difference_mu / denom) + denom / denom_r * (std::atan((difference_mu + 1.0) / denom_r) - std::atan(difference_mu / denom_r))};
+            // double     lambda              {-std::atan((difference_mu + 0.5) / denom) + std::atan((difference_mu - 0.5) / denom) + denom / denom_r * (std::atan((difference_mu + 0.5) / denom_r) - std::atan((difference_mu - 0.5) / denom_r))};
+            // std::cout << t << ", " << mu << ": " << distance_squared << ", " << difference_mu << ", " << lambda << std::endl;
             // TODO: Allow to choose between different embeddings
             //       For now only embed in 01 entries of SU(3) matrix
             // TODO: Use SU(2) matrices instead of SU(3) for as long as possible?
@@ -237,9 +239,10 @@ namespace GaugeUpdates
             // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
                    ActionT&    Action;
                    prngT&      prng;
+            RunStatistics&     statistics;
         public:
-            explicit InstantonUpdateKernel(GaugeField& U_in, GaugeField& U_copy_in, ActionT& Action_in, prngT& prng_in, const site_coord& center, const int r, const bool create_instantons) noexcept :
-            U(U_in), U_copy(U_copy_in), Action(Action_in), prng(prng_in)
+            explicit InstantonUpdateKernel(GaugeField& U_in, GaugeField& U_copy_in, ActionT& Action_in, prngT& prng_in, RunStatistics& statistics_in, const site_coord& center, const int r, const bool create_instantons) noexcept :
+            U(U_in), U_copy(U_copy_in), Action(Action_in), prng(prng_in), statistics(statistics_in)
             {
                 if (create_instantons)
                 {
@@ -263,8 +266,7 @@ namespace GaugeUpdates
                 }
                 double S_old {Action.Action(U)};
                 double S_new {Action.Action(U_copy)};
-                // TODO: Probably shouldn't use a global variable for DeltaSInstanton?
-                DeltaSInstanton = S_new - S_old;
+                statistics.delta_S_instanton = S_new - S_old;
                 if (metropolis_test)
                 {
                     double p {std::exp(-S_new + S_old)};
@@ -272,7 +274,7 @@ namespace GaugeUpdates
                     if (q <= p)
                     {
                         U = U_copy;
-                        acceptance_count_instanton += 1;
+                        statistics.acceptances_instanton += 1;
                         return true;
                     }
                     else
@@ -283,7 +285,7 @@ namespace GaugeUpdates
                 else
                 {
                     U = U_copy;
-                    // datalog << "DeltaS: " << DeltaS << std::endl;
+                    // datalog << "DeltaS: " << statistics.delta_S_instanton << std::endl;
                     return true;
                 }
             }
@@ -320,8 +322,7 @@ namespace GaugeUpdates
     //     }
     //     double S_old {WilsonAction::Action(Gluon)};
     //     double S_new {WilsonAction::Action(Gluon_copy)};
-    //     // TODO: Probably shouldn't use a global variable for DeltaSInstanton?
-    //     DeltaSInstanton = S_new - S_old;
+    //     statistics.delta_S_instanton = S_new - S_old;
     //     if (metropolis_test)
     //     {
     //         double p {std::exp(-S_new + S_old)};
@@ -340,7 +341,7 @@ namespace GaugeUpdates
     //     else
     //     {
     //         Gluon = Gluon_copy;
-    //         // datalog << "DeltaS: " << DeltaS << std::endl;
+    //         // datalog << "DeltaS: " << statistics.delta_S_instanton << std::endl;
     //         return true;
     //     }
     // }

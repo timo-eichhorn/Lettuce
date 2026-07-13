@@ -199,8 +199,8 @@ namespace Iterator
     }
     //-----
     // Random sequential iterator through the lattice
-    template<typename funcT>
-    void Random(funcT&& function, const int n_sweep = 1)
+    template<typename funcT, typename GeneratorT>
+    void Random(funcT&& function, GeneratorT& generator, const int n_sweep = 1)
     {
         std::uniform_int_distribution<> dist_t(0, Nt - 1);
         std::uniform_int_distribution<> dist_x(0, Nx - 1);
@@ -214,7 +214,7 @@ namespace Iterator
             // #pragma omp parallel
             for (std::size_t i = 0; i < Nt * Nx * Ny * Nz; ++i)
             {
-                link_coord current_link {dist_t(generator_rand), dist_x(generator_rand), dist_y(generator_rand), dist_z(generator_rand), dist_mu(generator_rand)};
+                link_coord current_link {dist_t(generator), dist_x(generator), dist_y(generator), dist_z(generator), dist_mu(generator)};
                 function(current_link);
             }
         }
