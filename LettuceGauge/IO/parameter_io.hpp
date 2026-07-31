@@ -499,7 +499,7 @@ inline void SaveParameters(std::string filename, const std::string& starttimestr
     stream << program_version << "\n";
     stream << "logfile\n\n";
     #ifdef FIXED_SEED
-    stream << "FIXED_SEED\n";
+    stream << "FIXED_SEED = " << FIXED_SEED <<  "\n";
     #endif
     stream << starttimestring << "\n";
     stream << "START_PARAMS\n";

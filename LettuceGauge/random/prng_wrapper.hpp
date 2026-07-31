@@ -102,10 +102,11 @@ class PRNG4D
         random_generators(size), normal_distributions(size, std::normal_distribution<floatT>(0.0, 1.0)), uniform_real_distributions(size, std::uniform_real_distribution<floatT>(0.0, 1.0)), uniform_int_distributions(size, std::uniform_int_distribution<intT>(1, 8))
         {
             #ifdef FIXED_SEED
+            constexpr typename prngT::state_type fixed_seed = static_cast<prngT::state_type>(FIXED_SEED);
             // Ignore seed source and seed all PRNGs incrementally (seeding all PRNGs with the same seed will cause the HMC to not work properly, since all initial momenta are the same)
             for (std::size_t index = 0; index < size; ++index)
             {
-                SeedPRNG(index, index);
+                SeedPRNG(index, fixed_seed + index);
             }
             #else
             // Seed all PRNGs with the provided seed_source

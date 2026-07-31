@@ -109,7 +109,8 @@ struct RunStatistics
 inline pcg64 MakeRandomGenerator()
 {
 #ifdef FIXED_SEED
-    return pcg64(1);
+    constexpr pcg64::state_type fixed_seed = static_cast<pcg64::state_type>(FIXED_SEED);
+    return pcg64{fixed_seed};
 #else
     pcg_extras::seed_seq_from<std::random_device> seed_source;
     return pcg64(seed_source);
