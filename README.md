@@ -19,13 +19,14 @@ This project requires [Eigen](https://gitlab.com/libeigen/eigen) and the [PCG PR
 ## Building
 
 Since all dependencies are already included in the repository as header files, you can simply compile the code via:
-```
+```bash
 make
 ```
-Optionally, the flag 'FIXED_SEED' may be set during compilation to seed the inbuilt PRNG class (used for the update algorithms) with a fixed seed:
+Optionally, the flag 'FIXED_SEED' may be defined during compilation to seed the inbuilt PRNG class (used for the update algorithms) with a fixed seed:
+```bash
+make FLGS=-DFIXED_SEED=<seed_value>
 ```
-make FLGS=-DFIXED_SEED
-```
+Defining the macro without an explicit value uses a seed of `1`.
 The following parameters need to be known/set at compile-time:
 - Lattice extents (Nt, Nx, Ny, Nz)
 - Update algorithm parameters (which type of update algorithms, sweep number, ...):
