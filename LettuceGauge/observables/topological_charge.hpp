@@ -200,7 +200,7 @@ double TopChargeClover(const GaugeField& U) noexcept
 }
 
 [[nodiscard]]
-double TopChargeClover(const FullTensor& Clover) noexcept
+double TopChargeClover(const CloverField& Clover) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
@@ -209,21 +209,31 @@ double TopChargeClover(const FullTensor& Clover) noexcept
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        std::array<Matrix_3x3, 6> F;
-        //-----
-        // F[0][1]
-        F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
-        // F[0][2]
-        F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
-        // F[0][3]
-        F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
-        // F[1][2]
-        F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
-        // F[1][3]
-        F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
-        // F[2][3]
-        F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
-        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+        // std::array<Matrix_3x3, 6> F;
+        // //-----
+        // // F[0][1]
+        // F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
+        // // F[0][2]
+        // F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
+        // // F[0][3]
+        // F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
+        // // F[1][2]
+        // F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
+        // // F[1][3]
+        // F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
+        // // F[2][3]
+        // F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
+        // Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+
+        site_coord current_site {t, x, y, z};
+        const Matrix_3x3& R_01 {Clover.IndependentComponent(current_site, 0, 1)};
+        const Matrix_3x3& R_02 {Clover.IndependentComponent(current_site, 0, 2)};
+        const Matrix_3x3& R_03 {Clover.IndependentComponent(current_site, 0, 3)};
+        const Matrix_3x3& R_12 {Clover.IndependentComponent(current_site, 1, 2)};
+        const Matrix_3x3& R_13 {Clover.IndependentComponent(current_site, 1, 3)};
+        const Matrix_3x3& R_23 {Clover.IndependentComponent(current_site, 2, 3)};
+
+        Q += std::real((R_01 * R_23 - R_02 * R_13 + R_03 * R_12).trace());
     }
     // The factor -1/64 comes from the field strength tensor terms (factor -1/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
     // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4

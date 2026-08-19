@@ -250,7 +250,8 @@ namespace GaugeUpdates
 {
     struct HMCMetaDData
     {
-        FullTensor                                             Clover;
+        // FullTensor                                             Clover;
+        CloverField                                            Clover;
         GaugeFieldSmeared                                      SmearedFields;
         GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
         GaugeField                                             ForceFatLink;

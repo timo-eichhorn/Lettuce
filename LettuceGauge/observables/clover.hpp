@@ -56,7 +56,7 @@ Matrix_3x3 CalculateCloverComponent<1, 1>(const GaugeField& U, const site_coord&
 }
 
 template<int N_mu, int N_nu = N_mu>
-void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
+void CalculateClover(const GaugeField& U, CloverField& Clov) noexcept
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of CalculateClover are not allowed to be 0!");
     #pragma omp parallel for collapse(omp_collapse_depth)
@@ -66,33 +66,60 @@ void CalculateClover(const GaugeField& U, FullTensor& Clov) noexcept
     for (int z = 0; z < Nz; ++z)
     {
         site_coord current_site {t, x, y, z};
-        Clov(current_site, 0, 0).setZero();
-        Clov(current_site, 0, 1) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 1);
-        Clov(current_site, 1, 0) = Clov(current_site, 0, 1).adjoint();
+        // Clov(current_site, 0, 0).setZero();
+        // Clov(current_site, 0, 1) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 1);
+        // Clov(current_site, 1, 0) = Clov(current_site, 0, 1).adjoint();
 
-        Clov(current_site, 0, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 2);
-        Clov(current_site, 2, 0) = Clov(current_site, 0, 2).adjoint();
+        // Clov(current_site, 0, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 2);
+        // Clov(current_site, 2, 0) = Clov(current_site, 0, 2).adjoint();
 
-        Clov(current_site, 0, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 3);
-        Clov(current_site, 3, 0) = Clov(current_site, 0, 3).adjoint();
+        // Clov(current_site, 0, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 0, 3);
+        // Clov(current_site, 3, 0) = Clov(current_site, 0, 3).adjoint();
 
-        Clov(current_site, 1, 1).setZero();
-        Clov(current_site, 1, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 2);
-        Clov(current_site, 2, 1) = Clov(current_site, 1, 2).adjoint();
+        // Clov(current_site, 1, 1).setZero();
+        // Clov(current_site, 1, 2) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 2);
+        // Clov(current_site, 2, 1) = Clov(current_site, 1, 2).adjoint();
 
-        Clov(current_site, 1, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 3);
-        Clov(current_site, 3, 1) = Clov(current_site, 1, 3).adjoint();
+        // Clov(current_site, 1, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 1, 3);
+        // Clov(current_site, 3, 1) = Clov(current_site, 1, 3).adjoint();
 
-        Clov(current_site, 2, 2).setZero();
-        Clov(current_site, 2, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 2, 3);
-        Clov(current_site, 3, 2) = Clov(current_site, 2, 3).adjoint();
-        Clov(current_site, 3, 3).setZero();
+        // Clov(current_site, 2, 2).setZero();
+        // Clov(current_site, 2, 3) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, 2, 3);
+        // Clov(current_site, 3, 2) = Clov(current_site, 2, 3).adjoint();
+        // Clov(current_site, 3, 3).setZero();
+        for (int mu = 0;      mu < NDim; ++mu)
+        for (int nu = mu + 1; nu < NDim; ++nu)
+        {
+            // Matrix_3x3 component {CalculateCloverComponent<N_mu, N_nu>(U, current_site, mu, nu)};
+            // Clov.IndependentComponent(current_site, mu, nu) = component - component.adjoint();
+            Clov.IndependentComponent(current_site, mu, nu) = CalculateCloverComponent<N_mu, N_nu>(U, current_site, mu, nu);
+        }
+    }
+}
+
+template<int N_mu, int N_nu = N_mu>
+void CalculateCloverDifference(const GaugeField& U, CloverDifferenceField& ClovDiff) noexcept
+{
+    static_assert(N_mu != 0 and N_nu != 0, "The template parameters of CalculateCloverDifference are not allowed to be 0!");
+    #pragma omp parallel for collapse(omp_collapse_depth)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        site_coord current_site {t, x, y, z};
+        for (int mu = 0;      mu < NDim; ++mu)
+        for (int nu = mu + 1; nu < NDim; ++nu)
+        {
+            Matrix_3x3 component {CalculateCloverComponent<N_mu, N_nu>(U, current_site, mu, nu)};
+            Clov.IndependentComponent(current_site, mu, nu) = component - component.adjoint();
+        }
     }
 }
 
 // Template specialization for plaquette-based clover term
 template<>
-void CalculateClover<1, 1>(const GaugeField& U, FullTensor& Clov) noexcept
+void CalculateClover<1, 1>(const GaugeField& U, CloverField& Clov) noexcept
 {
     #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)

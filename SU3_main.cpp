@@ -73,7 +73,8 @@ struct ObservableWorkspace
     GaugeField smeared1;
     GaugeField smeared2;
     GaugeField chain;
-    FullTensor field_strength;
+    // FullTensor field_strength;
+    FieldStrengthField field_strength;
 };
 
 //-------------------------------------------------------------------------------------
