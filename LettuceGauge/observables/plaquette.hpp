@@ -52,7 +52,7 @@ double PlaquetteSumTimeslice(const GaugeField& U, const int t) noexcept
     for (int z = 0; z < Nz; ++z)
     for (int nu = 1; nu < 4; ++nu)
     {
-        site_coord current_site {t, x, y, z};
+        const site_coord current_site {t, x, y, z};
         for (int mu = 0; mu < nu; ++mu)
         {
             Plaq_sum += std::real(Plaquette(U, current_site, mu, nu).trace());
@@ -90,7 +90,7 @@ Matrix_SU3 PlaquetteI(const GaugeField& U, const site_coord& current_site, const
 [[nodiscard]]
 Matrix_SU3 PlaquetteII(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mud     {U.Move<-1>(current_site, mu)};
+    const site_coord site_mud {U.Move<-1>(current_site, mu)};
     return U(current_site, nu) * U(U.Move<1>(site_mud, nu), mu).adjoint() * U(site_mud, nu).adjoint() * U(site_mud, mu);
 }
 
@@ -100,8 +100,8 @@ Matrix_SU3 PlaquetteIII(const GaugeField& U, const site_coord& current_site, con
 {
     // TODO: We could reorder the expression below and replace one U.Move<-1> by a U.Move<1>
     //       Also, we could replace the last U.Move<-1> with a U.Move<1> from a different site
-    site_coord site_mud     {U.Move<-1>(current_site, mu)};
-    site_coord site_mud_nud {U.Move<-1>(site_mud    , nu)};
+    const site_coord site_mud     {U.Move<-1>(current_site, mu)};
+    const site_coord site_mud_nud {U.Move<-1>(site_mud    , nu)};
     return U(site_mud, mu).adjoint() * U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(U.Move<-1>(current_site, nu), nu);
 }
 
@@ -109,7 +109,7 @@ Matrix_SU3 PlaquetteIII(const GaugeField& U, const site_coord& current_site, con
 [[nodiscard]]
 Matrix_SU3 PlaquetteIV(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_nud     {U.Move<-1>(current_site, nu)};
+    const site_coord site_nud {U.Move<-1>(current_site, nu)};
     return U(site_nud, nu).adjoint() * U(site_nud, mu) * U(U.Move<1>(site_nud, mu), nu) * U(current_site, mu).adjoint();
 }
 

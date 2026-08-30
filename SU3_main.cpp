@@ -70,11 +70,10 @@
 
 struct ObservableWorkspace
 {
-    GaugeField smeared1;
-    GaugeField smeared2;
-    GaugeField chain;
-    // FullTensor field_strength;
-    FieldStrengthField field_strength;
+    GaugeField         smeared1;
+    GaugeField         smeared2;
+    GaugeField         chain;
+    AntisymmetricField field_strength;
 };
 
 //-------------------------------------------------------------------------------------

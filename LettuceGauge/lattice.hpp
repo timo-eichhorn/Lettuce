@@ -3,249 +3,21 @@
 
 // Non-standard library headers
 #include "coords.hpp"
+#include "math/tensor_symmetry.hpp"
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
 //----------------------------------------
 // Standard C++ headers
-#include <complex>
 #include <concepts>
 #include <iostream>
 #include <memory>
-#include <type_traits>
 //----------------------------------------
 // Standard C headers
 #include <cassert>
 #include <cstddef>
 
 //----------------------------------------
-
-namespace TensorSymmetry
-{
-    namespace Detail
-    {
-
-        enum class ComponentAccess : unsigned char
-        {
-            Direct,
-            Indirect,
-            ImplicitZero
-        };
-
-        struct ComponentMap
-        {
-            std::size_t     component;
-            ComponentAccess access;
-        };
-
-        template<typename T>
-        [[nodiscard]]
-        T Zero() noexcept
-        {
-            if constexpr(requires{T::Zero();})
-            {
-                return T::Zero();
-            }
-            else
-            {
-                return T{};
-            }
-        }
-
-        template<typename T>
-        [[nodiscard]]
-        T Adjoint(const T& value) noexcept
-        {
-            if constexpr(requires{value.adjoint();})
-            {
-                return T(value.adjoint());
-            }
-            // Real (non-complex) type
-            // TODO: Better, more explicit complex check
-            else if constexpr(std::is_arithmetic_v<T>)
-            {
-                return value;
-            }
-            else
-            {
-                return T(std::conj(value));
-            }
-        }
-
-        template<bool StoresDiagonal>
-        struct TriangularSymmetryRelation
-        {
-            template<int N>
-            [[nodiscard]]
-            static consteval std::size_t ComponentCount() noexcept
-            {
-                if constexpr(StoresDiagonal)
-                {
-                    return static_cast<std::size_t>(N * (N + 1) / 2);
-                }
-                else
-                {
-                    return static_cast<std::size_t>(N * (N - 1) / 2);
-                }
-            }
-
-            template<int N>
-            [[nodiscard]]
-            static constexpr std::size_t IndependentIndex(const int mu, const int nu) noexcept
-            {
-                // TODO: Indexing correct and optimal?
-                if constexpr(StoresDiagonal)
-                {
-                    return static_cast<std::size_t>(mu * N - mu * (mu - 1) / 2 + nu - mu);
-                }
-                else
-                {
-                    return static_cast<std::size_t>(mu * (2 * N - mu - 1) / 2 + nu - mu - 1);
-                }
-            }
-
-            template<int N>
-            [[nodiscard]]
-            static constexpr bool IsIndependentComponent(const int mu, const int nu) noexcept
-            {
-                const bool in_bounds {mu >= 0 and mu < N and nu >= 0 and nu < N};
-                if constexpr(StoresDiagonal)
-                {
-                    return in_bounds and mu <= nu;
-                }
-                else
-                {
-                    return in_bounds and mu < nu;
-                }
-            }
-
-            template<int N>
-            [[nodiscard]]
-            static constexpr ComponentMap Locate(const int mu, const int nu) noexcept
-            {
-                if constexpr(not StoresDiagonal)
-                {
-                    if (mu == nu)
-                    {
-                        return {0, ComponentAccess::ImplicitZero};
-                    }
-                }
-
-                if (mu <= nu)
-                {
-                    return {IndependentIndex<N>(mu, nu), ComponentAccess::Direct};
-                }
-                return {IndependentIndex<N>(nu, mu), ComponentAccess::Indirect}
-            }
-        };
-    } // namespace Detail
-
-
-    // T_{ij} = T_{ji}
-    struct Symmetric : TriangularSymmetryRelation<true>
-    {
-        template<typename T>
-        [[nodiscard]]
-        static T Read(const ComponentMap& component_map, const T* components) noexcept
-        {
-            return components[component_map.component];
-        }
-
-        template<typename T>
-        static void Write(const T& value, const ComponentMap& component_map, const T* components)
-        {
-            components[component_map.component] = value;
-        }
-    };
-
-    // T_{ij} = -T_{ji}
-    struct Antisymmetric : TriangularSymmetryRelation<false>
-    {
-        template<typename T>
-        [[nodiscard]]
-        static T Read(const ComponentMap& component_map, const T* components) noexcept
-        {
-            if (component_map.access == Detail::ComponentAccess::ImplicitZero)
-            {
-                return Detail::Zero<T>();
-            }
-            const T& stored {components[component_map.component]};
-            return component_map.access == Detail::ComponentAccess::Indirect ? -stored : stored;
-        }
-
-        template<typename T>
-        static void Write(const T& value, const ComponentMap& component_map, const T* components)
-        {
-            if (component_map.access != Detail::ComponentAccess::ImplicitZero)
-            {
-                components[component_map.component] = component_map.access == Detail::ComponentAccess::Indirect ? -value : value;
-            }
-        }
-    };
-
-
-    // struct AdjointSymmetric : TriangularSymmetryRelation<true>{};
-    // struct AdjointAntisymmetric : TriangularSymmetryRelation<true>{};
-    // struct ZeroDiagonalAdjointSymmetric : TriangularSymmetryRelation<false>{};
-    // // T_{ij} = T_{ji}^\dagger
-    // struct Hermitian : TriangularSymmetryRelation<false>
-    // {
-    //     template<typename T>
-    //     [[nodiscard]]
-    //     static T Read(const ComponentMap& component_map, const T* components) noexcept
-    //     {
-    //         if (component_map.access == Detail::ComponentAccess::ImplicitZero)
-    //         {
-    //             return Detail::Zero<T>();
-    //         }
-    //         const T& stored {components[component_map.component]};
-    //         return component_map.access == Detail::ComponentAccess::Indirect ? -stored : stored;
-    //     }
-
-    //     template<typename T>
-    //     static void Write(const T& value, const ComponentMap& component_map, const T* components)
-    //     {
-    //         if (component_map.access != Detail::ComponentAccess::ImplicitZero)
-    //         {
-    //             components[component_map.component] = component_map.access == Detail::ComponentAccess::Indirect ? -value : value;
-    //         }
-    //     }
-    // };
-
-    // // T_{ij} = -T_{ji}^\dagger
-    // struct AntiHermitian : TriangularSymmetryRelation<false>
-    // {
-    //     template<typename T>
-    //     [[nodiscard]]
-    //     static T Read(const ComponentMap& component_map, const T* components) noexcept
-    //     {
-    //         if (component_map.access == Detail::ComponentAccess::ImplicitZero)
-    //         {
-    //             return Detail::Zero<T>();
-    //         }
-    //         const T& stored {components[component_map.component]};
-    //         return component_map.access == Detail::ComponentAccess::Indirect ? -stored : stored;
-    //     }
-
-    //     template<typename T>
-    //     static void Write(const T& value, const ComponentMap& component_map, const T* components)
-    //     {
-    //         if (component_map.access != Detail::ComponentAccess::ImplicitZero)
-    //         {
-    //             components[component_map.component] = component_map.access == Detail::ComponentAccess::Indirect ? -value : value;
-    //         }
-    //     }
-    // };
-
-    template<typename PolicyT, typename T, int N>
-    concept ComponentRelationPolicy = requires(const typename PolicyT::ComponentMap& component_map, const T* readable_components, T* writable_components, const T& value)
-    {
-        {PolicyT::template ComponentCount<N>()}                                 -> std::convertible_to<std::size_t>;
-        {PolicyT::template Locate<N>(0, 0)}                                     -> std::same_as<typename PolicyT::ComponentMap>;
-        {PolicyT::template Read<T>(component_map, readable_components)}         -> std::same_as<T>;
-        {PolicyT::template Write<T>(value, component_map, writable_components)} -> std::same_as<void>;
-    };
-} // namespace TensorSymmetry
 
 // This class is a minimal wrapper around an array containing a gauge field, to be used in the GaugeField4D and GaugeField4DSmeared classes
 // It should never be used by itself, hence everything is private
@@ -675,9 +447,6 @@ class GaugeField4DSmeared
         }
 };
 
-
-// TODO: Can not always provide regular reference access via operator(), since some components may not exist in memory
-//       Need to provide Setters at the very least
 // This class acts as a general container for a (4x4)-component tensor in 4 dimensions
 // The links can be accessed via a single lexicographic index, link_coords, or site_coords and an additional directional index
 template<int Nt_, int Nx_, int Ny_, int Nz_, typename gaugeT>
@@ -692,8 +461,7 @@ class FullTensor4D
         static constexpr int         Nnu    {4};
         // Promote single length to size_t so the product doesn't overflow
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
-        static constexpr std::size_t V_link {Nmu * Nnu * V};
-        LatticeField<V_link, gaugeT> gaugefield;
+        LatticeField<Nmu * Nnu * V, gaugeT> gaugefield;
     public:
         // Constructor with four arguments (one length for each direction)
         FullTensor4D() noexcept
@@ -777,22 +545,22 @@ class FullTensor4D
         {
             return Volume() / Nt;
         }
-        // constexpr int Length(const int direction) const noexcept
-        // {
-        //     switch (direction)
-        //     {
-        //         case 0:
-        //             return Nt;
-        //         case 1:
-        //             return Nx;
-        //         case 2:
-        //             return Ny;
-        //         case 3:
-        //             return Nz;
-        //         default:
-        //             return 0;
-        //     }
-        // }
+        constexpr int Length(const int direction) const noexcept
+        {
+            switch (direction)
+            {
+                case 0:
+                    return Nt;
+                case 1:
+                    return Nx;
+                case 2:
+                    return Ny;
+                case 3:
+                    return Nz;
+                default:
+                    return 0;
+            }
+        }
         // TODO: Should we add a Shape() function here like for GaugeField4D?
     private:
         // -----
@@ -825,26 +593,25 @@ class FullTensor4D
         // }
 };
 
-// Lattice field containing tensors of rank two in a compressed form (triangle instead of full tensor)
+// Lattice field containing tensors of rank two in a compressed form
 template<int Nt_, int Nx_, int Ny_, int Nz_, int N_, typename tensorT, typename ComponentPolicyT>
 class CompressedTensor4D
 {
     private:
-        static constexpr int         Nt            {Nt_};
-        static constexpr int         Nx            {Nx_};
-        static constexpr int         Ny            {Ny_};
-        static constexpr int         Nz            {Nz_};
-        static constexpr int         N             {N_};
+        static constexpr int         Nt          {Nt_};
+        static constexpr int         Nx          {Nx_};
+        static constexpr int         Ny          {Ny_};
+        static constexpr int         Nz          {Nz_};
+        static constexpr int         N           {N_};
         // Promote single length to size_t so the product doesn't overflow
-        static constexpr std::size_t V             {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
-        static constexpr std::size_t V_link        {Nmu * Nnu * V};
-        static constexpr std::size_t Ncomponents   {ComponentPolicyT::template ComponentCount<N>()};
-        LatticeField<V * Ncomponents, tensorT> tensorfield;
+        static constexpr std::size_t V           {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
+        static constexpr std::size_t Ncomponents {ComponentPolicyT::template ComponentCount<N>()};
+        LatticeField<V * Ncomponents, tensorT>   tensorfield;
 
         [[nodiscard]]
         static constexpr std::size_t SiteIndex(const site_coord& site) noexcept
         {
-            return ((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + size.y) * Nz + site.z;
+            return ((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + site.y) * Nz + site.z;
         }
 
         [[nodiscard]]
@@ -866,7 +633,8 @@ class CompressedTensor4D
         }
     public:
         static_assert(N > 1, "CompressedTensor4D requires at least two tensor components");
-        static_assert(TensorSymmetry::ComponentRelationPolicy<ComponentPolicyT, tensorT, N_>);
+        static_assert(Ncomponents > 0, "CompressedTensor4D requires at least one stored tensor component");
+        static_assert(TensorSymmetry::ComponentRelationPolicy<ComponentPolicyT, tensorT, N_>, "The component relation policy does not satisfy the CompressedTensor4D interface");
         CompressedTensor4D() noexcept = default;
         ~CompressedTensor4D()         = default;
 
@@ -884,10 +652,15 @@ class CompressedTensor4D
             return SiteData(site)[component];
         }
 
+        // Convenience overloads for callers that already comply with the policy's independent component convention
+        // Policies with no one-to-one canonical index pair do not need to provide this operation
         [[nodiscard]]
         tensorT& IndependentComponent(const site_coord& site, const int mu, const int nu) noexcept
-        requires requires{ComponentPolicyT::template IndependentIndex<N>(0, 0);
-                          ComponentPolicyT::template IsIndependentComponent<N>(0, 0);}
+        requires requires(const int component_mu, const int component_nu)
+        {
+            {ComponentPolicyT::template IndependentIndex<N>(component_mu, component_nu)}       -> std::same_as<std::size_t>;
+            {ComponentPolicyT::template IsIndependentComponent<N>(component_mu, component_nu)} -> std::same_as<bool>;
+        }
         {
             assert(ComponentPolicyT::template IsIndependentComponent<N>(mu, nu));
             return IndependentComponent(site, ComponentPolicyT::template IndependentIndex<N>(mu, nu));
@@ -895,8 +668,11 @@ class CompressedTensor4D
 
         [[nodiscard]]
         const tensorT& IndependentComponent(const site_coord& site, const int mu, const int nu) const noexcept
-        requires requires{ComponentPolicyT::template IndependentIndex<N>(0, 0);
-                          ComponentPolicyT::template IsIndependentComponent<N>(0, 0);}
+        requires requires(const int component_mu, const int component_nu)
+        {
+            {ComponentPolicyT::template IndependentIndex<N>(component_mu, component_nu)}       -> std::same_as<std::size_t>;
+            {ComponentPolicyT::template IsIndependentComponent<N>(component_mu, component_nu)} -> std::same_as<bool>;
+        }
         {
             assert(ComponentPolicyT::template IsIndependentComponent<N>(mu, nu));
             return IndependentComponent(site, ComponentPolicyT::template IndependentIndex<N>(mu, nu));
@@ -910,13 +686,11 @@ class CompressedTensor4D
             return ComponentPolicyT::template Read<tensorT>(component_map, SiteData(site));
         }
 
-        // TODO: Inconsistent argument order between Set and Write
-        [[nodiscard]]
-        void Set(const site_coord& site, const int mu, const int nu, const tensorT& value) const noexcept
+        void Set(const site_coord& site, const int mu, const int nu, const tensorT& value) noexcept
         {
             assert(mu >= 0 and mu < N and nu >= 0 and nu < N);
             const auto component_map {ComponentPolicyT::template Locate<N>(mu, nu)};
-            return ComponentPolicyT::template Write<tensorT>(value, component_map, SiteData(site));
+            ComponentPolicyT::template Write<tensorT>(component_map, SiteData(site), value);
         }
 
         [[nodiscard]]
@@ -942,39 +716,42 @@ class CompressedTensor4D
         {
             return V / Nt;
         }
-        // constexpr int Length(const int direction) const noexcept
-        // {
-        //     switch (direction)
-        //     {
-        //         case 0:
-        //             return Nt;
-        //         case 1:
-        //             return Nx;
-        //         case 2:
-        //             return Ny;
-        //         case 3:
-        //             return Nz;
-        //         default:
-        //             return 0;
-        //     }
-        // }
+
+        [[nodiscard]]
+        constexpr int Length(const int direction) const noexcept
+        {
+            switch (direction)
+            {
+                case 0:
+                    return Nt;
+                case 1:
+                    return Nx;
+                case 2:
+                    return Ny;
+                case 3:
+                    return Nz;
+                default:
+                    return 0;
+            }
+        }
 };
 
 using GaugeField            = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 using GaugeFieldSmeared     = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
 using FullTensor            = FullTensor4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
 
-// Compressed tensors with symmetries in their Lorentz indices
-// Clover term: C_{mu, nu} = C_{nu, mu}^dagger, and C_{mu, mu} = 0
-// using CloverField           = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::ZeroDiagonalAdjointSymmetric>;
-// Clover difference (R_{mu, nu} = C_{mu, nu} - C_{nu, mu}): R_{mu, nu} = - R_{nu, mu}
-using CloverDifferenceField = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::Antisymmetric>;
+// Compressed matrix-valued tensor fields, where the symmetries refer to the Lorentz indices
+// Clover terms are adjoint-symmetric and have vanishing diagonal entries:
+// C_{mu, nu} = C_{nu, mu}^dagger, and C_{mu, mu} = 0
+// Clover differences are antisymmetric in their Lorentz indices:
+// (R_{mu, nu} = C_{mu, nu} - C_{nu, mu}): R_{mu, nu} = - R_{nu, mu}
+// Field strength tensors are antisymmetric in their Lorentz indices:
 // F_{mu, nu} = -F_{nu, mu}
-using FieldStrengthField    = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::Antisymmetric>;
+using ZeroDiagonalAdjointSymmetricField = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::ZeroDiagonalAdjointSymmetric>;
+using AntisymmetricField                = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::Antisymmetric>;
 
-// static_assert(CloverField::ComponentsPerSite()           == Ndim * (Ndim - 1) / 2);
-static_assert(CloverDifferenceField::ComponentsPerSite() == Ndim * (Ndim - 1) / 2)
-static_assert(FieldStrengthField::ComponentsPerSite()    == Ndim * (Ndim - 1) / 2);
+static_assert(ZeroDiagonalAdjointSymmetricField::ComponentsPerSite() == static_cast<std::size_t>(Ndim) * (Ndim - 1) / 2);
+static_assert(AntisymmetricField::ComponentsPerSite()                == static_cast<std::size_t>(Ndim) * (Ndim - 1) / 2);
 
 // Struct to hold a pair of references to smeared fields
 // Useful when smearing multiple times, and only the final smearing level is needed

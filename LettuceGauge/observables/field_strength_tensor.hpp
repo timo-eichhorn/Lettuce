@@ -25,7 +25,7 @@
 namespace FieldStrengthTensor
 {
     // Version where the entries of F are antihermitian only (not traceless)
-    void Clover(const GaugeField& U, FullTensor& F) noexcept
+    void Clover(const GaugeField& U, AntisymmetricField& FieldStrengthTensor) noexcept
     {
         #pragma omp parallel for collapse(omp_collapse_depth)
         for (int t = 0; t < Nt; ++t)
@@ -33,39 +33,17 @@ namespace FieldStrengthTensor
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
-            Matrix_3x3 Clover;
-            F(current_site, 0, 0).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 1);
-            F(current_site, 0, 1) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 1, 0) = -F(t, x, y, z, 0, 1).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 2);
-            F(current_site, 0, 2) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 2, 0) = -F(t, x, y, z, 0, 2).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 3);
-            F(current_site, 0, 3) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 3, 0) = -F(t, x, y, z, 0, 3).adjoint();
-
-            F(current_site, 1, 1).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 2);
-            F(current_site, 1, 2) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 2, 1) = -F(t, x, y, z, 1, 2).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 3);
-            F(current_site, 1, 3) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 3, 1) = -F(t, x, y, z, 1, 3).adjoint();
-
-            F(current_site, 2, 2).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 2, 3);
-            F(current_site, 2, 3) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(Clover);
-            F(current_site, 3, 2) = -F(t, x, y, z, 2, 3).adjoint();
-            F(current_site, 3, 3).setZero();
+            const site_coord current_site {t, x, y, z};
+            for (int mu = 0;      mu < Ndim; ++mu)
+            for (int nu = mu + 1; nu < Ndim; ++nu)
+            {
+                const Matrix_3x3 clover {CalculateCloverComponent<1>(U, current_site, mu, nu)};
+                FieldStrengthTensor.IndependentComponent(current_site, mu, nu) = -i<floatT> / 4.0 * SU3::Projection::Antihermitian(clover);
+            }
         }
     }
     // Version where the entries of F are made antihermitian and traceless (i.e. algebra elements)
-    void CloverTraceless(const GaugeField& U, FullTensor& F) noexcept
+    void CloverTraceless(const GaugeField& U, AntisymmetricField& FieldStrengthTensor) noexcept
     {
         #pragma omp parallel for collapse(omp_collapse_depth)
         for (int t = 0; t < Nt; ++t)
@@ -73,38 +51,16 @@ namespace FieldStrengthTensor
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
-            Matrix_3x3 Clover;
-            F(current_site, 0, 0).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 1);
-            F(current_site, 0, 1) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 1, 0) = -F(t, x, y, z, 0, 1).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 2);
-            F(current_site, 0, 2) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 2, 0) = -F(t, x, y, z, 0, 2).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 0, 3);
-            F(current_site, 0, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 3, 0) = -F(t, x, y, z, 0, 3).adjoint();
-
-            F(current_site, 1, 1).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 2);
-            F(current_site, 1, 2) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 2, 1) = -F(t, x, y, z, 1, 2).adjoint();
-
-            Clover                = CalculateCloverComponent<1>(U, current_site, 1, 3);
-            F(current_site, 1, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 3, 1) = -F(t, x, y, z, 1, 3).adjoint();
-
-            F(current_site, 2, 2).setZero();
-            Clover                = CalculateCloverComponent<1>(U, current_site, 2, 3);
-            F(current_site, 2, 3) = -i<floatT> / 4.0 * SU3::Projection::Algebra(Clover);
-            F(current_site, 3, 2) = -F(t, x, y, z, 2, 3).adjoint();
-            F(current_site, 3, 3).setZero();
+            const site_coord current_site {t, x, y, z};
+            for (int mu = 0;      mu < Ndim; ++mu)
+            for (int nu = mu + 1; nu < Ndim; ++nu)
+            {
+                const Matrix_3x3 clover {CalculateCloverComponent<1>(U, current_site, mu, nu)};
+                FieldStrengthTensor.IndependentComponent(current_site, mu, nu) = -i<floatT> / 4.0 * SU3::Projection::Algebra(clover);
+            }
         }
     }
-    void MakeComponentsTraceless(FullTensor& F) noexcept
+    void MakeComponentsTraceless(AntisymmetricField& FieldStrengthTensor) noexcept
     {
         #pragma omp parallel for collapse(omp_collapse_depth)
         for (int t = 0; t < Nt; ++t)
@@ -112,24 +68,13 @@ namespace FieldStrengthTensor
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
-            F(current_site, 0, 1) = SU3::Projection::Traceless(F(current_site, 0, 1));
-            F(current_site, 1, 0) = -F(t, x, y, z, 0, 1).adjoint();
-
-            F(current_site, 0, 2) = SU3::Projection::Traceless(F(current_site, 0, 2));
-            F(current_site, 2, 0) = -F(t, x, y, z, 0, 2).adjoint();
-
-            F(current_site, 0, 3) = SU3::Projection::Traceless(F(current_site, 0, 3));
-            F(current_site, 3, 0) = -F(t, x, y, z, 0, 3).adjoint();
-
-            F(current_site, 1, 2) = SU3::Projection::Traceless(F(current_site, 1, 2));
-            F(current_site, 2, 1) = -F(t, x, y, z, 1, 2).adjoint();
-
-            F(current_site, 1, 3) = SU3::Projection::Traceless(F(current_site, 1, 3));
-            F(current_site, 3, 1) = -F(t, x, y, z, 1, 3).adjoint();
-
-            F(current_site, 2, 3) = SU3::Projection::Traceless(F(current_site, 2, 3));
-            F(current_site, 3, 2) = -F(t, x, y, z, 2, 3).adjoint();
+            const site_coord current_site {t, x, y, z};
+            for (int mu = 0;      mu < Ndim; ++mu)
+            for (int nu = mu + 1; nu < Ndim; ++nu)
+            {
+                Matrix_3x3& component {FieldStrengthTensor.IndependentComponent(current_site, mu, nu)};
+                component = SU3::Projection::Traceless(component);
+            }
         }
     }
 } // namespace FieldStrengthTensor
@@ -140,19 +85,19 @@ namespace EnergyDensity
     [[nodiscard]]
     double Plaquette(const GaugeField& U) noexcept
     {
-        double E {PlaquetteSum(U)};
+        const double E {PlaquetteSum(U)};
         return 2 * (6 * Ncolor - E / U.Volume());
     }
 
     [[nodiscard]]
     double PlaquetteTimeslice(const GaugeField& U, const int t) noexcept
     {
-        double E {PlaquetteSumTimeslice(U, t)};
+        const double E {PlaquetteSumTimeslice(U, t)};
         return 2 * (6 * Ncolor / U.Length(0) - E / U.Volume());
     }
 
     [[nodiscard]]
-    double Clover(const FullTensor& F) noexcept
+    double Clover(const AntisymmetricField& FieldStrengthTensor) noexcept
     {
         double E {0.0};
         #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: E)
@@ -161,21 +106,26 @@ namespace EnergyDensity
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
+            const site_coord current_site {t, x, y, z};
             // F_{nu,mu} = F_{mu,nu}^{\dagger}
             // F_{nu,mu} F_{nu,mu} = (F_{mu,nu} F_{mu,nu})^{\dagger}
             // Due to the real trace, we can simplify the sum to go over (mu < nu) instead of (mu, nu) and get a factor of two
-            E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
-                          + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
+            // ReTr(F_01^2 + F_02^2 + F_03^2 + F_12^2 + F_13^2 + F_23^2)
+            for (int mu = 0;      mu < Ndim; ++mu)
+            for (int nu = mu + 1; nu < Ndim; ++nu)
+            {
+                const Matrix_3x3& component {FieldStrengthTensor.IndependentComponent(current_site, mu, nu)};
+                E += std::real((component * component).trace());
+            }
         }
         // TODO: Normalization for different Ncolor?
-        return E / F.Volume();
+        return E / FieldStrengthTensor.Volume();
         // This should match Stephan's definition
-        // return 1.0 / (36.0 * F.Volume()) * E;
+        // return 1.0 / (36.0 * FieldStrengthTensor.Volume()) * E;
     }
 
     [[nodiscard]]
-    double CloverTimeslice(const FullTensor& F, const int t) noexcept
+    double CloverTimeslice(const AntisymmetricField& FieldStrengthTensor, const int t) noexcept
     {
         double E {0.0};
         #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: E)
@@ -183,15 +133,20 @@ namespace EnergyDensity
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
+            const site_coord current_site {t, x, y, z};
             // F_{nu,mu} = F_{mu,nu}^{\dagger}
             // F_{nu,mu} F_{nu,mu} = (F_{mu,nu} F_{mu,nu})^{\dagger}
             // Due to the real trace, we can simplify the sum to go over (mu < nu) instead of (mu, nu) and get a factor of two
-            E += std::real((F(current_site, 0, 1) * F(current_site, 0, 1) + F(current_site, 0, 2) * F(current_site, 0, 2) + F(current_site, 0, 3) * F(current_site, 0, 3)
-                          + F(current_site, 1, 2) * F(current_site, 1, 2) + F(current_site, 1, 3) * F(current_site, 1, 3) + F(current_site, 2, 3) * F(current_site, 2, 3)).trace());
+            // ReTr(F_01^2 + F_02^2 + F_03^2 + F_12^2 + F_13^2 + F_23^2)
+            for (int mu = 0;      mu < Ndim; ++mu)
+            for (int nu = mu + 1; nu < Ndim; ++nu)
+            {
+                const Matrix_3x3& component {FieldStrengthTensor.IndependentComponent(current_site, mu, nu)};
+                E += std::real((component * component).trace());
+            }
         }
         // TODO: Normalization for different Ncolor?
-        return E / F.Volume();
+        return E / FieldStrengthTensor.Volume();
     }
 } // namespace EnergyDensity
 

@@ -33,14 +33,14 @@ double TopChargeCloverSlow(const GaugeField& U) noexcept
     {
         Local_tensor Clov;
         Local_tensor F;
-        int tm = (t - 1 + Nt)%Nt;
-        int xm = (x - 1 + Nx)%Nx;
-        int ym = (y - 1 + Ny)%Ny;
-        int zm = (z - 1 + Nz)%Nz;
-        int tp = (t + 1)%Nt;
-        int xp = (x + 1)%Nx;
-        int yp = (y + 1)%Ny;
-        int zp = (z + 1)%Nz;
+        const int tm {(t - 1 + Nt)%Nt};
+        const int xm {(x - 1 + Nx)%Nx};
+        const int ym {(y - 1 + Ny)%Ny};
+        const int zm {(z - 1 + Nz)%Nz};
+        const int tp {(t + 1)%Nt};
+        const int xp {(x + 1)%Nx};
+        const int yp {(y + 1)%Ny};
+        const int zp {(z + 1)%Nz};
         // Calculate clover term
         // TODO: Rewrite using plaquette function?
         Clov[0][0].setZero();
@@ -106,14 +106,14 @@ double TopChargeClover(const GaugeField& U) noexcept
     {
         std::array<Matrix_3x3, 6> Clov;
         std::array<Matrix_3x3, 6> F;
-        int tm = (t - 1 + Nt)%Nt;
-        int xm = (x - 1 + Nx)%Nx;
-        int ym = (y - 1 + Ny)%Ny;
-        int zm = (z - 1 + Nz)%Nz;
-        int tp = (t + 1)%Nt;
-        int xp = (x + 1)%Nx;
-        int yp = (y + 1)%Ny;
-        int zp = (z + 1)%Nz;
+        const int tm {(t - 1 + Nt)%Nt};
+        const int xm {(x - 1 + Nx)%Nx};
+        const int ym {(y - 1 + Ny)%Ny};
+        const int zm {(z - 1 + Nz)%Nz};
+        const int tp {(t + 1)%Nt};
+        const int xp {(x + 1)%Nx};
+        const int yp {(y + 1)%Ny};
+        const int zp {(z + 1)%Nz};
         // site_coord current_site {t, x, y, z};
         // Calculate clover term using Q_{mu,nu} = Q_{nu,mu}^{dagger}
         // TODO: Rewrite using plaquette function?
@@ -159,27 +159,6 @@ double TopChargeClover(const GaugeField& U) noexcept
                 + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
         // Clov[5] = PlaquetteI(U, current_site, 2, 3) + PlaquetteII(U, current_site, 2, 3) + PlaquetteIII(U, current_site, 2, 3) + PlaquetteIV(U, current_site, 2, 3);
 
-        // Version that uses the symmetry of F_mu,nu
-        // for (int mu = 0; mu < 4; ++mu)
-        // for (int nu = mu + 1; nu < 4; ++nu)
-        // {
-        //     F[mu][nu] = -i<floatT>/8.f * (Clov[mu][nu] - Clov[mu][nu].adjoint());
-        // }
-        //-----
-        // // F[0][1]
-        // F[0] = -i<floatT>/8.f * (Clov[0] - Clov[0].adjoint());
-        // // F[0][2]
-        // F[1] = -i<floatT>/8.f * (Clov[1] - Clov[1].adjoint());
-        // // F[0][3]
-        // F[2] = -i<floatT>/8.f * (Clov[2] - Clov[2].adjoint());
-        // // F[1][2]
-        // F[3] = -i<floatT>/8.f * (Clov[3] - Clov[3].adjoint());
-        // // F[1][3]
-        // F[4] = -i<floatT>/8.f * (Clov[4] - Clov[4].adjoint());
-        // // F[2][3]
-        // F[5] = -i<floatT>/8.f * (Clov[5] - Clov[5].adjoint());
-        // Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
-        //-----
         // F[0][1]
         F[0] = (Clov[0] - Clov[0].adjoint());
         // F[0][2]
@@ -195,12 +174,12 @@ double TopChargeClover(const GaugeField& U) noexcept
         Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
     }
     // The factor -1/64 comes from the field strength tensor terms (factor -i/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
-    // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4
+    // Since we exploited the symmetries of the F_{mu nu} term above, the normalization factor 1/32 turns into 1/4
     return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
 }
 
 [[nodiscard]]
-double TopChargeClover(const CloverField& Clover) noexcept
+double TopChargeClover(const ZeroDiagonalAdjointSymmetricField& Clover) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
@@ -209,30 +188,44 @@ double TopChargeClover(const CloverField& Clover) noexcept
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        // std::array<Matrix_3x3, 6> F;
-        // //-----
-        // // F[0][1]
-        // F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
-        // // F[0][2]
-        // F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
-        // // F[0][3]
-        // F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
-        // // F[1][2]
-        // F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
-        // // F[1][3]
-        // F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
-        // // F[2][3]
-        // F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
-        // Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+        const site_coord current_site {t, x, y, z};
 
-        site_coord current_site {t, x, y, z};
-        const Matrix_3x3& R_01 {Clover.IndependentComponent(current_site, 0, 1)};
-        const Matrix_3x3& R_02 {Clover.IndependentComponent(current_site, 0, 2)};
-        const Matrix_3x3& R_03 {Clover.IndependentComponent(current_site, 0, 3)};
-        const Matrix_3x3& R_12 {Clover.IndependentComponent(current_site, 1, 2)};
-        const Matrix_3x3& R_13 {Clover.IndependentComponent(current_site, 1, 3)};
-        const Matrix_3x3& R_23 {Clover.IndependentComponent(current_site, 2, 3)};
+        // C_{mu nu}^dagger = C_{nu mu}
+        const auto ComputeDifference = [&Clover, &current_site](const int mu, const int nu) noexcept
+        {
+            const Matrix_3x3& component {Clover.IndependentComponent(current_site, mu, nu)};
+            return Matrix_3x3(component - component.adjoint());
+        };
+        const Matrix_3x3 R_01 {ComputeDifference(0, 1)};
+        const Matrix_3x3 R_02 {ComputeDifference(0, 2)};
+        const Matrix_3x3 R_03 {ComputeDifference(0, 3)};
+        const Matrix_3x3 R_12 {ComputeDifference(1, 2)};
+        const Matrix_3x3 R_13 {ComputeDifference(1, 3)};
+        const Matrix_3x3 R_23 {ComputeDifference(2, 3)};
+        Q += std::real((R_01 * R_23 - R_02 * R_13 + R_03 * R_12).trace());
+    }
+    // The factor -1/64 comes from the field strength tensor terms (factor -1/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
+    // Since we exploited the symmetries of the F_{mu,nu} term above, the normalization factor 1/32 turns into 1/4
+    return -1.0 / (64.0 * 4.0 * pi<double> * pi<double>) * Q;
+}
 
+[[nodiscard]]
+double TopChargeClover(const AntisymmetricField& CloverDifference) noexcept
+{
+    double Q {0.0};
+    #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
+    for (int t = 0; t < Nt; ++t)
+    for (int x = 0; x < Nx; ++x)
+    for (int y = 0; y < Ny; ++y)
+    for (int z = 0; z < Nz; ++z)
+    {
+        const site_coord current_site {t, x, y, z};
+        const Matrix_3x3& R_01 {CloverDifference.IndependentComponent(current_site, 0, 1)};
+        const Matrix_3x3& R_02 {CloverDifference.IndependentComponent(current_site, 0, 2)};
+        const Matrix_3x3& R_03 {CloverDifference.IndependentComponent(current_site, 0, 3)};
+        const Matrix_3x3& R_12 {CloverDifference.IndependentComponent(current_site, 1, 2)};
+        const Matrix_3x3& R_13 {CloverDifference.IndependentComponent(current_site, 1, 3)};
+        const Matrix_3x3& R_23 {CloverDifference.IndependentComponent(current_site, 2, 3)};
         Q += std::real((R_01 * R_23 - R_02 * R_13 + R_03 * R_12).trace());
     }
     // The factor -1/64 comes from the field strength tensor terms (factor -1/2 due to projection, and factor 1/4 due to 4 clover leaf terms)
@@ -251,14 +244,14 @@ double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
     {
         std::array<Matrix_3x3, 6> Clov;
         std::array<Matrix_3x3, 6> F;
-        int tm = (t - 1 + Nt)%Nt;
-        int xm = (x - 1 + Nx)%Nx;
-        int ym = (y - 1 + Ny)%Ny;
-        int zm = (z - 1 + Nz)%Nz;
-        int tp = (t + 1)%Nt;
-        int xp = (x + 1)%Nx;
-        int yp = (y + 1)%Ny;
-        int zp = (z + 1)%Nz;
+        const int tm {(t - 1 + Nt)%Nt};
+        const int xm {(x - 1 + Nx)%Nx};
+        const int ym {(y - 1 + Ny)%Ny};
+        const int zm {(z - 1 + Nz)%Nz};
+        const int tp {(t + 1)%Nt};
+        const int xp {(x + 1)%Nx};
+        const int yp {(y + 1)%Ny};
+        const int zp {(z + 1)%Nz};
         // site_coord current_site {t, x, y, z};
         // Calculate clover term using Q_{mu,nu} = Q_{nu,mu}^{dagger}
         // TODO: Rewrite using plaquette function?
@@ -304,27 +297,6 @@ double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
                 + U({t, x, y, zm, 3}).adjoint() * U({t, x, y, zm, 2})            * U({t, x, yp, zm, 3})          * U({t, x, y, z, 2}).adjoint();
         // Clov[5] = PlaquetteI(U, current_site, 2, 3) + PlaquetteII(U, current_site, 2, 3) + PlaquetteIII(U, current_site, 2, 3) + PlaquetteIV(U, current_site, 2, 3);
 
-        // Version that uses the symmetry of F_mu,nu
-        // for (int mu = 0; mu < 4; ++mu)
-        // for (int nu = mu + 1; nu < 4; ++nu)
-        // {
-        //     F[mu][nu] = -i<floatT>/8.f * (Clov[mu][nu] - Clov[mu][nu].adjoint());
-        // }
-        //-----
-        // // F[0][1]
-        // F[0] = -i<floatT>/8.f * (Clov[0] - Clov[0].adjoint());
-        // // F[0][2]
-        // F[1] = -i<floatT>/8.f * (Clov[1] - Clov[1].adjoint());
-        // // F[0][3]
-        // F[2] = -i<floatT>/8.f * (Clov[2] - Clov[2].adjoint());
-        // // F[1][2]
-        // F[3] = -i<floatT>/8.f * (Clov[3] - Clov[3].adjoint());
-        // // F[1][3]
-        // F[4] = -i<floatT>/8.f * (Clov[4] - Clov[4].adjoint());
-        // // F[2][3]
-        // F[5] = -i<floatT>/8.f * (Clov[5] - Clov[5].adjoint());
-        // Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
-        //-----
         // F[0][1]
         F[0] = (Clov[0] - Clov[0].adjoint());
         // F[0][2]
@@ -345,7 +317,7 @@ double TopChargeCloverTimeslice(const GaugeField& U, const int t) noexcept
 }
 
 [[nodiscard]]
-double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
+double TopChargeCloverTimeslice(const AntisymmetricField& FieldStrengthTensor, const int t) noexcept
 {
     double Q {0.0};
     #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
@@ -353,24 +325,16 @@ double TopChargeCloverTimeslice(const FullTensor& Clover, const int t) noexcept
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        std::array<Matrix_3x3, 6> F;
-        //-----
-        // F[0][1]
-        F[0] = (Clover(t, x, y, z, 0, 1) - Clover(t, x, y, z, 1, 0));
-        // F[0][2]
-        F[1] = (Clover(t, x, y, z, 0, 2) - Clover(t, x, y, z, 2, 0));
-        // F[0][3]
-        F[2] = (Clover(t, x, y, z, 0, 3) - Clover(t, x, y, z, 3, 0));
-        // F[1][2]
-        F[3] = (Clover(t, x, y, z, 1, 2) - Clover(t, x, y, z, 2, 1));
-        // F[1][3]
-        F[4] = (Clover(t, x, y, z, 1, 3) - Clover(t, x, y, z, 3, 1));
-        // F[2][3]
-        F[5] = (Clover(t, x, y, z, 2, 3) - Clover(t, x, y, z, 3, 2));
-        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
+        const site_coord current_site {t, x, y, z};
+        const Matrix_3x3& F_01 {FieldStrengthTensor.IndependentComponent(current_site, 0, 1)};
+        const Matrix_3x3& F_02 {FieldStrengthTensor.IndependentComponent(current_site, 0, 2)};
+        const Matrix_3x3& F_03 {FieldStrengthTensor.IndependentComponent(current_site, 0, 3)};
+        const Matrix_3x3& F_12 {FieldStrengthTensor.IndependentComponent(current_site, 1, 2)};
+        const Matrix_3x3& F_13 {FieldStrengthTensor.IndependentComponent(current_site, 1, 3)};
+        const Matrix_3x3& F_23 {FieldStrengthTensor.IndependentComponent(current_site, 2, 3)};
+        Q += std::real((F_01 * F_23 - F_02 * F_13 + F_03 * F_12).trace());
     }
-    // Correct prefactor when using the clover term obtained from FieldStrengthTensor::Clover()
-    return 1.0 / (16.0 * pi<double> * pi<double>) * Q;
+    return 1.0 / (4.0 * pi<double> * pi<double>) * Q;
 }
 
 [[nodiscard]]
@@ -383,43 +347,32 @@ double TopChargePlaquette(const GaugeField& U) noexcept
     for (int y = 0; y < Ny; ++y)
     for (int z = 0; z < Nz; ++z)
     {
-        Local_tensor Clov;
-        Local_tensor F;
-        int tp = (t + 1)%Nt;
-        int xp = (x + 1)%Nx;
-        int yp = (y + 1)%Ny;
-        int zp = (z + 1)%Nz;
-        // Calculate clover term
-        // TODO: Rewrite using plaquette function?
-        Clov[0][0].setZero();
-        Clov[0][1] = U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint();
-        Clov[1][0] = Clov[0][1].adjoint();
+        std::array<Matrix_3x3, 6> F;
+        const int tp {(t + 1)%Nt};
+        const int xp {(x + 1)%Nx};
+        const int yp {(y + 1)%Ny};
+        const int zp {(z + 1)%Nz};
 
-        Clov[0][2] = U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint();
-        Clov[2][0] = Clov[0][2].adjoint();
-
-        Clov[0][3] = U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint();
-        Clov[3][0] = Clov[0][3].adjoint();
-
-        Clov[1][1].setZero();
-        Clov[1][2] = U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint();
-        Clov[2][1] = Clov[1][2].adjoint();
-
-        Clov[1][3] = U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint();
-        Clov[3][1] = Clov[1][3].adjoint();
-
-        Clov[2][2].setZero();
-        Clov[2][3] = U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint();
-        Clov[3][2] = Clov[2][3].adjoint();
-        Clov[3][3].setZero();
-        for (int mu = 0; mu < 4; ++mu)
-        for (int nu = 0; nu < 4; ++nu)
+        const auto ComputeFieldStrength = [](const Matrix_3x3& plaquette) noexcept
         {
-            F[mu][nu] = -i<floatT> * (Clov[mu][nu] - Clov[nu][mu]);
-        }
-        Q += std::real((F[0][1] * F[2][3] + F[0][2] * F[3][1] + F[0][3] * F[1][2]).trace());
+            return Matrix_3x3(-i<floatT> * (plaquette - plaquette.adjoint()));
+        };
+
+        // F[0][1]
+        F[0] = ComputeFieldStrength(U({t, x, y, z, 0}) * U({tp, x, y, z, 1}) * U({t, xp, y, z, 0}).adjoint() * U({t, x, y, z, 1}).adjoint());
+        // F[0][2]
+        F[1] = ComputeFieldStrength(U({t, x, y, z, 0}) * U({tp, x, y, z, 2}) * U({t, x, yp, z, 0}).adjoint() * U({t, x, y, z, 2}).adjoint());
+        // F[0][3]
+        F[2] = ComputeFieldStrength(U({t, x, y, z, 0}) * U({tp, x, y, z, 3}) * U({t, x, y, zp, 0}).adjoint() * U({t, x, y, z, 3}).adjoint());
+        // F[1][2]
+        F[3] = ComputeFieldStrength(U({t, x, y, z, 1}) * U({t, xp, y, z, 2}) * U({t, x, yp, z, 1}).adjoint() * U({t, x, y, z, 2}).adjoint());
+        // F[1][3]
+        F[4] = ComputeFieldStrength(U({t, x, y, z, 1}) * U({t, xp, y, z, 3}) * U({t, x, y, zp, 1}).adjoint() * U({t, x, y, z, 3}).adjoint());
+        // F[2][3]
+        F[5] = ComputeFieldStrength(U({t, x, y, z, 2}) * U({t, x, yp, z, 3}) * U({t, x, y, zp, 2}).adjoint() * U({t, x, y, z, 3}).adjoint());
+        Q += std::real((F[0] * F[5] - F[1] * F[4] + F[2] * F[3]).trace());
     }
-    // TODO: Normalization of 16.0 instead of 4.0 should yield correct results, but it is probably unnecessary to calcualte a clover term
+    // TODO: Normalization of 16.0 instead of 4.0 should yield correct results, but it is probably unnecessary to calculate a clover term
     // like above. Instead, simply take the imaginary part of plaquettes and automatically get correct normalization?
     // For comparison of definitions see: https://arxiv.org/pdf/1708.00696.pdf
     return 1.0 / (16.0 * pi<double> * pi<double>) * Q;
@@ -437,7 +390,7 @@ double TopChargePlaquette2x2(const GaugeField& U) noexcept
     {
         std::array<Matrix_3x3, 6> Clov;
         std::array<Matrix_3x3, 6> F;
-        site_coord                current_site {t, x, y, z};
+        const site_coord          current_site {t, x, y, z};
         //-----
         Clov[0] = CalculateCloverComponent<2>(U, current_site, 0, 1);
         Clov[1] = CalculateCloverComponent<2>(U, current_site, 0, 2);
@@ -477,7 +430,7 @@ double TopChargeCloverImproved(const GaugeField& U, const double c_plaq = 1.0 + 
     {
         std::array<Matrix_3x3, 6> F_clover;
         std::array<Matrix_3x3, 6> F_rectangle;
-        site_coord                current_site {t, x, y, z};
+        const site_coord          current_site {t, x, y, z};
         //-----
         // F[0][1]
         F_clover[0]    = SU3::Projection::Antihermitian(CalculateCloverComponent<1, 1>(U, current_site, 0, 1));
@@ -554,7 +507,7 @@ namespace TopologicalCharge
     //       Here, F is made antihermitian and traceless (due to the function calculating F), whereas above, F is not made traceless, which leads to slightly different results
     //       Using F without making it traceless gives the exact same results as the regular function above (as one would expect)
     [[nodiscard]]
-    double CloverChargeFromFTensor(const FullTensor& F) noexcept
+    double CloverChargeFromFTensor(const AntisymmetricField& FieldStrengthTensor) noexcept
     {
         double Q {0.0};
         #pragma omp parallel for collapse(omp_collapse_depth) reduction(+: Q)
@@ -563,8 +516,14 @@ namespace TopologicalCharge
         for (int y = 0; y < Ny; ++y)
         for (int z = 0; z < Nz; ++z)
         {
-            site_coord current_site {t, x, y, z};
-            Q += std::real((F(current_site, 0, 1) * F(current_site, 2, 3) + F(current_site, 0, 2) * F(current_site, 3, 1) + F(current_site, 0, 3) * F(current_site, 1, 2)).trace());
+            const site_coord current_site {t, x, y, z};
+            const Matrix_3x3& F_01 {FieldStrengthTensor.IndependentComponent(current_site, 0, 1)};
+            const Matrix_3x3& F_02 {FieldStrengthTensor.IndependentComponent(current_site, 0, 2)};
+            const Matrix_3x3& F_03 {FieldStrengthTensor.IndependentComponent(current_site, 0, 3)};
+            const Matrix_3x3& F_12 {FieldStrengthTensor.IndependentComponent(current_site, 1, 2)};
+            const Matrix_3x3& F_13 {FieldStrengthTensor.IndependentComponent(current_site, 1, 3)};
+            const Matrix_3x3& F_23 {FieldStrengthTensor.IndependentComponent(current_site, 2, 3)};
+            Q += std::real((F_01 * F_23 - F_02 * F_13 + F_03 * F_12).trace());
         }
         return 1.0 / (4.0 * pi<double> * pi<double>) * Q;
     }

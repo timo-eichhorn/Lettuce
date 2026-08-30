@@ -250,13 +250,12 @@ namespace GaugeUpdates
 {
     struct HMCMetaDData
     {
-        // FullTensor                                             Clover;
-        CloverField                                            Clover;
+        AntisymmetricField                                     CloverDifference;
         GaugeFieldSmeared                                      SmearedFields;
         GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts;
         GaugeField                                             ForceFatLink;
 
-        HMCMetaDData(int n_smear_meta) noexcept : Clover(), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta), ForceFatLink()
+        HMCMetaDData(int n_smear_meta) noexcept : CloverDifference(), SmearedFields(n_smear_meta + 1), Exp_consts(n_smear_meta), ForceFatLink()
         {}
     };
 
@@ -317,9 +316,9 @@ namespace GaugeUpdates
                 {
                     StoutSmearing4DWithConstants(MetadynamicsData.SmearedFields[smear_count], MetadynamicsData.SmearedFields[smear_count + 1], MetadynamicsData.Exp_consts[smear_count], rho_stout_cv);
                 }
-                // Calculate clover term and topological charge (we usually need the clover term later during the update, so better this way than directly calculating the charge)
-                CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
-                return TopChargeClover(MetadynamicsData.Clover);
+                // Calculate antisymmetric clover difference field and topological charge (the difference field is also required during the force computation)
+                CalculateCloverDifference<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.CloverDifference);
+                return TopChargeClover(MetadynamicsData.CloverDifference);
             }
 
             void RandomMomentum() const noexcept
@@ -370,7 +369,7 @@ namespace GaugeUpdates
             }
 
             //-----
-            // Calculate topological force/fat-link contribution from the metapotential
+            // Calculate topological force/fat-link contribution from the bias potential
 
             void CalculateTopologicalForce(const bool perform_submeasurement = false) noexcept
             {
@@ -384,17 +383,17 @@ namespace GaugeUpdates
                 }
                 // auto end_smearing = std::chrono::high_resolution_clock::now();
                 // smearing_time += end_smearing - start_smearing;
-                // Now we need the derivative of the metapotential and the contribution of the clover term
-                // Calculate clover term on field that was smeared the most
+                // Now we need the derivative of the bias potential and the contribution of the clover term
+                // Calculate clover difference term on the most-smeared field
                 // auto start_clover = std::chrono::high_resolution_clock::now();
-                CalculateClover<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover);
+                CalculateCloverDifference<1>(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.CloverDifference);
                 // auto end_clover = std::chrono::high_resolution_clock::now();
                 // clover_time += end_clover - start_clover;
-                // Calculate derivative of metapotential at CV_old
+                // Calculate derivative of bias potential at CV_old
                 // TODO: This includes the interpolation constant. Is this correct, or do we really need (V_i + V_{i + 1})/dQ (like in 1508.07270)?
                 //       We could try to use a symmetric difference V(Q + 0.5 * dq) - V(Q - 0.5 * dq), but then we have to be careful with the edges...
                 // auto start_deriv = std::chrono::high_resolution_clock::now();
-                double CV_old {TopChargeClover(MetadynamicsData.Clover)};
+                double CV_old {TopChargeClover(MetadynamicsData.CloverDifference)};
                 double potential_derivative {Metapotential.ReturnDerivative(CV_old)};
                 if constexpr(metadynamics_path_update_enabled)
                 {
@@ -418,7 +417,7 @@ namespace GaugeUpdates
                     site_coord current_site {t, x, y, z};
                     // TODO: This should be a negative sign, since the force is given by the negative derivative of the potential?
                     //       There is another minus later on in the momentum update
-                    MetadynamicsData.ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.Clover, current_site, mu);
+                    MetadynamicsData.ForceFatLink(current_site, mu) = potential_derivative * CloverDerivative(MetadynamicsData.SmearedFields[n_smear_meta], MetadynamicsData.CloverDifference, current_site, mu);
                 }
                 // auto end_cderiv = std::chrono::high_resolution_clock::now();
                 // cderiv_time += end_cderiv - start_cderiv;
