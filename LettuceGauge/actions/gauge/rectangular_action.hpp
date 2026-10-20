@@ -186,38 +186,42 @@ namespace GaugeAction
             [[nodiscard]]
             Matrix_3x3 StapleRect(const GaugeField& U, const site_coord& current_site, const int mu) const noexcept
             {
-                Matrix_3x3 st;
+                Matrix_3x3 st = Matrix_3x3::Zero();
+
+                const site_coord site_mup      {U.Move< 1>(current_site, mu)};
+                const site_coord site_mupp     {U.Move< 1>(site_mup    , mu)};
+                const site_coord site_mud      {U.Move<-1>(current_site, mu)};
                 for (int nu_offset = 1; nu_offset < 4; ++nu_offset)
                 {
                     int nu {(mu + nu_offset) % 4};
                     // First term, orthogonal to link
                     // Right half
-                    site_coord site_nup      {U.Move< 1>(current_site, nu)};
-                    site_coord site_nupp     {U.Move< 1>(site_nup    , nu)};
-                    site_coord site_mup_nup  {U.Move< 1>(site_nup    , mu)};
-                    site_coord site_mup      {U.Move< 1>(current_site, mu)};
+                    const site_coord site_nup      {U.Move< 1>(current_site, nu)};
+                    const site_coord site_nupp     {U.Move< 1>(site_nup    , nu)};
+                    const site_coord site_mup_nup  {U.Move< 1>(site_nup    , mu)};
+                    // const site_coord site_mup      {U.Move< 1>(current_site, mu)};
                     // Left half
-                    site_coord site_nud      {U.Move<-1>(current_site, nu)};
-                    site_coord site_nudd     {U.Move<-1>(site_nud    , nu)};
-                    site_coord site_mup_nudd {U.Move< 1>(site_nudd   , mu)};
-                    site_coord site_mup_nud  {U.Move< 1>(site_nud    , mu)};
+                    const site_coord site_nud      {U.Move<-1>(current_site, nu)};
+                    const site_coord site_nudd     {U.Move<-1>(site_nud    , nu)};
+                    const site_coord site_mup_nudd {U.Move< 1>(site_nudd   , mu)};
+                    const site_coord site_mup_nud  {U.Move< 1>(site_nud    , mu)};
                     st.noalias() += U(current_site, nu)           * U(site_nup , nu)           * U(site_nupp, mu) * U(site_mup_nup , nu).adjoint() * U(site_mup    , nu).adjoint()
                                   + U(site_nud    , nu).adjoint() * U(site_nudd, nu).adjoint() * U(site_nudd, mu) * U(site_mup_nudd, nu)           * U(site_mup_nud, nu);
                     //-----
                     // Second term, same direction as link (staple originating from current_site)
                     // Right half
-                    site_coord site_mupp     {U.Move< 1>(site_mup    , mu)};
+                    // const site_coord site_mupp     {U.Move< 1>(site_mup    , mu)};
                     // Left half
-                    site_coord site_mupp_nud {U.Move< 1>(site_mup_nud, mu)};
+                    const site_coord site_mupp_nud {U.Move< 1>(site_mup_nud, mu)};
                     st.noalias() += (U(current_site, nu)           * U(site_nup, mu) * U(site_mup_nup, mu) * U(site_mupp    , nu).adjoint()
                                    + U(site_nud    , nu).adjoint() * U(site_nud, mu) * U(site_mup_nud, mu) * U(site_mupp_nud, nu)) * U(site_mup, mu).adjoint();
                     //-----
                     // Third term, same direction as link (staple originating from site_mud)
                     // Right half
-                    site_coord site_mud      {U.Move<-1>(current_site, mu)};
-                    site_coord site_mud_nup  {U.Move< 1>(site_mud    , nu)};
+                    // const site_coord site_mud      {U.Move<-1>(current_site, mu)};
+                    const site_coord site_mud_nup  {U.Move< 1>(site_mud    , nu)};
                     // Left half
-                    site_coord site_mud_nud  {U.Move<-1>(site_mud    , nu)};
+                    const site_coord site_mud_nud  {U.Move<-1>(site_mud    , nu)};
                     st.noalias() += U(site_mud, mu).adjoint() * (U(site_mud    , nu)           * U(site_mud_nup, mu) * U(site_nup, mu) * U(site_mup    , nu).adjoint()
                                                                + U(site_mud_nud, nu).adjoint() * U(site_mud_nud, mu) * U(site_nud, mu) * U(site_mup_nud, nu));
                 }
