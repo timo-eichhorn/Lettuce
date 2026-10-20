@@ -3,16 +3,18 @@
 
 // Non-standard library headers
 #include "coords.hpp"
+#include "math/tensor_symmetry.hpp"
 //----------------------------------------
 // Standard library headers
 #include <omp.h>
 //----------------------------------------
 // Standard C++ headers
+#include <concepts>
 #include <iostream>
 #include <memory>
-#include <type_traits>
 //----------------------------------------
 // Standard C headers
+#include <cassert>
 #include <cstddef>
 
 //----------------------------------------
@@ -32,6 +34,9 @@ class LatticeField
 
         template<int Nt_, int Nx_, int Ny_, int Nz_, typename S>
         friend class FullTensor4D;
+
+        template<int Nt_, int Nx_, int Ny_, int Nz_, int N_, typename S, typename ComponentPolicyT>
+        friend class CompressedTensor4D;
 
         std::unique_ptr<T[]> buffer {std::make_unique<T[]>(size)};
         static constexpr std::size_t size {size_};
@@ -456,8 +461,7 @@ class FullTensor4D
         static constexpr int         Nnu    {4};
         // Promote single length to size_t so the product doesn't overflow
         static constexpr std::size_t V      {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
-        static constexpr std::size_t V_link {Nmu * Nnu * V};
-        LatticeField<V_link, gaugeT> gaugefield;
+        LatticeField<Nmu * Nnu * V, gaugeT> gaugefield;
     public:
         // Constructor with four arguments (one length for each direction)
         FullTensor4D() noexcept
@@ -589,9 +593,165 @@ class FullTensor4D
         // }
 };
 
-using GaugeField        = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
-using GaugeFieldSmeared = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
-using FullTensor        = FullTensor4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
+// Lattice field containing tensors of rank two in a compressed form
+template<int Nt_, int Nx_, int Ny_, int Nz_, int N_, typename tensorT, typename ComponentPolicyT>
+class CompressedTensor4D
+{
+    private:
+        static constexpr int         Nt          {Nt_};
+        static constexpr int         Nx          {Nx_};
+        static constexpr int         Ny          {Ny_};
+        static constexpr int         Nz          {Nz_};
+        static constexpr int         N           {N_};
+        // Promote single length to size_t so the product doesn't overflow
+        static constexpr std::size_t V           {static_cast<std::size_t>(Nt) * Nx * Ny * Nz};
+        static constexpr std::size_t Ncomponents {ComponentPolicyT::template ComponentCount<N>()};
+        LatticeField<V * Ncomponents, tensorT>   tensorfield;
+
+        [[nodiscard]]
+        static constexpr std::size_t SiteIndex(const site_coord& site) noexcept
+        {
+            return ((site.t * static_cast<std::size_t>(Nx) + site.x) * Ny + site.y) * Nz + site.z;
+        }
+
+        [[nodiscard]]
+        static constexpr std::size_t LinearCoordinate(const site_coord& site, const std::size_t component) noexcept
+        {
+            return SiteIndex(site) * Ncomponents + component;
+        }
+
+        [[nodiscard]]
+        tensorT* SiteData(const site_coord& site) noexcept
+        {
+            return &tensorfield[LinearCoordinate(site, 0)];
+        }
+
+        [[nodiscard]]
+        const tensorT* SiteData(const site_coord& site) const noexcept
+        {
+            return &tensorfield[LinearCoordinate(site, 0)];
+        }
+    public:
+        static_assert(N > 1, "CompressedTensor4D requires at least two tensor components");
+        static_assert(Ncomponents > 0, "CompressedTensor4D requires at least one stored tensor component");
+        static_assert(TensorSymmetry::ComponentRelationPolicy<ComponentPolicyT, tensorT, N_>, "The component relation policy does not satisfy the CompressedTensor4D interface");
+        CompressedTensor4D() noexcept = default;
+        ~CompressedTensor4D()         = default;
+
+        [[nodiscard]]
+        tensorT& IndependentComponent(const site_coord& site, const std::size_t component) noexcept
+        {
+            assert(component < Ncomponents);
+            return SiteData(site)[component];
+        }
+
+        [[nodiscard]]
+        const tensorT& IndependentComponent(const site_coord& site, const std::size_t component) const noexcept
+        {
+            assert(component < Ncomponents);
+            return SiteData(site)[component];
+        }
+
+        // Convenience overloads for callers that already comply with the policy's independent component convention
+        // Policies with no one-to-one canonical index pair do not need to provide this operation
+        [[nodiscard]]
+        tensorT& IndependentComponent(const site_coord& site, const int mu, const int nu) noexcept
+        requires requires(const int component_mu, const int component_nu)
+        {
+            {ComponentPolicyT::template IndependentIndex<N>(component_mu, component_nu)}       -> std::same_as<std::size_t>;
+            {ComponentPolicyT::template IsIndependentComponent<N>(component_mu, component_nu)} -> std::same_as<bool>;
+        }
+        {
+            assert(ComponentPolicyT::template IsIndependentComponent<N>(mu, nu));
+            return IndependentComponent(site, ComponentPolicyT::template IndependentIndex<N>(mu, nu));
+        }
+
+        [[nodiscard]]
+        const tensorT& IndependentComponent(const site_coord& site, const int mu, const int nu) const noexcept
+        requires requires(const int component_mu, const int component_nu)
+        {
+            {ComponentPolicyT::template IndependentIndex<N>(component_mu, component_nu)}       -> std::same_as<std::size_t>;
+            {ComponentPolicyT::template IsIndependentComponent<N>(component_mu, component_nu)} -> std::same_as<bool>;
+        }
+        {
+            assert(ComponentPolicyT::template IsIndependentComponent<N>(mu, nu));
+            return IndependentComponent(site, ComponentPolicyT::template IndependentIndex<N>(mu, nu));
+        }
+
+        [[nodiscard]]
+        tensorT Get(const site_coord& site, const int mu, const int nu) const noexcept
+        {
+            assert(mu >= 0 and mu < N and nu >= 0 and nu < N);
+            const auto component_map {ComponentPolicyT::template Locate<N>(mu, nu)};
+            return ComponentPolicyT::template Read<tensorT>(component_map, SiteData(site));
+        }
+
+        void Set(const site_coord& site, const int mu, const int nu, const tensorT& value) noexcept
+        {
+            assert(mu >= 0 and mu < N and nu >= 0 and nu < N);
+            const auto component_map {ComponentPolicyT::template Locate<N>(mu, nu)};
+            ComponentPolicyT::template Write<tensorT>(component_map, SiteData(site), value);
+        }
+
+        [[nodiscard]]
+        static constexpr std::size_t ComponentsPerSite() noexcept
+        {
+            return Ncomponents;
+        }
+
+        [[nodiscard]]
+        static constexpr int TensorDimension() noexcept
+        {
+            return N;
+        }
+
+        [[nodiscard]]
+        constexpr std::size_t Volume() const noexcept
+        {
+            return V;
+        }
+
+        [[nodiscard]]
+        constexpr std::size_t SpatialVolume() const noexcept
+        {
+            return V / Nt;
+        }
+
+        [[nodiscard]]
+        constexpr int Length(const int direction) const noexcept
+        {
+            switch (direction)
+            {
+                case 0:
+                    return Nt;
+                case 1:
+                    return Nx;
+                case 2:
+                    return Ny;
+                case 3:
+                    return Nz;
+                default:
+                    return 0;
+            }
+        }
+};
+
+using GaugeField            = GaugeField4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
+using GaugeFieldSmeared     = GaugeField4DSmeared<Nt, Nx, Ny, Nz, Matrix_SU3>;
+using FullTensor            = FullTensor4D<Nt, Nx, Ny, Nz, Matrix_SU3>;
+
+// Compressed matrix-valued tensor fields, where the symmetries refer to the Lorentz indices
+// Clover terms are adjoint-symmetric and have vanishing diagonal entries:
+// C_{mu, nu} = C_{nu, mu}^dagger, and C_{mu, mu} = 0
+// Clover differences are antisymmetric in their Lorentz indices:
+// (R_{mu, nu} = C_{mu, nu} - C_{nu, mu}): R_{mu, nu} = - R_{nu, mu}
+// Field strength tensors are antisymmetric in their Lorentz indices:
+// F_{mu, nu} = -F_{nu, mu}
+using ZeroDiagonalAdjointSymmetricField = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::ZeroDiagonalAdjointSymmetric>;
+using AntisymmetricField                = CompressedTensor4D<Nt, Nx, Ny, Nz, Ndim, Matrix_SU3, TensorSymmetry::Antisymmetric>;
+
+static_assert(ZeroDiagonalAdjointSymmetricField::ComponentsPerSite() == static_cast<std::size_t>(Ndim) * (Ndim - 1) / 2);
+static_assert(AntisymmetricField::ComponentsPerSite()                == static_cast<std::size_t>(Ndim) * (Ndim - 1) / 2);
 
 // Struct to hold a pair of references to smeared fields
 // Useful when smearing multiple times, and only the final smearing level is needed
