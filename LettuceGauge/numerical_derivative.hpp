@@ -6,10 +6,10 @@ for (int i = 0; i < 5; ++i)
     Iterator::Checkerboard(Heatbath, 1);
     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
 }
-GaugeField        FieldFwd;
-GaugeField        FieldBwd;
-GaugeFieldSmeared TestFieldSmeared(n_smear_meta);
-FullTensor        Clov;
+GaugeField         FieldFwd;
+GaugeField         FieldBwd;
+GaugeFieldSmeared  TestFieldSmeared(n_smear_meta);
+AntisymmetricField CloverDifference;
 
 site_coord        current_site {1, 2, 0, 1};
 int               direction    {3};
@@ -34,8 +34,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     double ActionNewB {WilsonAction::Action(FieldBwd)};
 
     // Calculate the clover charge derivative
-    CalculateClover<1, 1>(Gluon, Clov);
-    Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, Clov, current_site, direction)};
+    CalculateCloverDifference<1, 1>(Gluon, CloverDifference);
+    Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, CloverDifference, current_site, direction)};
 
     // Calculate the Wilson action derivative (where the sum over all 8 generators is already taken)
     Matrix_3x3 st {WilsonAction::Staple(Gluon, current_link)};
@@ -77,18 +77,18 @@ for (int i = 0; i < 5; ++i)
     Iterator::Checkerboard(OverrelaxationSubgroup, 4);
 }
 
-GaugeField        FieldFwd;
-GaugeField        FieldBwd;
-GaugeFieldSmeared TestFieldSmeared(n_smear_meta + 1);
+GaugeField                                             FieldFwd;
+GaugeField                                             FieldBwd;
+GaugeFieldSmeared                                      TestFieldSmeared(n_smear_meta + 1);
 GaugeField4DSmeared<Nt, Nx, Ny, Nz, SU3::ExpConstants> Exp_consts(n_smear_meta);
-GaugeField        TopForceFatLink;
-GaugeField        ForceFatLink;
-FullTensor        Clov;
+GaugeField                                             TopForceFatLink;
+GaugeField                                             ForceFatLink;
+AntisymmetricField                                     CloverDifference;
 
-site_coord        current_site {1, 2, 0, 1};
-int               direction    {3};
-link_coord        current_link {1, 2, 0, 1, 3};
-double            deltah       {0.001};
+site_coord current_site {1, 2, 0, 1};
+int        direction    {3};
+link_coord current_link {1, 2, 0, 1, 3};
+double     deltah       {0.001};
 
 // TODO: Difference between manually smearing and using StoutSmearingAll!
 // std::cout << TopChargeClover(Gluon) << std::endl;
@@ -138,8 +138,8 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     double ActionSmearedNewB {WilsonAction::Action(TestFieldSmeared[n_smear_meta])};
 
     // Calculate the clover charge derivative (the factor i comes in at the end)
-    CalculateClover<1, 1>(Gluon, Clov);
-    Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, Clov, current_site, direction)};
+    CalculateCloverDifference<1, 1>(Gluon, CloverDifference);
+    Matrix_3x3 ClovD {i<floatT> * CloverDerivative(Gluon, CloverDifference, current_site, direction)};
 
     // Calculate the smeared clover charge derivative (here we don't have a factor i until the very end)
     TestFieldSmeared[0] = Gluon;
@@ -147,7 +147,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
     {
         StoutSmearing4DWithConstants(TestFieldSmeared[smear_count], TestFieldSmeared[smear_count + 1], Exp_consts[smear_count], rho_stout_metadynamics);
     }
-    CalculateClover<1, 1>(TestFieldSmeared[n_smear_meta], Clov);
+    CalculateCloverDifference<1, 1>(TestFieldSmeared[n_smear_meta], CloverDifference);
     // Original clover derivative on maximally smeared field
     #pragma omp parallel for collapse(omp_collapse_depth)
     for (int t = 0; t < Nt; ++t)
@@ -159,7 +159,7 @@ for (int group_direction = 1; group_direction <= 8; ++group_direction)
         site_coord current_site {t, x, y, z};
         // TODO: This should be a negative sign, since the force is given by the negative derivative of the potential
         //       There is another minus later on in the momentum update
-        TopForceFatLink(current_site, mu) = CloverDerivative(TestFieldSmeared[n_smear_meta], Clov, current_site, mu);
+        TopForceFatLink(current_site, mu) = CloverDerivative(TestFieldSmeared[n_smear_meta], CloverDifference, current_site, mu);
     }
     // Stout force recursion
     for (int smear_count = n_smear_meta; smear_count > 0; --smear_count)

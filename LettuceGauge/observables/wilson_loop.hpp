@@ -90,16 +90,16 @@ double WilsonLoop(const GaugeField& U, GaugeField& U_chain) noexcept
     #pragma omp parallel for reduction(+: W)
     for (int t = 0; t < Nt; ++t)
     {
-        int tp {(t + N_mu_end)%Nt};
+        const int tp {(t + N_mu_end)%Nt};
         for (int x = 0; x < Nx; ++x)
         {
-            int xp {(x + N_mu_end)%Nx};
+            const int xp {(x + N_mu_end)%Nx};
             for (int y = 0; y < Ny; ++y)
             {
-                int yp {(y + N_mu_end)%Ny};
+                const int yp {(y + N_mu_end)%Ny};
                 for (int z = 0; z < Nz; ++z)
                 {
-                    int zp {(z + N_mu_end)%Nz};
+                    const int zp {(z + N_mu_end)%Nz};
                     // W += (U_chain({t, x, y, z, 0}) * U_chain({tp, x, y, z, 1}) * U_chain({t, xp, y, z, 0}).adjoint() * U_chain({t, x, y, z, 1}).adjoint()).cast<std::complex<double>>();
                     // W += (U_chain({t, x, y, z, 0}) * U_chain({tp, x, y, z, 2}) * U_chain({t, x, yp, z, 0}).adjoint() * U_chain({t, x, y, z, 2}).adjoint()).cast<std::complex<double>>();
                     // W += (U_chain({t, x, y, z, 0}) * U_chain({tp, x, y, z, 3}) * U_chain({t, x, y, zp, 0}).adjoint() * U_chain({t, x, y, z, 3}).adjoint()).cast<std::complex<double>>();
@@ -133,9 +133,9 @@ Matrix_SU3 WilsonLoop(const GaugeField& U, const site_coord current_site, const 
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of WilsonLoop are not allowed to be 0!");
     static_assert((N_mu * N_mu) == (N_nu * N_nu), "The absolute values of the template parameters of WilsonLoop must be the same!");
-    site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
-    site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
-    site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
+    const site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
+    const site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
+    const site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
     return LineProduct<N_mu>(U, current_site, mu) * LineProduct<N_nu>(U, site_mup, nu) * LineProduct<-N_mu>(U, site_mup_nup, mu) * LineProduct<-N_nu>(U, site_nup, nu);
 }
 
@@ -145,9 +145,9 @@ template<int N_mu, int N_nu>
 Matrix_SU3 RectangularLoop(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
     static_assert(N_mu != 0 and N_nu != 0, "The template parameters of RectangularLoop are not allowed to be 0!");
-    site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
-    site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
-    site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
+    const site_coord site_mup     {U.Move<N_mu>(current_site, mu)};
+    const site_coord site_mup_nup {U.Move<N_nu>(site_mup,     nu)};
+    const site_coord site_nup     {U.Move<N_nu>(current_site, nu)};
     return LineProduct<N_mu>(U, current_site, mu) * LineProduct<N_nu>(U, site_mup, nu) * LineProduct<-N_mu>(U, site_mup_nup, mu) * LineProduct<-N_nu>(U, site_nup, nu);
 }
 
@@ -156,10 +156,10 @@ template<>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop<1, 2>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mup     {U.Move<1>(current_site, mu)};
-    site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
-    site_coord site_nupp    {U.Move<2>(current_site, nu)};
-    site_coord site_nup     {U.Move<1>(current_site, nu)};
+    const site_coord site_mup     {U.Move<1>(current_site, mu)};
+    const site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
+    const site_coord site_nupp    {U.Move<2>(current_site, nu)};
+    const site_coord site_nup     {U.Move<1>(current_site, nu)};
     return U(current_site, mu) * U(site_mup, nu) * U(site_mup_nup, nu) * U(site_nupp, mu).adjoint() * U(site_nup, nu).adjoint() * U(current_site, nu).adjoint();
 }
 
@@ -167,10 +167,10 @@ template<>
 [[nodiscard]]
 Matrix_SU3 RectangularLoop<2, 1>(const GaugeField& U, const site_coord& current_site, const int mu, const int nu) noexcept
 {
-    site_coord site_mup     {U.Move<1>(current_site, mu)};
-    site_coord site_mupp    {U.Move<1>(site_mup    , mu)};
-    site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
-    site_coord site_nup     {U.Move<1>(current_site, nu)};
+    const site_coord site_mup     {U.Move<1>(current_site, mu)};
+    const site_coord site_mupp    {U.Move<1>(site_mup    , mu)};
+    const site_coord site_mup_nup {U.Move<1>(site_mup    , nu)};
+    const site_coord site_nup     {U.Move<1>(current_site, nu)};
     return U(current_site, mu) * U(site_mup, mu) * U(site_mupp, nu) * U(site_mup_nup, mu).adjoint() * U(site_nup, mu).adjoint() * U(current_site, nu).adjoint();
 }
 
