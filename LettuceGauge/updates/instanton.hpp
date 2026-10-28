@@ -57,21 +57,39 @@ namespace GaugeUpdates
         return squared_distance;
     }
 
-    // This creates an approximate (charge 1) BPST instanton on the lattice with scale parameter r
+    // This creates an approximate (charge abs(Q) = 1) BPST instanton on the lattice with scale parameter r
     // Note that no self-dual instanton configurations with abs(Q) = 1 exist on the torus (cf. hep-lat/0112034), but for
     // the purpose of an attempted instanton update we will try to proceed with an approximate abs(Q) = 1 'instanton'
     void CreateBPSTInstanton(GaugeField& Gluon, GaugeField& Gluon1, const bool positive_Q, const site_coord& center, const int r) noexcept
     {
-        Matrix_SU3 sig1, sig2, sig3;
+        // TODO: Can use Cabibbo-Marinari machinery and work in SU(2) until the end?
+        // Pauli matrices embedded into 3x3 matrices
+        Matrix_3x3 sig1, sig2, sig3;
+        // sig1 << 0.0, 1.0, 0.0,
+        //         1.0, 0.0, 0.0,
+        //         0.0, 0.0, 1.0;
+        // sig2 << 0.0      , -i<floatT>, 0.0,
+        //         i<floatT>,  0.0      , 0.0,
+        //         0.0      ,  0.0      , 1.0;
+        // sig3 << 1.0,  0.0, 0.0,
+        //         0.0, -1.0, 0.0,
+        //         0.0,  0.0, 1.0;
         sig1 << 0.0, 1.0, 0.0,
                 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0;
+                0.0, 0.0, 0.0;
         sig2 << 0.0      , -i<floatT>, 0.0,
                 i<floatT>,  0.0      , 0.0,
-                0.0      ,  0.0      , 1.0;
+                0.0      ,  0.0      , 0.0;
         sig3 << 1.0,  0.0, 0.0,
                 0.0, -1.0, 0.0,
-                0.0,  0.0, 1.0;
+                0.0,  0.0, 0.0;
+        Matrix_3x3 id_su2, complement_su2;
+        id_su2         << 1.0, 0.0, 0.0,
+                          0.0, 1.0, 0.0,
+                          0.0, 0.0, 0.0;
+        complement_su2 << 0.0, 0.0, 0.0,
+                          0.0, 0.0, 0.0,
+                          0.0, 0.0, 1.0;
         // sig1 << 1.0, 0.0, 0.0,
         //         0.0, 0.0, 1.0,
         //         0.0, 1.0, 0.0;
@@ -102,13 +120,12 @@ namespace GaugeUpdates
         {
             site_coord current_site        {t, x, y, z};
             double     distance_squared    {SquaredDistanceToCenter(lattice_shape, center, current_site)};
-            double     difference_mu       {DifferenceMu(lattice_shape[mu], center[mu] + 0.5, current_site[mu])};
+            // double     difference_mu       {DifferenceMu(lattice_shape[mu], center[mu] + 0.5, current_site[mu])};
+            double     difference_mu       {DifferenceMu(lattice_shape[mu], current_site[mu], center[mu] + 0.5)};
             double     distance_mu_squared {difference_mu * difference_mu};
             double     denom               {std::sqrt(distance_squared - distance_mu_squared)};
             double     denom_r             {std::sqrt(distance_squared - distance_mu_squared + r * r)};
             double     lambda              {-std::atan((difference_mu + 1.0) / denom) + std::atan(difference_mu / denom) + denom / denom_r * (std::atan((difference_mu + 1.0) / denom_r) - std::atan(difference_mu / denom_r))};
-            // double     lambda              {-std::atan((difference_mu + 0.5) / denom) + std::atan((difference_mu - 0.5) / denom) + denom / denom_r * (std::atan((difference_mu + 0.5) / denom_r) - std::atan((difference_mu - 0.5) / denom_r))};
-            // std::cout << t << ", " << mu << ": " << distance_squared << ", " << difference_mu << ", " << lambda << std::endl;
             // TODO: Allow to choose between different embeddings
             //       For now only embed in 01 entries of SU(3) matrix
             // TODO: Use SU(2) matrices instead of SU(3) for as long as possible?
@@ -157,7 +174,8 @@ namespace GaugeUpdates
                 }
                 break;
             }
-            Gluon(current_site, mu) = std::cos(lambda) * Matrix_SU3::Identity() + i<floatT> * std::sin(lambda) / denom * tmp;
+            // Gluon(current_site, mu) = std::cos(lambda) * Matrix_SU3::Identity() + i<floatT> * std::sin(lambda) / denom * tmp;
+            Gluon(current_site, mu) = complement_su2 + std::cos(lambda) * id_su2 + i<floatT> * std::sin(lambda) / denom * tmp;
             SU3::Projection::GramSchmidt(Gluon(current_site, mu));
         }
         // std::cout << "All elements in group: " << SU3::Tests::TestSU3All(Gluon) << std::endl;
@@ -232,8 +250,8 @@ namespace GaugeUpdates
         private:
             // TODO: The instanton configurations should not be static members so we can support different lattice sizes
             //       Does not matter right now as the size of GaugeField is fixed at compile time anyways
-            static GaugeField  PositiveInstanton;
-            static GaugeField  NegativeInstanton;
+            inline static GaugeField  PositiveInstanton;
+            inline static GaugeField  NegativeInstanton;
                    GaugeField& U;
                    GaugeField& U_copy;
             // TODO: Check if the stencil_radius of the Action is larger than 1 to prevent incorrect masking/parallelization
